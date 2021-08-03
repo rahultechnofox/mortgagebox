@@ -32,7 +32,7 @@ Route::get("/verify-success",function(){
 });
 
 Route::middleware('auth')->group(function(){
-
+    /******************* User Management **********************/
     Route::get('admin', '\App\Http\Controllers\UserController@dashboard')->name("admin");
     Route::get('admin/users', '\App\Http\Controllers\AdminController@users')->name("admin/users");
     Route::get('admin/view-customer/{id}', '\App\Http\Controllers\AdminController@viewCustomer')->name("admin/view-customer");

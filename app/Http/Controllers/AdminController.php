@@ -19,12 +19,12 @@ class AdminController extends Controller
 {
     public function index(User $model)
     {
-        return view('dashboard');
+        return view('dashboard.index');
     }
-    public function users(User $model)
-    {
-        $userDetails = User::where('user_role','=',0)->get();
-        return view('users',['userDetails'=>$userDetails]);
+    public function users(User $model){
+        $data['users'] = User::getLists();
+        // echo json_encode($data);exit;
+        return view('users.index',$data);
     }
     public function viewCustomer($id) {
         $userDetails = User::where('id','=',$id)->first();
@@ -50,48 +50,48 @@ class AdminController extends Controller
         $userDetails->active_bid = $adviceBidActive;
         $userDetails->pending_bid = $pendingBidCount;
 
-        return view('view_customer',['userDetails'=>$userDetails]);
+        return view('users.show',['userDetails'=>$userDetails]);
     }
-    public function Advisors(User $model)
-    {
+    public function Advisors(User $model){
         $userDetails = User::select('advisor_profiles.*','users.email_verified_at')->where('users.user_role','=',1)
         ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
-        ->get();
-        foreach($userDetails as $k=>$v) {
-            $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
-            ->join('users', 'advice_areas.user_id', '=', 'users.id')
-            ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('advisor_bids.advisor_status', '=', 1)
-            ->where('advisor_bids.advisor_id', '=', $v->advisorId)
-            ->get();
-            $userDetails[$k]->acceptedLeads = count($advice_area);
+        ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+        // echo json_encode($userDetails);exit;
+        // foreach($userDetails as $k=>$v) {
+        //     $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
+        //     ->join('users', 'advice_areas.user_id', '=', 'users.id')
+        //     ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+        //     ->where('advisor_bids.advisor_status', '=', 1)
+        //     ->where('advisor_bids.advisor_id', '=', $v->advisorId)
+        //     ->get();
+        //     $userDetails[$k]->acceptedLeads = count($advice_area);
 
-            $live_leads = AdvisorBids::where('advisor_id','=',$v->advisorId)
-            ->where('status', '=', 0)
-            ->where('advisor_status', '=', 1)
-            ->count();
-            $userDetails[$k]->live_leads = $live_leads;
+        //     $live_leads = AdvisorBids::where('advisor_id','=',$v->advisorId)
+        //     ->where('status', '=', 0)
+        //     ->where('advisor_status', '=', 1)
+        //     ->count();
+        //     $userDetails[$k]->live_leads = $live_leads;
 
-            $hired_leads = AdvisorBids::where('advisor_id','=',$v->advisorId)
-            ->where('status', '=', 1)
-            ->where('advisor_status', '=', 1)
-            ->count();
-            $userDetails[$k]->hired_leads = $hired_leads;
+        //     $hired_leads = AdvisorBids::where('advisor_id','=',$v->advisorId)
+        //     ->where('status', '=', 1)
+        //     ->where('advisor_status', '=', 1)
+        //     ->count();
+        //     $userDetails[$k]->hired_leads = $hired_leads;
 
-            $completed_leads = AdvisorBids::where('advisor_id','=',$v->advisorId)
-            ->where('status', '=', 2)
-            ->where('advisor_status', '=', 1)
-            ->count();
-            $userDetails[$k]->completed_leads = $completed_leads;
+        //     $completed_leads = AdvisorBids::where('advisor_id','=',$v->advisorId)
+        //     ->where('status', '=', 2)
+        //     ->where('advisor_status', '=', 1)
+        //     ->count();
+        //     $userDetails[$k]->completed_leads = $completed_leads;
 
-        }
+        // }
         
 
-        return view('advisors',['userDetails'=>$userDetails]);
+        return view('advisor.index',['userDetails'=>$userDetails]);
     }
     public function needList() {
         $advice_area = Advice_area::select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-        ->get();
+        ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
         foreach ($advice_area as $key => $item) {
             $offer_count = AdvisorBids::where('area_id','=',$item->id)->count();
             $bidDetails = AdvisorBids::where('area_id','=',$item->id)->where('status','>','0')->first();
@@ -104,7 +104,7 @@ class AdminController extends Controller
             $advice_area[$key]->offer_count = $offer_count;
             
         }
-        return view('need_list',['userDetails'=>$advice_area]);
+        return view('need_list.index',['userDetails'=>$advice_area]);
     }
     public function viewNeeds($id) {
         $needDetails = Advice_area::select('advice_areas.*','users.name','user_notes.notes')->where('advice_areas.id','=',$id)
@@ -157,7 +157,7 @@ class AdminController extends Controller
             $needDetails->cost_of_lead = $costOfLeadsStr;
             $needDetails->cost_of_lead_drop = $costOfLeadsDropStr;
         // }
-        return view('view_needs',['needDetails'=>$needDetails]);
+        return view('need_list.show',['needDetails'=>$needDetails]);
     }
     public function viewAdvisor($id) {
         $userDetails = User::where('id','=',$id)->first();
@@ -218,10 +218,9 @@ class AdminController extends Controller
         $data['message'] = 'Need deleted!';
         return redirect()->to('admin/needList')->with('message', $data['message']);
     }
-    public function companyList()
-    {
-        $companyDetails = companies::get();
-        return view('company_list',['companyDetails'=>$companyDetails]);
+    public function companyList(){
+        $companyDetails = companies::orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+        return view('company.index',['companyDetails'=>$companyDetails]);
     }
     public function viewCompany($id)
     {
@@ -242,8 +241,8 @@ class AdminController extends Controller
     
     public function pages()
     {
-        $pages = StaticPage::get();
-        return view('pages',['page_list'=>$pages]);
+        $pages = StaticPage::orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+        return view('pages.index',['page_list'=>$pages]);
     }
     public function addPage(Request $request ) {
         return view('add_page');
@@ -297,8 +296,8 @@ class AdminController extends Controller
     //services
     public function services()
     {
-        $pages = ServiceType::get();
-        return view('services',['page_list'=>$pages]);
+        $pages = ServiceType::orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));;
+        return view('services.index',['page_list'=>$pages]);
     }
     public function addService(Request $request ) {
         return view('add_service');

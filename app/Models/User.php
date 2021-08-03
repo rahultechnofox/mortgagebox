@@ -50,4 +50,13 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Product::class);
     }
+    public static function getLists(){
+        try {
+          $query = new Self;
+          $data = $query->where('user_role','=',0)->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+          return $data;
+        }catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
+        }
+    }
 }

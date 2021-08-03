@@ -59,12 +59,13 @@ class UserController extends Controller
     public function index(User $model)
     {
         // return view('users.index');
-        return view('dashboard');
+        
+        return view('dashboard.index');
     }
     public function dashboard(User $model)
     {
         // return view('users.index');
-        return view('dashboard');
+        return view('dashboard.index');
     }
     public function users(User $model)
     {

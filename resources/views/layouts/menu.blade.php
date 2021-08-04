@@ -1,4 +1,4 @@
-<li class="{{ Request::is('admin/home*') ? 'active' : '' }} nav-item">
+<li class="{{ Request::is('admin/home*') || Request::is('/') ? 'active' : '' }} nav-item">
     <a class="d-flex align-items-center" href="{{ route('home') }}"><i data-feather="grid"></i><span class="menu-title text-truncate" data-i18n="Dashboards">Dashboard</span></a>
 </li>
 

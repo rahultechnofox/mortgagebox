@@ -774,7 +774,7 @@ footer.footer-border {
   z-index: 1; }
 
 .main-menu.menu-light .navigation > li.active > a {
-  background: linear-gradient(118deg, #0272bd, rgb(137 176 202));
+  background: linear-gradient(118deg, #2d7af1, rgb(39 94 173));
   box-shadow: 0 0 5px 1px rgb(56 144 202 / 45%);
   color: #fff;
   font-weight: 400;

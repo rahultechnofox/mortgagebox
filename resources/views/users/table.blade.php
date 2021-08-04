@@ -1,5 +1,4 @@
 <div class="content-body">
-    <!-- Striped rows start -->
     <div class="row" id="table-striped">
         <div class="col-12">
             <div class="card">
@@ -45,7 +44,7 @@
                                             <i data-feather="more-vertical"></i>
                                         </button>
                                         <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="{{ route('admin/view-customer',$users_data->id) }}">
+                                            <a class="dropdown-item" href="{{ route('admin/users/show',$users_data->id) }}">
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a>

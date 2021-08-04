@@ -28,7 +28,7 @@
                             <div class="card-body statistics-body">
                                 <div class="row">
                                     <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
-                                        <a href="{{url('/user')}}">
+                                        <a href="{{ route('admin/users') }}">
                                             <div class="d-flex flex-row">
                                                 <div class="avatar bg-light-success me-2">
                                                     <div class="avatar-content">
@@ -36,14 +36,14 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">3</h4>
+                                                    <h4 class="fw-bolder mb-0">0</h4>
                                                     <p class="card-text font-small-3 mb-0">Total Customers</p>
                                                 </div>
                                             </div>
                                         </a>
                                     </div>
                                     <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
-                                        <a href="">
+                                        <a href="{{ route('admin/advisors') }}">
                                             <div class="d-flex flex-row">
                                                 <div class="avatar bg-light-info me-2">
                                                     <div class="avatar-content">
@@ -51,14 +51,14 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">25</h4>
-                                                    <p class="card-text font-small-3 mb-0">Total Books</p>
+                                                <h4 class="fw-bolder mb-0">0</h4>
+                                                    <p class="card-text font-small-3 mb-0">Total Advisors</p>
                                                 </div>
                                             </div>
                                         </a>
                                     </div>
                                     <div class="col-xl-3 col-sm-6 col-12">
-                                        <a href="">
+                                        <a href="{{ route('admin/companies') }}">
                                             <div class="d-flex flex-row">
                                                 <div class="avatar bg-light-danger me-2">
                                                     <div class="avatar-content">
@@ -66,14 +66,14 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">$9745</h4>
-                                                    <p class="card-text font-small-3 mb-0">Books Borrowed</p>
+                                                    <h4 class="fw-bolder mb-0">0</h4>
+                                                    <p class="card-text font-small-3 mb-0">Companies</p>
                                                 </div>
                                             </div>
                                         </a>
                                     </div>
                                     <div class="col-xl-3 col-sm-6 col-12">
-                                        <a href="">
+                                        <a href="{{ route('admin/needList') }}">
                                             <div class="d-flex flex-row">
                                                 <div class="avatar bg-light-success me-2">
                                                     <div class="avatar-content">
@@ -81,106 +81,8 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">$9745</h4>
-                                                    <p class="card-text font-small-3 mb-0">Sold Books</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body statistics-body">
-                                <div class="row">
-                                    <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
-                                        <a href="">
-                                            <div class="d-flex flex-row">
-                                                <div class="avatar bg-light-danger me-2">
-                                                    <div class="avatar-content">
-                                                        <i data-feather="message-circle" class="avatar-icon"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">230k</h4>
-                                                    <p class="card-text font-small-3 mb-0">Material Pending for review</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
-                                        <a href="">
-                                            <div class="d-flex flex-row">
-                                                <div class="avatar bg-light-success me-2">
-                                                    <div class="avatar-content">
-                                                        <i data-feather="user-check" class="avatar-icon"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">12</h4>
-                                                    <p class="card-text font-small-3 mb-0">Registered Reviewer</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-xl-3 col-sm-6 col-12">
-                                        <a href="">
-                                            <div class="d-flex flex-row">
-                                                <div class="avatar bg-light-info me-2">
-                                                    <div class="avatar-content">
-                                                        <i data-feather="shield-off" class="avatar-icon"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">$9745</h4>
-                                                    <p class="card-text font-small-3 mb-0">Pending Verification</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-xl-3 col-sm-6 col-12">
-                                        <a href="">
-                                            <div class="d-flex flex-row">
-                                                <div class="avatar bg-light-danger me-2">
-                                                    <div class="avatar-content">
-                                                        <i data-feather="dollar-sign" class="avatar-icon"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">$9745</h4>
-                                                    <p class="card-text font-small-3 mb-0">Donation Pending</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body statistics-body">
-                                <div class="row">
-                                    <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
-                                        <a href="">
-                                            <div class="d-flex flex-row">
-                                                <div class="avatar bg-light-primary me-2">
-                                                    <div class="avatar-content">
-                                                        <i data-feather="message-square" class="avatar-icon"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">230k</h4>
-                                                    <p class="card-text font-small-3 mb-0">Reviewer Applied</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
-                                        <a href="">
-                                            <div class="d-flex flex-row">
-                                                <div class="avatar bg-light-danger me-2">
-                                                    <div class="avatar-content">
-                                                        <i data-feather="clipboard" class="avatar-icon"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">5</h4>
-                                                    <p class="card-text font-small-3 mb-0">Pending Approval School/University</p>
+                                                    <h4 class="fw-bolder mb-0">0</h4>
+                                                    <p class="card-text font-small-3 mb-0">Needs</p>
                                                 </div>
                                             </div>
                                         </a>
@@ -189,13 +91,9 @@
                             </div>
                         </div>
                     </div>
-                    <!--/ Statistics Card -->
                 </div>
             </section>
-            <!-- Dashboard Ecommerce ends -->
-
         </div>
     </div>
 </div>
-<!-- END: Content-->
 @endsection

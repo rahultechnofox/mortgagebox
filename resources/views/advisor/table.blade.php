@@ -54,7 +54,7 @@
                                             <i data-feather="more-vertical"></i>
                                         </button>
                                         <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="{{ route('admin/view-advisor',$users_data->id) }}">
+                                            <a class="dropdown-item" href="{{ route('admin/advisors/show',$users_data->id) }}">
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a>

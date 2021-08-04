@@ -35,6 +35,76 @@ use Illuminate\Support\Facades\Mail;
 class AdvisorController extends Controller
 {
     protected $user;
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(User $model){
+        $data['userDetails'] = User::select('advisor_profiles.*','users.email_verified_at')->where('users.user_role','=',1)
+        ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
+        ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+
+        return view('advisor.index',$data);
+    }
+    /**
+     * Display the specified resource..
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id) {
+        $data['userDetails'] = User::where('id','=',$id)->first();
+        $advisorProfile = AdvisorProfile::where('advisorId','=',$id)->first();
+        $userDetails = (object) $userDetails;
+        $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
+        ->join('users', 'advice_areas.user_id', '=', 'users.id')
+        ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+        ->where('advisor_bids.advisor_status', '=', 1)
+        ->where('advisor_bids.advisor_id', '=', $id)
+        ->count();
+      
+        $userDetails->acceptedLeads = $advice_areaCount;
+         
+        $live_leads = AdvisorBids::where('advisor_id','=',$id)
+        ->where('status', '=', 0)
+        ->where('advisor_status', '=', 1)
+        ->count();
+        $userDetails->live_leads = $live_leads;
+
+        $hired_leads = AdvisorBids::where('advisor_id','=',$id)
+        ->where('status', '=', 1)
+        ->where('advisor_status', '=', 1)
+        ->count();
+        $userDetails->hired_leads = $hired_leads;
+
+        $completed_leads = AdvisorBids::where('advisor_id','=',$id)
+        ->where('status', '=', 2)
+        ->where('advisor_status', '=', 1)
+        ->count();
+        $userDetails->completed_leads = $completed_leads;
+        $lost_leads = AdvisorBids::where('advisor_id','=',$id)
+        ->where('status', '=', 3)
+        ->where('advisor_status', '=', 1)
+        ->count();
+        $userDetails->lost_leads = $lost_leads;
+        $data['profile'] = $advisorProfile;
+        return view('advisor.show',$data);
+    }
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    function destroy($advisor_id) {
+        User::where('id', '=', $advisor_id)->delete();
+        AdvisorProfile::where('advisorId', '=', $advisor_id)->delete();
+        AdvisorBids::where('advisor_id', '=', $advisor_id)->delete();
+        AdvisorPreferencesCustomer::where('advisor_id', '=', $advisor_id)->delete();
+        AdvisorPreferencesProducts::where('advisor_id', '=', $advisor_id)->delete();
+        $data['message'] = 'Advisor deleted!';
+        return redirect()->to('admin/advisors')->with('message', $data['message']);
+    }
     function getReviewRating()
     {
 
@@ -277,85 +347,54 @@ class AdvisorController extends Controller
         $dataArray = array();
         if ($advisor_data) {
             foreach ($advisor_data as $key => $item) {
+                $rating =  ReviewRatings::select('review_ratings.*')
+                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                    ->where('review_ratings.status', '=', 0)
+                    ->get();
 
-                // if ($item->postcode != "") {
-                    // $getAdvisorPostalDetails = PostalCodes::where('Postcode', '=', $item->postcode)->first();
-                    // if (!empty($getAdvisorPostalDetails)) {
-                        // $customerEasting = $getCustomerPostalDetails->Easting;
-                        // $advisorEasting = $getAdvisorPostalDetails->Easting;
-                        // $customerNorthing = $getCustomerPostalDetails->Northing;
-                        // $advisorNorthing = $getAdvisorPostalDetails->Northing;
-                        // $distance = $this->getDistanceRange($customerEasting, $advisorEasting, $customerNorthing, $advisorNorthing);
-                        // $item->distance = $distance;
-                        // if ($item->serve_range > $distance) {
+                $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisorId)->where('review_ratings.status', '=', 0)->avg('rating');
 
-                        //     unset($advisor_data[$key]);
-                        // } else {
+                $ratingExcellent =  ReviewRatings::where('review_ratings.rating', '<=', '5')
+                    ->where('review_ratings.rating', '>', '4')
+                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                    ->count();
 
-                            $rating =  ReviewRatings::select('review_ratings.*')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->where('review_ratings.status', '=', 0)
-                                ->get();
+                $ratingGreat =  ReviewRatings::where('review_ratings.rating', '<=', '4')
+                    ->where('review_ratings.rating', '>', '3')
+                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                    ->count();
 
-                            $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisorId)->where('review_ratings.status', '=', 0)->avg('rating');
+                $ratingAverage =  ReviewRatings::where('review_ratings.rating', '<=', '3')
+                    ->where('review_ratings.rating', '>', '2')
+                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                    ->count();
 
-                            $ratingExcellent =  ReviewRatings::where('review_ratings.rating', '<=', '5')
-                                ->where('review_ratings.rating', '>', '4')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
+                $ratingPoor =  ReviewRatings::where('review_ratings.rating', '<=', '2')
+                    ->where('review_ratings.rating', '>', '1')
+                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                    ->count();
 
-                            $ratingGreat =  ReviewRatings::where('review_ratings.rating', '<=', '4')
-                                ->where('review_ratings.rating', '>', '3')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
+                $ratingBad =  ReviewRatings::where('review_ratings.rating', '<=', '1')
+                    ->where('review_ratings.rating', '>', '0')
+                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                    ->count();
 
-                            $ratingAverage =  ReviewRatings::where('review_ratings.rating', '<=', '3')
-                                ->where('review_ratings.rating', '>', '2')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
-
-                            $ratingPoor =  ReviewRatings::where('review_ratings.rating', '<=', '2')
-                                ->where('review_ratings.rating', '>', '1')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
-
-                            $ratingBad =  ReviewRatings::where('review_ratings.rating', '<=', '1')
-                                ->where('review_ratings.rating', '>', '0')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
-
-                            $item->avarageRating = number_format((float)$averageRating, 2, '.', '');
-                            $item->rating = [
-                                'total' => count($rating),
-                            ];
-                            $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
-                            ->Where('advisor_status','=',1)
-                            ->Where('advisor_id','=',$item->advisorId)
-                            ->count();
-                            $item->used_by  = $usedByMortage;
-                            $dataArray[] = $item;
-                        // }
-                    // } else {
-                    //     unset($advisor_data[$key]);
-                    // }
-                // } else {
-                //     unset($advisor_data[$key]);
-                // }
+                $item->avarageRating = number_format((float)$averageRating, 2, '.', '');
+                $item->rating = [
+                    'total' => count($rating),
+                ];
+                $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
+                ->Where('advisor_status','=',1)
+                ->Where('advisor_id','=',$item->advisorId)
+                ->count();
+                $item->used_by  = $usedByMortage;
+                $dataArray[] = $item;
             }
 
             return response()->json([
                 'status' => true,
                 'message' => 'success',
                 'data' => $dataArray
-                // 'current_page' => $advisor_data->currentPage(),
-                // 'first_page_url' => $advisor_data->url(1),
-                // 'last_page_url' => $advisor_data->url($advisor_data->lastPage()),
-                // 'per_page' => $advisor_data->perPage(),
-                // 'next_page_url' => $advisor_data->nextPageUrl(),
-                // 'prev_page_url' => $advisor_data->previousPageUrl(),
-                // 'total' => $advisor_data->total(),
-                // 'total_on_current_page' => $advisor_data->count(),
-                // 'has_more_page' => $advisor_data->hasMorePages(),
             ], Response::HTTP_OK);
         } else {
             return response()->json([
@@ -407,11 +446,9 @@ class AdvisorController extends Controller
         if ($request->hasFile('company_logo')) {
             $uploadFolder = 'advisor';
             $image = $request->file('company_logo');
-            // $image_uploaded_path = $image->store($uploadFolder, 'public');
             $name = $request->file('company_logo')->getClientOriginalName();
             $extension = $request->file('company_logo')->extension();
             $originalString = str_replace("." . $extension, "", $name);
-            //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
             $upfileName = $name;
 
             $num = 1;
@@ -448,11 +485,9 @@ class AdvisorController extends Controller
         if ($request->hasFile('image')) {
             $uploadFolder = 'advisor';
             $image = $request->file('image');
-            // $image_uploaded_path = $image->store($uploadFolder, 'public');
             $name = $request->file('image')->getClientOriginalName();
             $extension = $request->file('image')->extension();
             $originalString = str_replace("." . $extension, "", $name);
-            //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
             $upfileName = $name;
 
             $num = 1;
@@ -531,10 +566,7 @@ class AdvisorController extends Controller
             $arr['company_name'] = $request->company_name;
         }
 
-        $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update(
-            $arr
-
-        );
+        $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($arr);
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
 
         return response()->json([
@@ -633,15 +665,7 @@ class AdvisorController extends Controller
     public function getAdvisorLocationPreference(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
-        //$locations = LocationPreferences::where('advisor_id', '=', $user->id)->first();
         $locations = AdvisorProfile::select(['postcode AS post_code', 'serve_range AS miles'])->where('advisorId', '=', $user->id)->first();
-        // if (empty($locations)) {
-
-        //     LocationPreferences::create([
-        //         'advisor_id'=>$user->id,
-        //     ]);
-        // }  
-        // $locations = LocationPreferences::where('advisor_id', '=', $user->id)->first();
         return response()->json([
             'status' => true,
             'message' => 'success',
@@ -655,7 +679,6 @@ class AdvisorController extends Controller
             "postcode" => $request->post_code,
             "serve_range" => $request->miles,
         ]);
-        // $locations = LocationPreferences::where('advisor_id', '=', $user->id)->first();
         $locations = AdvisorProfile::select(['postcode AS post_code', 'serve_range AS miles'])->where('advisorId', '=', $user->id)->first();
         return response()->json([
             'status' => true,

@@ -27,9 +27,57 @@ use Illuminate\Support\Facades\Mail;
 class UserController extends Controller
 {
     protected $user;
-    public function addReview(Request $request)
-    {
-      
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(User $model){
+        $data['users'] = User::getLists();
+        return view('users.index',$data);
+    }
+    /**
+     * Display the specified resource..
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id) {
+        $userDetails = User::where('id','=',$id)->first();
+        $advice_area =  Advice_area::select('advice_areas.*')
+            ->where('advice_areas.user_id', '=', $id)
+            ->get();
+        $userDetails->total_needs = count($advice_area);
+        $adviceBidClosed = 0;
+        $adviceBidActive = 0;
+        $pendingBidCount = 0;
+        foreach($advice_area as $items) {
+            $adviceBidCl= AdvisorBids::where('area_id',$items->id)->where('status','=','2')->get();
+            $adviceBidClosed = $adviceBidClosed+count($adviceBidCl);
+            $adviceBidAc= AdvisorBids::where('area_id',$items->id)->where('status','=','1')->get();
+            $adviceBidActive = $adviceBidActive+count($adviceBidAc);
+            $pendingCount= AdvisorBids::where('area_id',$items->id)->where('status','=','0')->get();
+            $pendingBidCount = $pendingBidCount+count($pendingCount);
+        }
+        $userDetails->closed = $adviceBidClosed;
+        $userDetails->active_bid = $adviceBidActive;
+        $userDetails->pending_bid = $pendingBidCount;
+        return view('users.show',['userDetails'=>$userDetails]);
+    }
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    function destroy($customer_id) {
+        User::where('id', '=', $customer_id)->delete();
+        Advice_area::where('user_id', '=', $customer_id)->delete();
+        $data['message'] = 'Customer deleted!';
+        return redirect()->to('admin/users')->with('message', $data['message']);
+    }
+
+    public function addReview(Request $request){
         $userDetails = JWTAuth::parseToken()->authenticate();
         $rating = ReviewRatings::create([
             'user_id' => $userDetails->id,
@@ -56,22 +104,7 @@ class UserController extends Controller
             'message' => 'Rating added successfully',
         ], Response::HTTP_OK);
     }
-    public function index(User $model)
-    {
-        // return view('users.index');
-        
-        return view('dashboard.index');
-    }
-    public function dashboard(User $model)
-    {
-        // return view('users.index');
-        return view('dashboard.index');
-    }
-    public function users(User $model)
-    {
-        // return view('users.index');
-        return view('users');
-    }
+    
     public function saveNotification($data) {
         $notification = Notifications::create($data);
         if($notification) {

@@ -32,17 +32,42 @@ Route::get("/verify-success",function(){
 });
 
 Route::middleware('auth')->group(function(){
+
     /******************* User Management **********************/
+    Route::get('admin/users', '\App\Http\Controllers\UserController@index')->name("admin/users");
+    Route::get('admin/users/show/{id}', '\App\Http\Controllers\UserController@show')->name("admin/users/show");
+    Route::get('admin/delete-customer/{id}', '\App\Http\Controllers\UserController@destroy')->name("admin/delete-customer");
+    /******************* User Management **********************/
+
+    /******************* Advisor Management **********************/
+    Route::get('admin/advisors', '\App\Http\Controllers\AdvisorController@index')->name("admin/advisors");
+    Route::get('admin/advisors/show/{id}', '\App\Http\Controllers\AdvisorController@show')->name("admin/advisors/show");
+    Route::get('admin/delete-advisor/{id}', '\App\Http\Controllers\AdvisorController@destroy')->name("admin/delete-advisor");
+    /******************* Advisor Management **********************/
+
+    /******************* Need Management **********************/
+    Route::get('admin/need', '\App\Http\Controllers\NeedController@index')->name("admin/need");
+    Route::get('admin/need/show/{id}', '\App\Http\Controllers\NeedController@show')->name("admin/need/show");
+    Route::get('admin/delete-need/{id}', '\App\Http\Controllers\NeedController@destroy')->name("admin/delete-need");
+    /******************* Need Management **********************/
+
+    /******************* Company Management **********************/
+    Route::get('admin/companies', '\App\Http\Controllers\CompanyController@index')->name("admin/companies");
+    // Route::get('admin/company/show/{id}', '\App\Http\Controllers\CompanyController@show')->name("admin/company/show");
+    Route::get('admin/delete-company/{id}', '\App\Http\Controllers\CompanyController@destroy')->name("admin/delete-company");
+    /******************* Company Management **********************/
+
+    /******************* Pages Management **********************/
+    Route::get('admin/pages', '\App\Http\Controllers\PagesController@index')->name("admin/pages");
+    Route::get('admin/delete-page/{id}', '\App\Http\Controllers\PagesController@destroy')->name("admin/delete-page");
+    /******************* Pages Management **********************/
+
+    /******************* Services Management **********************/
+    Route::get('admin/services', '\App\Http\Controllers\ServicesController@index')->name("admin/services");
+    Route::get('admin/delete-service/{id}', '\App\Http\Controllers\ServicesController@destroy')->name("admin/delete-service");
+    /******************* Services Management **********************/
+
     Route::get('admin', '\App\Http\Controllers\UserController@dashboard')->name("admin");
-    Route::get('admin/users', '\App\Http\Controllers\AdminController@users')->name("admin/users");
-    Route::get('admin/view-customer/{id}', '\App\Http\Controllers\AdminController@viewCustomer')->name("admin/view-customer");
-    Route::get('admin/delete-customer/{id}', '\App\Http\Controllers\AdminController@deleteCustomer')->name("admin/delete-customer");
-    Route::get('admin/view-advisor/{id}', '\App\Http\Controllers\AdminController@viewAdvisor')->name("admin/view-advisor");
-    Route::get('admin/view-need/{id}', '\App\Http\Controllers\AdminController@viewNeeds')->name("admin/view-need");
-    Route::get('admin/advisors', '\App\Http\Controllers\AdminController@Advisors')->name("admin/advisors");
-    Route::get('admin/delete-advisor/{id}', '\App\Http\Controllers\AdminController@deleteAdvisor')->name("admin/delete-advisor");
-    Route::get('admin/needList', '\App\Http\Controllers\AdminController@needList')->name("admin/needList");
-    Route::get('admin/delete-need/{id}', '\App\Http\Controllers\AdminController@deleteNeed')->name("admin/delete-need");
     Route::get('/', '\App\Http\Controllers\UserController@index');
     Route::get('home', '\App\Http\Controllers\UserController@index')->name("home");
     Route::get('profile', '\App\Http\Controllers\UserController@index')->name("profile.edit");
@@ -52,24 +77,4 @@ Route::middleware('auth')->group(function(){
     Route::get('table', '\App\Http\Controllers\UserController@index')->name("table");
     Route::get('update', '\App\Http\Controllers\UserController@index')->name("profile.update");
     Route::get('password', '\App\Http\Controllers\UserController@index')->name("profile.password");
-    //company
-    Route::get('admin/companies', '\App\Http\Controllers\AdminController@companyList')->name("admin/companies");
-    Route::get('admin/view-company/{id}', '\App\Http\Controllers\AdminController@viewCompany')->name("admin/view-company");
-    Route::get('admin/delete-company/{id}', '\App\Http\Controllers\AdminController@deleteCompany')->name("admin/delete-company");
-    Route::get('admin/pages', '\App\Http\Controllers\AdminController@pages')->name("admin/pages");
-    Route::get('admin/addPage', '\App\Http\Controllers\AdminController@addPage')->name("admin/addPage");
-    Route::post('admin/savePage', '\App\Http\Controllers\AdminController@savePage')->name("admin/savePage");
-    Route::get('admin/edit-page/{id}', '\App\Http\Controllers\AdminController@editPage')->name("admin/edit-page");
-    Route::get('admin/delete-page/{id}', '\App\Http\Controllers\AdminController@deletePage')->name("admin/delete-page");
-    Route::post('admin/updatePage', '\App\Http\Controllers\AdminController@updatePage')->name("admin/updatePage");
-    Route::get('admin/status-page/{status}/{id}', '\App\Http\Controllers\AdminController@pageStatus')->name("admin/status-page");
-    // Services
-    Route::get('admin/services', '\App\Http\Controllers\AdminController@services')->name("admin/services");
-    Route::get('admin/addService', '\App\Http\Controllers\AdminController@addService')->name("admin/addService");
-    Route::post('admin/saveService', '\App\Http\Controllers\AdminController@saveService')->name("admin/saveService");
-    Route::get('admin/edit-service/{id}', '\App\Http\Controllers\AdminController@editService')->name("admin/edit-service");
-    Route::get('admin/delete-service/{id}', '\App\Http\Controllers\AdminController@deleteService')->name("admin/delete-service");
-    Route::post('admin/updateService', '\App\Http\Controllers\AdminController@updateService')->name("admin/updateService");
-    Route::get('admin/status-service/{status}/{id}', '\App\Http\Controllers\AdminController@serviceStatus')->name("admin/status-service");
-    
 });

@@ -58,7 +58,7 @@
                                             <i data-feather="more-vertical"></i>
                                         </button>
                                         <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="{{ route('admin/view-need',$users_data->id) }}">
+                                            <a class="dropdown-item" href="{{ route('admin/need/show',$users_data->id) }}">
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a>
@@ -68,7 +68,7 @@
                                             </a> -->
                                             <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-need',$users_data->id) }}">
                                                 <i data-feather="trash" class="me-50"></i>
-                                                <span>Deletes</span>
+                                                <span>Delete</span>
                                             </a>
                                         </div>
                                     </div>

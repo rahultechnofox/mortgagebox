@@ -23,6 +23,7 @@
                             @if(count($page_list) > 0)
                             @foreach($page_list as $users_data)
                             <tr>
+                                <td>{{$i}}</td>
                                 <td>{{$users_data->page_name}}</td>
                                 <td>{{$users_data->slug}}</td>
                                 <td>
@@ -48,7 +49,7 @@
                                             </a> -->
                                             <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-page',$users_data->id) }}">
                                                 <i data-feather="trash" class="me-50"></i>
-                                                <span>Deletes</span>
+                                                <span>Delete</span>
                                             </a>
                                         </div>
                                     </div>

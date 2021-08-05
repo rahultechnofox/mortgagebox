@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use DB;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -50,11 +51,24 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Product::class);
     }
-    public static function getLists(){
+    public static function getLists($search){
         try {
-          $query = new Self;
-          $data = $query->where('user_role','=',0)->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
-          return $data;
+            $query = new Self;
+            // echo json_encode($search);exit;
+            if(isset($search['search']) && $search['search']!=''){
+                $query = $query->where('name', 'like', '%' .strtolower($search['search']). '%')->orWhere('email', 'like', '%' .strtolower($search['search']). '%')->orWhere('post_code', 'like', '%' .strtolower($search['search']). '%');
+            }
+            if(isset($search['email_status']) && $search['email_status']!=''){
+                $query = $query->where('email_status',$search['email_status']);
+            }
+            if(isset($search['status']) && $search['status']!=''){
+                $query = $query->where('status',$search['status']);
+            }
+            if(isset($search['created_at']) && $search['created_at']!=''){
+                $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
+            }
+            $data = $query->where('user_role','=',0)->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
         }

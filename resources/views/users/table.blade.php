@@ -15,6 +15,7 @@
                                 <th>PostCode</th>
                                 <th>Email</th>
                                 <th>Date Joined</th>
+                                <th>Email Verified</th>
                                 <th>Last Active</th>
                                 <th>Status</th>
                                 <th>Action</th>
@@ -30,12 +31,19 @@
                                 <td>{{$users_data->post_code}}</td>
                                 <td>{{$users_data->email}}</td>
                                 <td>{{$users_data->created_at}}</td>
+                                <td>
+                                    @if($users_data->email_status == 0)
+                                        Not Verifed
+                                    @else
+                                        Verfied
+                                    @endif
+                                </td>
                                 <td>{{$users_data->last_active}}</td>
                                 <td>
-                                    @if($users_data->email_verified_at == NULL)
-                                    Not Verifed
-                                    @else: 
-                                    Verfied
+                                    @if($users_data->status == 1)
+                                        Active
+                                    @else 
+                                        Deactive
                                     @endif
                                 </td>
                                 <td>

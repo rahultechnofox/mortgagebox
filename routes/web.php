@@ -13,6 +13,13 @@ use  App\Http\Controllers\UserController;
 | contains the "web" middleware group. Now create something great!
 |
 */
+Route::get('clear', function() {
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('config:cache');
+    Artisan::call('view:clear');
+    return "Cleared!";
+});
 Route::get('lang/{locale}',function($lang){
     \Session::put('locale',$lang);
     return redirect()->back();   
@@ -37,6 +44,9 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/users', '\App\Http\Controllers\UserController@index')->name("admin/users");
     Route::get('admin/users/show/{id}', '\App\Http\Controllers\UserController@show')->name("admin/users/show");
     Route::get('admin/delete-customer/{id}', '\App\Http\Controllers\UserController@destroy')->name("admin/delete-customer");
+    Route::post('admin/updatePassword','\App\Http\Controllers\UserController@updatePassword');
+    Route::post('admin/deleteCustomer','\App\Http\Controllers\UserController@deleteCustomer');
+
     /******************* User Management **********************/
 
     /******************* Advisor Management **********************/

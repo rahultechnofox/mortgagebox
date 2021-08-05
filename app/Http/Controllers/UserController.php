@@ -33,8 +33,9 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(User $model){
-        $data['users'] = User::getLists();
+    public function index(Request $request){
+        $post = $request->all();
+        $data['users'] = User::getLists($post);
         return view('users.index',$data);
     }
     /**
@@ -111,6 +112,59 @@ class UserController extends Controller
             return true;
         }else {
             return false;
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updatePassword(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'password' => 'required'
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                if(isset($post['password']) && $post['password']!=''){
+                    $post['password'] = Hash::make($post['password']);
+                }
+                unset($post['_token']);
+                $user = User::where('id',$post['id'])->update($post);
+                if($user){
+                    return response(\Helpers::sendSuccessAjaxResponse('Customer updated successfully.',$user));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
+    }
+
+    /**
+     * Delete the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function deleteCustomer(Request $request){
+        try {
+            $post = $request->all();
+            $user = User::where('id',$post['id'])->delete();
+            if($user){
+                return response(\Helpers::sendSuccessAjaxResponse('Customer deleted successfully.',$user));
+            }else{
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
         }
     }
 }

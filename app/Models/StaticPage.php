@@ -11,4 +11,20 @@ class StaticPage extends Model
     protected $fillable = [
         'page_name', 'slug', 'page_content','status'
     ];
+
+    public static function getPages($search){
+        try {
+            $query = new Self;
+            if(isset($search['name']) && $search['name']!=''){
+                $query = $query->where('page_name', 'like', '%' .strtolower($search['name']). '%');
+            }
+            if(isset($search['status']) && $search['status']!=''){
+                $query = $query->where('status',$search['status']);
+            }
+            $data = $query->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            return $data;
+        }catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
+        }
+    }
 }

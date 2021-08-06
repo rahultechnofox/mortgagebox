@@ -1,6 +1,7 @@
 <?php
 use App\Models\User;
 use App\Models\UserAuthLogin;
+use App\Models\ServiceType;
 
 class Helpers
 {
@@ -62,6 +63,21 @@ class Helpers
             return $tokenExist;
         }
         return false;
+    }
+    /*
+    	Get Main service
+    */
+    public static function getServiceName($service_id =''){
+        if($service_id != ''){
+            $service = ServiceType::findorfail($service_id);
+            if($service){
+                return $service->name;
+            }else{
+                return '--';
+            }
+        }else{
+            return '--';
+        }
     }
 
     public static function checkNull($val = null)

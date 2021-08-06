@@ -70,11 +70,25 @@ Route::middleware('auth')->group(function(){
     /******************* Pages Management **********************/
     Route::get('admin/pages', '\App\Http\Controllers\PagesController@index')->name("admin/pages");
     Route::get('admin/delete-page/{id}', '\App\Http\Controllers\PagesController@destroy')->name("admin/delete-page");
+    Route::get('admin/pages/edit/{id}', '\App\Http\Controllers\PagesController@edit')->name("admin/pages/edit");
+    Route::post('admin/update-page','\App\Http\Controllers\PagesController@update');
+    Route::post('admin/update-page-status','\App\Http\Controllers\PagesController@updateStatus');
     /******************* Pages Management **********************/
 
     /******************* Services Management **********************/
     Route::get('admin/services', '\App\Http\Controllers\ServicesController@index')->name("admin/services");
     Route::get('admin/delete-service/{id}', '\App\Http\Controllers\ServicesController@destroy')->name("admin/delete-service");
+    Route::post('admin/add-update-service','\App\Http\Controllers\ServicesController@store');
+    Route::post('admin/get-service','\App\Http\Controllers\ServicesController@show');
+    Route::post('admin/update-service-status','\App\Http\Controllers\ServicesController@updateServiceStatus');
+    /******************* Services Management **********************/
+
+    /******************* Faq Category Management **********************/
+    Route::get('admin/faq-category', '\App\Http\Controllers\FaqCategoryController@index')->name("admin/faq-category");
+    Route::get('admin/delete-faq-categories/{id}', '\App\Http\Controllers\FaqCategoryController@destroy')->name("admin/delete-faq-categories");
+    Route::post('admin/add-update-faq-category','\App\Http\Controllers\FaqCategoryController@store');
+    Route::post('admin/get-faq-category','\App\Http\Controllers\FaqCategoryController@show');
+    Route::post('admin/update-faq-category-status','\App\Http\Controllers\FaqCategoryController@updateFaqCategoryStatus');
     /******************* Services Management **********************/
 
     Route::get('admin', '\App\Http\Controllers\UserController@dashboard')->name("admin");

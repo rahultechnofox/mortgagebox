@@ -314,9 +314,148 @@ function deleteCustomer(id) {
         type:'POST',
         success:function(data){
             console.log(data);
-            // location.reload();
+            myToastr(data.message,'success');
+            location.href = base_url+"/admin/users";
         }
     })
+}
+
+function updateStatus(id,status,url){
+    var data = {};
+    data.id = id;
+    data.status = status;
+    var api_url = base_url+''+url;
+    if(data.status == ''){
+        myToastr('Something went wrong please refresh page','error');
+    }else{
+        showLoader();
+        $.ajax({
+            type: 'post',
+            url: api_url,
+            data: data,
+            success: function (response) {
+                if(!response.status){
+                    hideLoader();
+                    myToastr(response.message,'error');
+                }else{
+                    location.reload();                   
+                    myToastr(response.message,'success');
+                }
+            }
+        });
+    }
+}
+
+function addUpdateService(formId){
+    var $form = $("#"+formId);
+    var data = getFormData($form);
+    if(data.name == ''){
+        myToastr('Enter name','error');
+    }else{
+        showLoader();
+        $.ajax({
+            type: 'post',
+            url: base_url+"/admin/add-update-service",
+            data: data,
+            success: function (response) {
+                if(!response.status){
+                    hideLoader();
+                    myToastr(response.message,'error');
+                }else{
+                    location.reload();                   
+                    myToastr(response.message,'success');
+                }
+            }
+        });
+    }
+}
+
+function getServiceData(id){
+    showLoader();
+    var data = {};
+    data.id = id;
+    $.ajax({
+        type: 'post',
+        url: base_url +"/admin/get-service",
+        data: data,
+        success: function (response) {
+            $('#exampleModalLabel').html('Edit Service');
+            $('#id').val(response.data.id);
+            $('#name').val(response.data.name);
+            if(response.data.parent_id!=0){
+                $('#parent_id').val(response.data.parent_id);
+                $('.parent_id').show();
+            }else{
+                $('.parent_id').hide();
+            }  
+            hideLoader();
+        }
+    });
+}
+
+function resetFaqCategoryForm(){
+    $("#faqCategoryForm").closest('form').find("input[type=text], input[type=number], input[type=file], textarea").val("");
+    $("#faqCategoryForm").closest('form').find("input[type=checkbox]").removeAttr("checked");
+    $('#id').val('');
+    $('#audience_id').val('');
+    $('#exampleModalLabel').html('Add Faq Category');
+}
+
+function addUpdateFaqCategory(formId){
+    var $form = $("#"+formId);
+    var data = getFormData($form);
+    if(data.name == ''){
+        myToastr('Enter name','error');
+    }else if(data.audience_id == ''){
+        myToastr('Select audience','error');
+    }else{
+        showLoader();
+        $.ajax({
+            type: 'post',
+            url: base_url+"/admin/add-update-faq-category",
+            data: data,
+            success: function (response) {
+                if(!response.status){
+                    hideLoader();
+                    myToastr(response.message,'error');
+                }else{
+                    location.reload();                   
+                    myToastr(response.message,'success');
+                }
+            }
+        });
+    }
+}
+
+function getFaqCategoryData(id){
+    showLoader();
+    var data = {};
+    data.id = id;
+    $.ajax({
+        type: 'post',
+        url: base_url +"/admin/get-faq-category",
+        data: data,
+        success: function (response) {
+            $('#exampleModalLabel').html('Edit Faq Category');
+            $('#id').val(response.data.id);
+            $('#name').val(response.data.name);  
+            if(response.data.audience_id!=0){
+                $('#audience_id').val(response.data.audience_id);
+                $('.audience_id').show();
+            }else{
+                $('.audience_id').hide();
+            } 
+            hideLoader();
+        }
+    });
+}
+
+function resetServiceForm(){
+    $("#servicesForm").closest('form').find("input[type=text], input[type=number], input[type=file], textarea").val("");
+    $("#servicesForm").closest('form').find("input[type=checkbox]").removeAttr("checked");
+    $('#id').val('');
+    $('#parent_id').val('');
+    $('#exampleModalLabel').html('Add Service');
 }
 
 $("#for_all_users").on('change', function () {

@@ -11,11 +11,9 @@
                         <thead>
                             <tr>
                                 <th>Id</th>
-                                <th>Sub-Service</th>
                                 <th>Service</th>
                                 <th>Created Date</th>
                                 <th>Status</th>
-                                <th>Sequence</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -25,28 +23,26 @@
                             @foreach($page_list as $users_data)
                             <tr>
                                 <td>{{$i}}</td>
-                                <td>{{\Helpers::getServiceName($users_data->parent_id)}}</td>
                                 <td>{{$users_data->name}}</td>
                                 <td>{{\Helpers::checkEmptydateMdYHIS($users_data->created_at)}}</td>
                                 <td>
                                     @if($users_data->status == 1) 
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-service-status');">Active</a>
+                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-faq-category-status');">Active</a>
                                     @else
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-service-status');">Deactive</a>
+                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-faq-category-status');">Deactive</a>
                                     @endif
                                 </td>
-                                <td>{{$i}}</td>
                                 <td>
                                     <div class="dropdown">
                                         <button type="button" class="btn btn-sm dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                                             <i data-feather="more-vertical"></i>
                                         </button>
                                         <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="javascript:;" onclick="getServiceData('{{$users_data->id}}')" data-bs-toggle="modal" data-bs-target="#modals-slide-in">
+                                            <a class="dropdown-item" href="javascript:;" onclick="getFaqCategoryData('{{$users_data->id}}')" data-bs-toggle="modal" data-bs-target="#modals-slide-in">
                                                 <i data-feather="edit-2" class="me-50"></i>
                                                 <span>Edit</span>
                                             </a>
-                                            <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-service',$users_data->id) }}">
+                                            <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-faq-categories',$users_data->id) }}">
                                                 <i data-feather="trash" class="me-50"></i>
                                                 <span>Delete</span>
                                             </a>

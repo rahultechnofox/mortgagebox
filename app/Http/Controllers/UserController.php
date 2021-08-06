@@ -158,11 +158,7 @@ class UserController extends Controller
         try {
             $post = $request->all();
             $user = User::where('id',$post['id'])->delete();
-            if($user){
-                return response(\Helpers::sendSuccessAjaxResponse('Customer deleted successfully.',$user));
-            }else{
-                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
-            }
+            return response(\Helpers::sendSuccessAjaxResponse('Customer deleted successfully.',[]));
         } catch (\Exception $ex) {
             return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
         }

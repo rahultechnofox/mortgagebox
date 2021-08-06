@@ -28,7 +28,7 @@
                 </div>
             </div>
             <div class="content-header-right text-md-end col-md-12 col-12 d-md-block mb-1">
-            <form role="form" method="get">
+                <form role="form" method="get">
                     <div class="form-group row">
                         <div class="col-md-3 col-12">
                             <input type="text" class="form-control" value="<?php if(isset($_GET['search']) && $_GET['search']!=''){ echo $_GET['search']; } ?>" name="search" placeholder="Search">

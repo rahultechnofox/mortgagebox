@@ -13,7 +13,15 @@
                             <tr>
                                 <th>Company ID</th>
                                 <th>Company Name</th>
-                                <th>Action</th>
+                                <th>Contact Admin</th>
+                                <th>No. of Advisers</th>
+                                <th>Accepted Leads</th>
+                                <th>Live Leads</th>
+                                <th>Hired</th>
+                                <th>Completed</th>
+                                <th>Success %</th>
+                                <th>Value</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -22,19 +30,21 @@
                             @foreach($companyDetails as $users_data)
                             <tr>
                                 <td>{{$users_data->id}}</td>
-                                <td>{{$users_data->company_name}}</td>
+                                <td><a href="{{url('/admin/company/show')}}/{{$users_data->id}}">{{$users_data->company_name}}</a></td>
+                                <td>Jhon Blogs</td>
+                                <td>{{$users_data->total_advisor}}</td>
+                                <td>{{$users_data->accepted_leads}}</td>
+                                <td>{{$users_data->live_leads}}</td>
+                                <td>{{$users_data->hired}}</td>
+                                <td>{{$users_data->completed}}</td>
+                                <td>{{$users_data->value}}</td>
+                                <td>{{$users_data->cost}}</td>
                                 <td>
-                                    <div class="dropdown">
-                                        <button type="button" class="btn btn-sm dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                            <i data-feather="more-vertical"></i>
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-company',$users_data->id) }}">
-                                                <i data-feather="trash" class="me-50"></i>
-                                                <span>Delete</span>
-                                            </a>
-                                        </div>
-                                    </div>
+                                    @if ($users_data->status == 1) 
+                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-company-status');">Active</a>
+                                    @else
+                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-company-status');">In-Active</a>
+                                    @endif
                                 </td>
                             </tr>
                             <?php $i++; ?>

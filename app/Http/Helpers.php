@@ -83,7 +83,7 @@ class Helpers
     public static function checkNull($val = null)
     {
         if ($val == '' || $val == null) {
-            return '-';
+            return '--';
         } else {
             return $val;
         }

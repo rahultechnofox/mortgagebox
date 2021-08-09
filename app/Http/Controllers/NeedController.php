@@ -38,6 +38,7 @@ class NeedController extends Controller
             
         }
         $data['userDetails'] = $advice_area;
+        echo json_encode($data['userDetails']);exit;    
         return view('need_list.index',$data);
     }
     /**

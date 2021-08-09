@@ -458,6 +458,36 @@ function resetServiceForm(){
     $('#exampleModalLabel').html('Add Service');
 }
 
+function addUpdateFaq(formId){
+    // var $form = $("#"+formId);
+    // var data = getFormData($form);
+    // console.log(data);
+    // if(data.faq_category_id == ''){
+    //     myToastr('Select faq category','error');
+    //     return false;
+    // }else if(data.question == ''){
+    //     myToastr('Enter question','error');
+    //     return false;
+    // }else{
+    //     showLoader();
+    //     return true;
+    //     // $.ajax({
+    //     //     type: 'post',
+    //     //     url: base_url+"/admin/add-update-faq",
+    //     //     data: data,
+    //     //     success: function (response) {
+    //     //         if(!response.status){
+    //     //             hideLoader();
+    //     //             myToastr(response.message,'error');
+    //     //         }else{
+    //     //             location.reload();                   
+    //     //             myToastr(response.message,'success');
+    //     //         }
+    //     //     }
+    //     // });
+    // }
+}
+
 $("#for_all_users").on('change', function () {
     var el = $(this);
     $(".user_group").addClass('hide');

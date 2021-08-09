@@ -28,3 +28,6 @@
 <li class="{{ Request::is('admin/faq-category*') ? 'active' : '' }} nav-item">
     <a class="d-flex align-items-center" href="{{ route('admin/faq-category') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Faq Categories</span></a>
 </li>
+<li class="{{ Request::is('admin/faq*') ? 'active' : '' }} nav-item">
+    <a class="d-flex align-items-center" href="{{ route('admin/faq') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Faq</span></a>
+</li>

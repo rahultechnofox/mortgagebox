@@ -63,8 +63,10 @@ Route::middleware('auth')->group(function(){
 
     /******************* Company Management **********************/
     Route::get('admin/companies', '\App\Http\Controllers\CompanyController@index')->name("admin/companies");
-    // Route::get('admin/company/show/{id}', '\App\Http\Controllers\CompanyController@show')->name("admin/company/show");
+    Route::get('admin/company/show/{id}', '\App\Http\Controllers\CompanyController@show')->name("admin/company/show");
     Route::get('admin/delete-company/{id}', '\App\Http\Controllers\CompanyController@destroy')->name("admin/delete-company");
+    Route::post('admin/update-company-status','\App\Http\Controllers\CompanyController@updateCompanyStatus');
+    
     /******************* Company Management **********************/
 
     /******************* Pages Management **********************/
@@ -89,7 +91,17 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/add-update-faq-category','\App\Http\Controllers\FaqCategoryController@store');
     Route::post('admin/get-faq-category','\App\Http\Controllers\FaqCategoryController@show');
     Route::post('admin/update-faq-category-status','\App\Http\Controllers\FaqCategoryController@updateFaqCategoryStatus');
-    /******************* Services Management **********************/
+    /******************* Faq Category Management **********************/
+
+    /******************* Faq Management **********************/
+    Route::get('admin/faq', '\App\Http\Controllers\FaqController@index')->name("admin/faq");
+    Route::get('admin/delete-faq/{id}', '\App\Http\Controllers\FaqController@destroy')->name("admin/delete-faq");
+    Route::get('admin/faq/create', '\App\Http\Controllers\FaqController@create')->name("admin/faq/create");
+    Route::get('admin/faq/edit/{id}', '\App\Http\Controllers\FaqController@edit')->name("admin/faq/edit");
+    Route::post('admin/update-faq','\App\Http\Controllers\FaqController@update');
+    Route::post('admin/add-update-faq','\App\Http\Controllers\FaqController@store');
+    Route::post('admin/update-faq-status','\App\Http\Controllers\FaqController@updateFaqStatus');
+    /******************* Faq Management **********************/
 
     Route::get('admin', '\App\Http\Controllers\AdminController@index')->name("admin");
     Route::get('/', '\App\Http\Controllers\AdminController@index');

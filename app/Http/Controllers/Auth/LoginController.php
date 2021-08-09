@@ -74,7 +74,7 @@ class LoginController extends Controller
             if($user){
                 Auth::login($user,true);
                 // $user->markEmailAsVerified();
-                return redirect('/');
+                return redirect('/admin');
             }else{
                 $user= new User();
                 $user->name = $getUser->getName();
@@ -87,7 +87,7 @@ class LoginController extends Controller
                 $user->save();
                 $user->markEmailAsVerified();
                 Auth::login($user,true);
-                return redirect('/');
+                return redirect('/admin');
             
             }
       

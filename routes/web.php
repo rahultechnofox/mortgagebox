@@ -91,8 +91,8 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/update-faq-category-status','\App\Http\Controllers\FaqCategoryController@updateFaqCategoryStatus');
     /******************* Services Management **********************/
 
-    Route::get('admin', '\App\Http\Controllers\UserController@dashboard')->name("admin");
-    Route::get('/', '\App\Http\Controllers\UserController@index');
+    Route::get('admin', '\App\Http\Controllers\AdminController@index')->name("admin");
+    Route::get('/', '\App\Http\Controllers\AdminController@index');
     Route::get('home', '\App\Http\Controllers\UserController@index')->name("home");
     Route::get('profile', '\App\Http\Controllers\UserController@index')->name("profile.edit");
     Route::get('user', '\App\Http\Controllers\UserController@index')->name("user.index");

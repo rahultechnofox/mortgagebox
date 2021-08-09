@@ -73,7 +73,7 @@
                                         </a>
                                     </div>
                                     <div class="col-xl-3 col-sm-6 col-12">
-                                        <a href="{{ route('admin/needList') }}">
+                                        <a href="{{ route('admin/need') }}">
                                             <div class="d-flex flex-row">
                                                 <div class="avatar bg-light-success me-2">
                                                     <div class="avatar-content">

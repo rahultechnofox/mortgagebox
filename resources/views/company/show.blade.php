@@ -164,54 +164,58 @@
                             </div>
                         </div>
                         <div class="row">
-                        <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <!-- <th>No. of Advisers</th>
-                                <th>Accepted Leads</th>
-                                <th>Live Leads</th>
-                                <th>Hired</th>
-                                <th>Completed</th>
-                                <th>Success %</th>
-                                <th>Value</th> -->
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $i = 1; ?>
-                            @if(count($company_detail->team_members) > 0)
-                            @foreach($company_detail->team_members as $company_detail_data)
-                            <tr>
-                                <td>{{$company_detail_data->id}}</td>
-                                <td>{{$company_detail_data->name}}</td>
-                                <td>{{$company_detail_data->email}}</td>
-                                <!-- <td>{{$company_detail_data->total_advisor}}</td>
-                                <td>{{$company_detail_data->accepted_leads}}</td>
-                                <td>{{$company_detail_data->live_leads}}</td>
-                                <td>{{$company_detail_data->hired}}</td>
-                                <td>{{$company_detail_data->completed}}</td>
-                                <td>{{$company_detail_data->value}}</td>
-                                <td>{{$company_detail_data->cost}}</td>-->
-                                <td>
-                                    @if ($company_detail_data->status == 1) 
-                                        Active
-                                    @else
-                                        In-Active
-                                    @endif
-                                </td>
-                            </tr>
-                            <?php $i++; ?>
-                            @endforeach
-                            @else
-                            <tr>
-                                <td colspan="15" class="recordnotfound"><span>No results found.</span></td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Role</th>
+                                            <th>Email Confirmed?</th>
+                                            <th>FCA Checked?</th>
+                                            <th>Accepted Leads</th>
+                                            <th>Live Leads</th>
+                                            <th>Hired</th>
+                                            <th>Completed</th>
+                                            <th>Success %</th>
+                                            <th>Value</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $i = 1; ?>
+                                        @if(count($company_detail->team_members) > 0)
+                                            @foreach($company_detail->team_members as $company_detail_data)
+                                                <tr>
+                                                    <td>{{$company_detail_data->id}}</td>
+                                                    <td>{{$company_detail_data->name}}</td>
+                                                    <td>{{$company_detail_data->team_data->role}}</td>
+                                                    <td>{{$company_detail_data->team_data->email_status}}</td>
+                                                    <td>{{$company_detail_data->team_data_advisor_profile->FCA_verified}}</td>
+                                                    <td>{{$company_detail_data->accepted_leads}}</td>
+                                                    <td>{{$company_detail_data->live_leads}}</td>
+                                                    <td>{{$company_detail_data->hired}}</td>
+                                                    <td>{{$company_detail_data->completed}}</td>
+                                                    <td>{{$company_detail_data->value}}</td>
+                                                    <td>{{$company_detail_data->cost}}</td>
+                                                    <td>
+                                                        @if ($company_detail_data->status == 1) 
+                                                            Active
+                                                        @else
+                                                            In-Active
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                <?php $i++; ?>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="15" class="recordnotfound"><span>No results found.</span></td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -223,27 +227,34 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-12">
-                                <div class="mb-1">
-                                    <div class="transaction-percentage">
-                                        <input class="form-control" name="notes" placeholder="Notes">
+                            @if(count($company_detail->notes)>0)
+                                @foreach($company_detail->notes as $notes_data)
+                                    <div class="col-md-12">
+                                        <div class="mb-1">
+                                            <div class="transaction-percentage">
+                                                <input class="form-control" value="{{$notes_data->notes}}" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @endif
+                            <form id="noteForm">
+                                <input name="company_id" id="company_id" type="hidden" value="{{$company_detail->id}}">
+                                <div class="col-md-10" style="display: inline-block;">
+                                    <div class="mb-1">
+                                        <div class="transaction-percentage">
+                                            <input class="form-control" name="notes" placeholder="Notes">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-10">
-                                <div class="mb-1">
-                                    <div class="transaction-percentage">
-                                        <input class="form-control" name="notes" placeholder="Notes">
+                                <div class="col-md-1" style="display: inline-block;">
+                                    <div class="mb-1">
+                                        <div class="transaction-percentage">
+                                            <button type="button" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1" onclick="addNotes('noteForm');">Add</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-1">
-                                <div class="mb-1">
-                                    <div class="transaction-percentage">
-                                        <button type="submit" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1">Add</button>
-                                    </div>
-                                </div>
-                            </div>
+                            </form>
                         </div>
                     </div>
                 </div>

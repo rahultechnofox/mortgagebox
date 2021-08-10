@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/advisors', '\App\Http\Controllers\AdvisorController@index')->name("admin/advisors");
     Route::get('admin/advisors/show/{id}', '\App\Http\Controllers\AdvisorController@show')->name("admin/advisors/show");
     Route::get('admin/delete-advisor/{id}', '\App\Http\Controllers\AdvisorController@destroy')->name("admin/delete-advisor");
+    Route::post('admin/update-fca-verification-status','\App\Http\Controllers\AdvisorController@updateFCAStatus');
+    Route::post('admin/update-advisor-status','\App\Http\Controllers\AdvisorController@updateAdvisorStatus');
     /******************* Advisor Management **********************/
 
     /******************* Need Management **********************/
@@ -66,7 +68,7 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/company/show/{id}', '\App\Http\Controllers\CompanyController@show')->name("admin/company/show");
     Route::get('admin/delete-company/{id}', '\App\Http\Controllers\CompanyController@destroy')->name("admin/delete-company");
     Route::post('admin/update-company-status','\App\Http\Controllers\CompanyController@updateCompanyStatus');
-    
+    Route::post('admin/add-notes','\App\Http\Controllers\CompanyController@addNotes');    
     /******************* Company Management **********************/
 
     /******************* Pages Management **********************/

@@ -346,6 +346,32 @@ function updateStatus(id,status,url){
     }
 }
 
+function validFCANumber(status,id){
+    var data = {};
+    data.id = id;
+    data.status = status;
+    console.log(data);
+    if(data.status == ''){
+        myToastr('Something went wrong please refresh page','error');
+    }else{
+        showLoader();
+        $.ajax({
+            type: 'post',
+            url: base_url+'/admin/update-fca-verification-status',
+            data: data,
+            success: function (response) {
+                if(!response.status){
+                    hideLoader();
+                    myToastr(response.message,'error');
+                }else{
+                    location.reload();                   
+                    myToastr(response.message,'success');
+                }
+            }
+        });
+    }
+}
+
 function addUpdateService(formId){
     var $form = $("#"+formId);
     var data = getFormData($form);
@@ -486,6 +512,30 @@ function addUpdateFaq(formId){
     //     //     }
     //     // });
     // }
+}
+
+function addNotes(formId){
+    var $form = $("#"+formId);
+    var data = getFormData($form);
+    if(data.notes == ''){
+        myToastr('Enter notes','error');
+    }else{
+        showLoader();
+        $.ajax({
+            type: 'post',
+            url: base_url+"/admin/add-notes",
+            data: data,
+            success: function (response) {
+                if(!response.status){
+                    hideLoader();
+                    myToastr(response.message,'error');
+                }else{
+                    location.reload();                   
+                    myToastr(response.message,'success');
+                }
+            }
+        });
+    }
 }
 
 $("#for_all_users").on('change', function () {

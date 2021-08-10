@@ -40,11 +40,10 @@ class AdvisorController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(User $model){
-        $data['userDetails'] = User::select('advisor_profiles.*','users.email_verified_at')->where('users.user_role','=',1)
-        ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
-        ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
-
+    public function index(Request $request){
+        $post = $request->all();
+        $data['adviors'] = User::getAdvisors($post);
+        // echo json_encode($data);exit;
         return view('advisor.index',$data);
     }
     /**
@@ -53,42 +52,74 @@ class AdvisorController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function show($id) {
-        $data['userDetails'] = User::where('id','=',$id)->first();
-        $advisorProfile = AdvisorProfile::where('advisorId','=',$id)->first();
-        $userDetails = (object) $userDetails;
-        $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
-        ->join('users', 'advice_areas.user_id', '=', 'users.id')
-        ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-        ->where('advisor_bids.advisor_status', '=', 1)
-        ->where('advisor_bids.advisor_id', '=', $id)
-        ->count();
-      
-        $userDetails->acceptedLeads = $advice_areaCount;
-         
-        $live_leads = AdvisorBids::where('advisor_id','=',$id)
-        ->where('status', '=', 0)
-        ->where('advisor_status', '=', 1)
-        ->count();
-        $userDetails->live_leads = $live_leads;
-
-        $hired_leads = AdvisorBids::where('advisor_id','=',$id)
-        ->where('status', '=', 1)
-        ->where('advisor_status', '=', 1)
-        ->count();
-        $userDetails->hired_leads = $hired_leads;
-
-        $completed_leads = AdvisorBids::where('advisor_id','=',$id)
-        ->where('status', '=', 2)
-        ->where('advisor_status', '=', 1)
-        ->count();
-        $userDetails->completed_leads = $completed_leads;
-        $lost_leads = AdvisorBids::where('advisor_id','=',$id)
-        ->where('status', '=', 3)
-        ->where('advisor_status', '=', 1)
-        ->count();
-        $userDetails->lost_leads = $lost_leads;
-        $data['profile'] = $advisorProfile;
+        $data = User::getAdvisorDetail($id);
+        // echo json_encode($data);exit;
         return view('advisor.show',$data);
+    }
+    /**
+     * Update FCA the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateFCAStatus(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+                'status' => 'required'
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                if($post['status']==1){
+                    $postData['FCA_verified'] = date("Y-m-d H:i:s");
+                }else{
+                    $postData['FCA_verified'] = null;
+                }
+                $user = AdvisorProfile::where('id',$post['id'])->update($postData);
+                if($user){
+                    return response(\Helpers::sendSuccessAjaxResponse('FCA updated successfully.',$user));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
+    }
+    /**
+     * Update status the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateAdvisorStatus(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+                'status' => 'required'
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                $user = User::where('id',$post['id'])->update($post);
+                if($user){
+                    return response(\Helpers::sendSuccessAjaxResponse('Account suspended successfully.',$user));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
     }
     /**
      * Remove the specified resource from storage.

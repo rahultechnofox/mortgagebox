@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\AdvisorProfile;
 use App\Models\AdvisorBids;
 
-class Companies extends Model
+class companies extends Model
 {
     use HasFactory;
     protected $fillable = [
@@ -15,11 +15,15 @@ class Companies extends Model
     ];
 
     public function team_members(){
-        return $this->hasMany('App\Models\CompanyTeamMembers',"company_id","id");
+        return $this->hasMany('App\Models\CompanyTeamMembers',"company_id","id")->with('team_data')->with('team_data_advisor_profile');
     }
 
     public function adviser(){
         return $this->hasMany('App\Models\AdvisorProfile',"company_id","id");
+    }
+
+    public function notes(){
+        return $this->hasMany('App\Models\Notes',"company_id","id");
     }
 
     public static function getCompanies($search){
@@ -58,11 +62,28 @@ class Companies extends Model
     public static function getCompanyDetail($id){
         try {
             $query = new Self;
-            $data = $query->where('id',$id)->with('team_members')->first();
+            $data = $query->where('id',$id)->with('team_members')->with('notes')->first();
             $teamadmin = 0;
             if($data){
+                $data->total_advisor = count($data->team_members);
+                // $accepted_leads = 0;
+                // $value = 0;
+                // $cost = 0;
+                // $live_leads = 0;
+                // $hired = 0;
+                // $completed = 0;
                 foreach($data->team_members as $team_members_data){
+                    $team_members_data->accepted_leads = 0;
+                    $team_members_data->value = 0;
+                    $team_members_data->cost = 0;
+                    $team_members_data->completed = 0;
+                    $team_members_data->live_leads = 0;
+                    $team_members_data->hired = 0;
                     $teamadmin = $team_members_data->advisor_id;
+                    $team_members_data->accepted_leads = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->count();
+                    $team_members_data->value = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->sum('cost_leads');
+                    $team_members_data->cost = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->sum('cost_discounted');
+                    $team_members_data->completed = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->where('status',2)->count();
                 }
                 $data->adviser = AdvisorProfile::where('advisorId',$teamadmin)->where('company_id',$data->id)->first();
             }

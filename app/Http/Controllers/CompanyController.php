@@ -7,10 +7,12 @@ use App\Models\AdvisorBids;
 use App\Models\AdvisorProfile;
 use App\Models\AdvisorPreferencesCustomer;
 use App\Models\AdvisorPreferencesProducts;
-use App\Models\Companies;
+use App\Models\companies;
 use App\Models\CompanyTeamMembers;
 use App\Models\StaticPage;
 use App\Models\ServiceType;
+use App\Models\Notes;
+
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -26,7 +28,7 @@ class CompanyController extends Controller
      */
     public function index(Request $request){
         $post = $request->all();
-        $companyDetails = Companies::getCompanies($post);
+        $companyDetails = companies::getCompanies($post);
         // echo json_encode($companyDetails);exit;
         return view('company.index',['companyDetails'=>$companyDetails]);
     }
@@ -66,9 +68,41 @@ class CompanyController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function show($id) {
-        $data['company_detail'] = Companies::getCompanyDetail($id);
+        $data['company_detail'] = companies::getCompanyDetail($id);
         // echo json_encode($data['company_detail']);exit;
         return view('company.show',$data);
+    }
+    /**
+     * Update status the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function addNotes(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'company_id' => 'required',
+                'notes' => 'required'
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                $post['status'] = 1;
+                $post['created_at'] = date("Y-m-d H:i:s");
+                $id = Notes::insertGetId($post);
+                if($id){
+                    return response(\Helpers::sendSuccessAjaxResponse('Notes added successfully.',$id));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
     }
     /**
      * Remove the specified resource from storage.
@@ -77,7 +111,7 @@ class CompanyController extends Controller
      * @return \Illuminate\Http\Response
      */
     function destroy($advisor_id) {
-        Companies::where('id', '=', $id)->delete();
+        companies::where('id', '=', $id)->delete();
         CompanyTeamMembers::where('company_id', '=', $id)->delete();
         $data['message'] = 'Company deleted!';
         return redirect()->to('admin/companies')->with('message', $data['message']);

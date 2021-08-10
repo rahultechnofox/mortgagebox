@@ -4,7 +4,7 @@
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title">Advisor List</h4>
-                    <h6 style="float: right;"> <?php if ($userDetails->firstItem() != null) {?> Showing {{ $userDetails->firstItem() }}-{{ $userDetails->lastItem() }} of {{ $userDetails->total() }} <?php }?></h6>
+                    <h6 style="float: right;"> <?php if ($adviors->firstItem() != null) {?> Showing {{ $adviors->firstItem() }}-{{ $adviors->lastItem() }} of {{ $adviors->total() }} <?php }?></h6>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped">
@@ -12,14 +12,14 @@
                             <tr>
                                 <th>Id</th>
                                 <th>Name</th>
-                                <th>PostCode</th>
-                                <th>Email</th>
-                                <th>FCA Number</th>
+                                <th>Role</th>
+                                <th>Email Confirmed?</th>
+                                <th>FCA Checked?</th>
                                 <th>Accepted Leads</th>
                                 <th>Live Leads</th>
                                 <th>Hired</th>
                                 <th>Completed</th>
-                                <th>Success</th>
+                                <th>Success%</th>
                                 <th>Value</th>
                                 <th>Cost</th>
                                 <th>Status</th>
@@ -27,47 +27,37 @@
                         </thead>
                         <tbody>
                             <?php $i = 1; ?>
-                            @if(count($userDetails) > 0)
-                            @foreach($userDetails as $users_data)
+                            @if(count($adviors) > 0)
+                            @foreach($adviors as $users_data)
                             <tr>
                                 <td>{{$users_data->id}}</td>
-                                <td>{{$users_data->display_name}}</td>
-                                <td>{{$users_data->postcode != "" ? $users_data->postcode : 'N/A' }}</td>
-                                <td>{{$users_data->email != "" ? $users_data->email : 'N/A' }}</td>
-                                <td>{{$users_data->FCANumber != "" ? $users_data->FCANumber : 'N/A' }}</td>
-                                <td>{{$users_data->acceptedLeads}}</td>
+                                <td><a href="{{ route('admin/advisors/show',$users_data->advisorId) }}">{{$users_data->display_name}}</a></td>
+                                <td>{{$users_data->role != "" ? $users_data->role : 'N/A' }}</td>
+                                <td>
+                                    @if($users_data->email_status!='')
+                                        @if($users_data->email_status==1)
+                                            Yes
+                                        @else
+                                            No
+                                        @endif
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
+                                <td>{{$users_data->FCA_verified != "" ? $users_data->FCA_verified : 'N/A' }}</td>
+                                <td>{{$users_data->accepted_leads}}</td>
                                 <td>{{$users_data->live_leads}}</td>
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
-                                <td>N/A</td>
-                                <td>N/A</td>
+                                <td>10%</td>
+                                <td>{{$users_data->value}}</td>
+                                <td>{{$users_data->cost}}</td>
                                 <td>
-                                    @if($users_data->email_verified_at == NULL)
-                                        Not Verifed
-                                    @else: 
-                                        Verfied
+                                    @if($users_data->status == 1)
+                                        Active
+                                    @else 
+                                        Deactive
                                     @endif
-                                </td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button type="button" class="btn btn-sm dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                            <i data-feather="more-vertical"></i>
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="{{ route('admin/advisors/show',$users_data->id) }}">
-                                                <i data-feather="eye" class="me-50"></i>
-                                                <span>Detail</span>
-                                            </a>
-                                            <!-- <a class="dropdown-item" href="#">
-                                                <i data-feather="edit-2" class="me-50"></i>
-                                                <span>Edit</span>
-                                            </a> -->
-                                            <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-advisor',$users_data->id) }}">
-                                                <i data-feather="trash" class="me-50"></i>
-                                                <span>Delete</span>
-                                            </a>
-                                        </div>
-                                    </div>
                                 </td>
                             </tr>
                             <?php $i++; ?>
@@ -82,7 +72,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="pagination" style="float: right;">
-                        {{$userDetails->links('pagination::bootstrap-4')}}
+                        {{$adviors->links('pagination::bootstrap-4')}}
                     </div>
                 </div>
             </div>

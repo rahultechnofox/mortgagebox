@@ -90,7 +90,7 @@ class FaqController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit($id){
-        $data['row'] = StaticPage::find($id);
+        $data['row'] = Faq::find($id);
         return view('faq.edit',$data);
     }
     /**

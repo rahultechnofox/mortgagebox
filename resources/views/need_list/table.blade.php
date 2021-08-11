@@ -35,7 +35,7 @@
                                 <td>{{ $users_data->service_type != "" ? $users_data->service_type : 'N/A' }}</td>
                                 <td>{{ $users_data->size_want != "" ? $users_data->size_want : 'N/A' }}</td>
                                 <td>{{$users_data->offer_count}}</td>
-                                <td>{{$users_data->live_leads}}</td>
+                                <td>{{$users_data->active_bids}}</td>
                                 
                                 <td>
                                 @if($users_data->bid_status == 0)

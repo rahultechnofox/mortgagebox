@@ -29,7 +29,34 @@
                 </div>
             </div>
             <div class="content-header-right text-md-end col-md-12 col-12 d-md-block mb-1">
-               
+                <form role="form" method="get">
+                    <div class="form-group row">
+                        <div class="col-md-3 col-12">
+                            <input type="text" class="form-control" value="<?php if(isset($_GET['search']) && $_GET['search']!=''){ echo $_GET['search']; } ?>" name="search" placeholder="Search">
+                        </div>
+                        <div class="col-md-3 col-12">
+                            <input type="text" id="fp-default" value="<?php if(isset($_GET['created_at']) && $_GET['created_at']!=''){ echo date("Y-m-d",strtotime($_GET['created_at'])); } ?>" name="created_at" class="form-control flatpickr-basic" placeholder="Date" />
+                        </div>
+                        <!-- <div class="col-md-2 col-12">
+                            <select class="form-select" id="" name="email_status">
+                                <option value="">Email Verified</option>
+                                <option value="1" value="<?php if(isset($_GET['email_status']) && $_GET['email_status']!=''){ if($_GET['email_status']==1){ echo "selected"; } } ?>">Yes</option>
+                                <option value="0" value="<?php if(isset($_GET['email_status']) && $_GET['email_status']!=''){ if($_GET['email_status']==0){ echo "selected"; } } ?>">No</option>
+                            </select>
+                        </div> -->
+                        <!-- <div class="col-md-2 col-12">
+                            <select class="form-select" id="" name="status">    
+                                <option value="">Status</option>
+                                <option value="1" value="<?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>">Active</option>
+                                <option value="0" value="<?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>">Deactive</option>
+                            </select>
+                        </div> -->
+                        <div class="col-md-2 col-12">
+                            <button type="submit" name="submit" value="Search" id="submit" class="dt-button create-new btn btn-primary"><i data-feather="search"></i></button>
+                            <a href="javascript:;" onclick="resetFilter()" class="btn btn-outline-secondary"><i data-feather="refresh-ccw"></i></a>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
         @include('need_list.table')

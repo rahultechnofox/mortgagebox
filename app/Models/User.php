@@ -85,22 +85,24 @@ class User extends Authenticatable implements JWTSubject
     public static function getAdvisors($search){
         try {
             $query = new Self;
-            // echo json_encode($search);exit;
-            // if(isset($search['search']) && $search['search']!=''){
-            //     $query = $query->where('name', 'like', '%' .strtolower($search['search']). '%')->orWhere('email', 'like', '%' .strtolower($search['search']). '%')->orWhere('post_code', 'like', '%' .strtolower($search['search']). '%');
-            // }
+            if(isset($search['search']) && $search['search']!=''){
+                $query = $query->where('users.name', 'like', '%' .strtolower($search['search']). '%');
+            }
             // if(isset($search['email_status']) && $search['email_status']!=''){
-            //     $query = $query->where('email_status',$search['email_status']);
+            //     $query = $query->where('users.email_status',$search['email_status']);
             // }
-            // if(isset($search['status']) && $search['status']!=''){
-            //     $query = $query->where('status',$search['status']);
-            // }
-            // if(isset($search['created_at']) && $search['created_at']!=''){
-            //     $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
-            // }
+            if(isset($search['status']) && $search['status']!=''){
+                $query = $query->where('users.status',$search['status']);
+            }
+            if(isset($search['created_at']) && $search['created_at']!=''){
+                $query = $query->whereDate('users.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
+            }
+            // echo json_encode($search);exit;
             $data = $query->select('advisor_profiles.*','users.email_verified_at','users.email_status')->where('users.user_role','=',1)
             ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
             ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            // echo json_encode($data);exit;
+
             foreach($data as $row){
                 $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
                 ->join('users', 'advice_areas.user_id', '=', 'users.id')

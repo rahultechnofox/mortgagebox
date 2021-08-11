@@ -61,6 +61,8 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/need', '\App\Http\Controllers\NeedController@index')->name("admin/need");
     Route::get('admin/need/show/{id}', '\App\Http\Controllers\NeedController@show')->name("admin/need/show");
     Route::get('admin/delete-need/{id}', '\App\Http\Controllers\NeedController@destroy')->name("admin/delete-need");
+    Route::post('admin/update-need-status','\App\Http\Controllers\NeedController@updateNeedStatus');
+
     /******************* Need Management **********************/
 
     /******************* Company Management **********************/
@@ -103,6 +105,11 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/update-faq','\App\Http\Controllers\FaqController@update');
     Route::post('admin/add-update-faq','\App\Http\Controllers\FaqController@store');
     Route::post('admin/update-faq-status','\App\Http\Controllers\FaqController@updateFaqStatus');
+    /******************* Faq Management **********************/
+
+    /******************* Faq Management **********************/
+    Route::get('admin/setting/{type}', '\App\Http\Controllers\AppSettingsController@edit');
+    Route::post('admin/update-setting','\App\Http\Controllers\AppSettingsController@updateSetting');
     /******************* Faq Management **********************/
 
     Route::get('admin', '\App\Http\Controllers\AdminController@index')->name("admin");

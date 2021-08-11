@@ -43,7 +43,7 @@ class AdvisorController extends Controller
     public function index(Request $request){
         $post = $request->all();
         $data['adviors'] = User::getAdvisors($post);
-        // echo json_encode($data);exit;
+        // echo json_encode($data['adviors']);exit;
         return view('advisor.index',$data);
     }
     /**

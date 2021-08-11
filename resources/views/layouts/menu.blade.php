@@ -7,7 +7,7 @@
 </li>
 
 <li class="{{ Request::is('admin/advisors*') || Request::is('admin/advisors/show*') ? 'active' : '' }} nav-item">
-    <a class="d-flex align-items-center" href="{{ route('admin/advisors') }}"><i data-feather="list"></i><span class="menu-title text-truncate" data-i18n="Advisors">Advisors</span></a>
+    <a class="d-flex align-items-center" href="{{ route('admin/advisors') }}"><i data-feather="list"></i><span class="menu-title text-truncate" data-i18n="Professionals">Professionals</span></a>
 </li>
 
 <li class="{{ Request::is('admin/need*') || Request::is('admin/need/show*') ? 'active' : '' }} nav-item">
@@ -30,4 +30,7 @@
 </li>
 <li class="{{ Request::is('admin/faq*') ? 'active' : '' }} nav-item">
     <a class="d-flex align-items-center" href="{{ route('admin/faq') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Faq</span></a>
+</li>
+<li class="{{ Request::is('admin/setting*') ? 'active' : '' }} nav-item">
+    <a class="d-flex align-items-center" href="{{ url('admin/setting/promotion') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Promotion</span></a>
 </li>

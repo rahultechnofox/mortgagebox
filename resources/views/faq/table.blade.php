@@ -47,10 +47,10 @@
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a> -->
-                                            <a class="dropdown-item"  href="{{ route('admin/faq/edit',$users_data->id) }}">
+                                            <!-- <a class="dropdown-item"  href="{{ route('admin/faq/edit',$users_data->id) }}">
                                                 <i data-feather="edit-2" class="me-50"></i>
                                                 <span>Edit</span>
-                                            </a>
+                                            </a> -->
                                             <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-faq',$users_data->id) }}">
                                                 <i data-feather="trash" class="me-50"></i>
                                                 <span>Delete</span>

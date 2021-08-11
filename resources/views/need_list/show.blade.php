@@ -60,28 +60,12 @@
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Cost of Lead:') }}</h6>
-                                        <small>{{isset($needDetails->cost_of_lead) ? old('name', ucfirst($needDetails->cost_of_lead)) : '--'}}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="col-md-3">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Combined Name:') }}</h6>
-                                        <small>{{isset($needDetails->combined_income) ? old('name', ucfirst($needDetails->combined_income)) : '--' }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Date Joined:') }}</h6>
                                         <small>{{isset($needDetails->created_at) ? ucfirst($needDetails->created_at) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
+                            <hr>
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
@@ -93,13 +77,38 @@
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
+                                        <h6 class="transaction-title">{{ __('Combined Name:') }}</h6>
+                                        <small>{{isset($needDetails->combined_income) ? old('name', ucfirst($needDetails->combined_income)) : '--' }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex">
+                                    <div class="transaction-percentage">
+                                        <h6 class="transaction-title">{{ __('Cost of Lead:') }}</h6>
+                                        <small>{{isset($needDetails->cost_of_lead) ? old('name', ucfirst($needDetails->cost_of_lead)) : '--'}}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex">
+                                    <div class="transaction-percentage">
+                                        <h6 class="transaction-title">{{ __('Average Value:') }}</h6>
+                                        <small>{{isset($needDetails->adverse_credit) ? $needDetails->adverse_credit : '--'}}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="col-md-12">
+                                <div class="d-flex">
+                                    <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Additional Details:') }}:</h6>
                                         <small>{{isset($needDetails->advisor_preference) ? $needDetails->advisor_preference : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-12">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Adverse Credit:') }}</h6>
@@ -107,7 +116,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <hr>
+                            <div class="col-md-12">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('How Soon:') }}</h6>
@@ -115,7 +125,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <hr>
+                            <div class="col-md-12">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Preference:') }}</h6>
@@ -123,6 +134,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <hr>
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
@@ -132,7 +144,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Active:') }}</h6>
@@ -140,7 +152,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Feedback:') }}</h6>
@@ -148,6 +160,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <hr>
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
@@ -155,6 +168,59 @@
                                         <small>{{isset($needDetails->notes) ? ucfirst($needDetails->notes): '--' }}</small>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="col-12 d-flex flex-sm-row flex-column mt-2">
+                                <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','0','/admin/update-need-status');">Suspend</button>
+                                <button type="button" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','1','/admin/update-need-status');">Activate</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex mb-2">
+                            <div class="mt-50">
+                                <h4>Revenue Generated</h4>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Professional</th>
+                                            <th>Bid Status</th>
+                                            <th>Bid Time</th>
+                                            <th>Bid Cycle</th>
+                                            <th>Full Fee</th>
+                                            <th>Discount</th>
+                                            <th>Final Fee</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $i = 1; ?>
+                                        @if(count($needDetails->bids) > 0)
+                                            @foreach($needDetails->bids as $bids_data)
+                                                <tr>
+                                                    <td>{{$i}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->advisor_name)}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->bid_status)}}</td>
+                                                    <td>{{\Helpers::checkEmptydateMdYHIS($bids_data->created_at)}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->cost_of_lead_drop)}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->cost_leads)}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->cost_discounted)}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->cost_discounted)}}</td>
+                                                </tr>
+                                                <?php $i++; ?>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="15" class="recordnotfound"><span>No results found.</span></td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>

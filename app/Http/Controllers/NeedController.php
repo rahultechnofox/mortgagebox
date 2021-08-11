@@ -14,6 +14,7 @@ use App\Models\ServiceType;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 
 class NeedController extends Controller
 {
@@ -22,23 +23,25 @@ class NeedController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(User $model){
-        $advice_area = Advice_area::select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-        ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
-        foreach ($advice_area as $key => $item) {
-            $offer_count = AdvisorBids::where('area_id','=',$item->id)->count();
-            $bidDetails = AdvisorBids::where('area_id','=',$item->id)->where('status','>','0')->first();
-            if(!empty($bidDetails)) {
-                $advice_area[$key]->bid_status = $bidDetails->status;
-            }else{
-                $advice_area[$key]->bid_status ="N/A";
-            }
-            
-            $advice_area[$key]->offer_count = $offer_count;
-            
-        }
-        $data['userDetails'] = $advice_area;
-        echo json_encode($data['userDetails']);exit;    
+    public function index(Request $request){
+        $post = $request->all();
+        $advice_area = Advice_area::getNeedList($post);
+        // $advice_area = Advice_area::select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
+        // ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+        // foreach ($advice_area as $key => $item) {
+        //     $offer_count = AdvisorBids::where('area_id','=',$item->id)->count();
+        //     $active_bids = AdvisorBids::where('area_id','=',$item->id)->where('status',1)->where('advisor_status',1)->count();
+        //     $bidDetails = AdvisorBids::where('area_id','=',$item->id)->where('status','>','0')->first();
+        //     if(!empty($bidDetails)) {
+        //         $advice_area[$key]->bid_status = $bidDetails->status;
+        //     }else{
+        //         $advice_area[$key]->bid_status ="N/A";
+        //     }
+        //     $advice_area[$key]->offer_count = $offer_count;
+        //     $advice_area[$key]->active_bids = $active_bids;
+        // }
+        $data = $advice_area;   
+        // echo json_encode($data);exit; 
         return view('need_list.index',$data);
     }
     /**
@@ -52,51 +55,86 @@ class NeedController extends Controller
         ->leftJoin('user_notes', 'advice_areas.id', '=', 'user_notes.advice_id')
         ->first();
         $bidCountArr = array();
-            $adviceBid = AdvisorBids::where('area_id',$needDetails->id)->where('status','>','0')->where('status','<','3')->first();
-            $adviceBidCount = AdvisorBids::where('area_id',$needDetails->id)->count();
-            if(!empty($adviceBid)) {
-                $needDetails->bid_status =  ($adviceBid->status == 2)? "Closed":"Active";
-            }else {
-                $needDetails->bid_status =  "Active";
-            }
+        $adviceBid = AdvisorBids::where('area_id',$needDetails->id)->get();
+        $adviceBidCount = AdvisorBids::where('area_id',$needDetails->id)->count();
+        $needDetails->totalBids = $adviceBidCount;
+        if(count($adviceBid)>0){
             
-            $needDetails->totalBids = $adviceBidCount;
-            $costOfLead = ($needDetails->size_want/100)*0.006;
-            $time1 = Date('Y-m-d H:i:s');
-            $time2 = Date('Y-m-d H:i:s',strtotime($needDetails->created_at));
-            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
-            $costOfLeadsStr = "";
-            $costOfLeadsDropStr = "";
-            $amount = number_format((float)$costOfLead, 2, '.', '');
-            if($hourdiff < 24) {
-                $costOfLeadsStr = "".$needDetails->size_want_currency.$amount;
-                $in = 24-$hourdiff;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".$needDetails->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = "".$needDetails->size_want_currency.($amount/2)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
-                $in = 48-$hourdiff;
-                $newAmount = (75 / 100) * $amount;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 48 && $hourdiff < 72) {
-                $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
-                $in = 72-$hourdiff;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 72) {
-                $costOfLeadsStr = ""."Free";
+            foreach($adviceBid as $advice_data){
+                $advisors = AdvisorProfile::where('advisorId',$needDetails->advisor_id)->first();
+                $costOfLead = ($needDetails->size_want/100)*0.006;
+                $time1 = Date('Y-m-d H:i:s',strtotime($advice_data->created_at));
+                $time2 = Date('Y-m-d H:i:s',strtotime($advice_data->accepted_date));
+                $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+                $costOfLeadsStr = "";
                 $costOfLeadsDropStr = "";
+                $amount = number_format((float)$costOfLead, 2, '.', '');
+                if(!empty($advice_data)) {
+                    $advice_data->bid_status =  ($advice_data->status == 2)? "Closed":"Active";
+                }else {
+                    $advice_data->bid_status =  "Active";
+                }
+                if($hourdiff < 24) {
+                    $costOfLeadsStr = "".$needDetails->size_want_currency.$amount;
+                    $in = 24-$hourdiff;
+                    $hrArr = explode(".",$in);
+                    $costOfLeadsDropStr = "Cost of lead drops to ".$needDetails->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                }
+                if($hourdiff > 24 && $hourdiff < 48) {
+                    $costOfLeadsStr = "".$needDetails->size_want_currency.($amount/2)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
+                    $in = 48-$hourdiff;
+                    $newAmount = (75 / 100) * $amount;
+                    $hrArr = explode(".",$in);
+                    $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                }
+                if($hourdiff > 48 && $hourdiff < 72) {
+                    $newAmount = (75 / 100) * $amount;
+                    $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
+                    $in = 72-$hourdiff;
+                    $hrArr = explode(".",$in);
+                    $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                }
+                if($hourdiff > 72) {
+                    $costOfLeadsStr = ""."Free";
+                    $costOfLeadsDropStr = "";
+                }
+                $advice_data->cost_of_lead = $costOfLeadsStr;
+                $advice_data->cost_of_lead_drop = $costOfLeadsDropStr;
             }
-            
-            $needDetails->cost_of_lead = $costOfLeadsStr;
-            $needDetails->cost_of_lead_drop = $costOfLeadsDropStr;
-        
+
+        }
+        $needDetails->bids = $adviceBid;
         return view('need_list.show',['needDetails'=>$needDetails]);
+    }
+    /**
+     * Update status the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateNeedStatus(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+                'status' => 'required'
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                $user = Advice_area::where('id',$post['id'])->update($post);
+                if($user){
+                    return response(\Helpers::sendSuccessAjaxResponse('Status changed successfully.',$user));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
     }
     /**
      * Remove the specified resource from storage.

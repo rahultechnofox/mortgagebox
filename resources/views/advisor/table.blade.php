@@ -3,7 +3,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">Advisor List</h4>
+                    <h4 class="card-title">Professionals List</h4>
                     <h6 style="float: right;"> <?php if ($adviors->firstItem() != null) {?> Showing {{ $adviors->firstItem() }}-{{ $adviors->lastItem() }} of {{ $adviors->total() }} <?php }?></h6>
                 </div>
                 <div class="table-responsive">

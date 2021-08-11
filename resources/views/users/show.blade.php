@@ -133,7 +133,7 @@
                             <div class="col-md-6">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">Last Active:</h6>
+                                        <h6 class="transaction-title">Password:</h6>
                                         <input type="password" name="password" id="password" class="form-control form-control-merge">
                                         <button type="button" class="dt-button create-new btn btn-primary" onclick="updatePassword('{{$userDetails->id}}');">Update</button>
                                     </div>

@@ -40,10 +40,10 @@
                                 <td>{{$users_data->value}}</td>
                                 <td>{{$users_data->cost}}</td>
                                 <td>
-                                    @if ($users_data->status == 1) 
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-company-status');">Active</a>
-                                    @else
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-company-status');">In-Active</a>
+                                    @if($users_data->status == 1)
+                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-company-status');">Active</a>
+                                    @else 
+                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-company-status');">Deactive</a>
                                     @endif
                                 </td>
                             </tr>

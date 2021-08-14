@@ -44,8 +44,11 @@
                             <div class="col-md-6">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <!-- <h6 class="transaction-title">Customer ID:</h6> -->
-                                        <small>{{isset($company_detail->id) ? $company_detail->id : '--'}}</small>
+                                        <small>
+                                            @if(isset($company_detail->id))
+                                                <img src="{{url('no-image.png')}}" style="width: 80px;">
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>

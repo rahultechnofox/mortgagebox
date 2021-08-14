@@ -94,7 +94,17 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Status:') }}</h6>
-                                        <small>{{isset($profile->FCANumber) ? $profile->FCANumber : '--'}}</small>
+                                        <small>
+                                            @if(isset($profile->user_status))
+                                                @if($profile->status==1)
+                                                    Active
+                                                @else
+                                                    Deactive
+                                                @endif
+                                            @else
+                                                --
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -103,7 +113,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Active Team Members:') }}</h6>
-                                        <small>{{isset($userDetails->last_active) ? $userDetails->last_active : '--'}}</small>
+                                        <small>--</small>
                                     </div>
                                 </div>
                             </div>

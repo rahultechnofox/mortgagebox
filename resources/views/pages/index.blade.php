@@ -37,8 +37,8 @@
                         <div class="col-md-2 col-12">
                             <select class="form-select" id="" name="status">    
                                 <option value="">Status</option>
-                                <option value="1" value="<?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>">Active</option>
-                                <option value="0" value="<?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>">Deactive</option>
+                                <option value="1" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>>Active</option>
+                                <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>>Deactive</option>
                             </select>
                         </div>
                         <div class="col-md-2 col-12">

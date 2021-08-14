@@ -39,13 +39,13 @@
                                 
                                 <td>
                                 @if($users_data->bid_status == 0)
-                                In-Progress
+                                    <a class="btn btn-warning btn-sm waves-effect waves-float waves-light">In-Progress</a>
                                 @elseif($users_data->bid_status == 1)
-                                Accepted
+                                    <a class="btn btn-success btn-sm waves-effect waves-float waves-light">Accepted</a>
                                 @elseif($users_data->bid_status == 2)
-                                Closed 
+                                    <a class="btn btn-info btn-sm waves-effect waves-float waves-light">Closed</a>
                                 @elseif($users_data->bid_status == 3)
-                                Declined 
+                                    <a class="btn btn-danger btn-sm waves-effect waves-float waves-light">Declined</a> 
                                 @else:
                                     {{$users_data->bid_status}}
                                 @endif

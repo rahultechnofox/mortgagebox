@@ -28,13 +28,13 @@
                                 <td>{{$i}}</td>
                                 <td>{{\Helpers::checkNull($users_data->question)}}</td>
                                 <td>{{\Helpers::checkEmptydateMdYHIS($users_data->created_at)}}</td>
-                                <td>{{\Helpers::checkNull($users_data->faq_category_name)}}</td>
-                                <td>{{\Helpers::checkNull($users_data->audience)}}</td>
+                                <td>@if(isset($users_data->faq_category) && $users_data->faq_category!=''){{\Helpers::checkNull($users_data->faq_category->name)}}@else -- @endif</td>
+                                <td>@if(isset($users_data->audience) && $users_data->audience!=''){{\Helpers::checkNull($users_data->audience->name)}}@else -- @endif</td>
                                 <td>
-                                    @if ($users_data->status == 1) 
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-faq-status');">Active</a>
-                                    @else
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-faq-status');">In-Active</a>
+                                    @if($users_data->status == 1)
+                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-faq-status');">Active</a>
+                                    @else 
+                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-faq-status');">Deactive</a>
                                     @endif
                                 </td>
                                 <td>
@@ -47,10 +47,10 @@
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a> -->
-                                            <!-- <a class="dropdown-item"  href="{{ route('admin/faq/edit',$users_data->id) }}">
+                                            <a class="dropdown-item"  href="{{ route('admin/faq/edit',$users_data->id) }}">
                                                 <i data-feather="edit-2" class="me-50"></i>
                                                 <span>Edit</span>
-                                            </a> -->
+                                            </a>
                                             <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-faq',$users_data->id) }}">
                                                 <i data-feather="trash" class="me-50"></i>
                                                 <span>Delete</span>

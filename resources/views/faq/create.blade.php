@@ -34,11 +34,12 @@
                             <div class="tab-pane active" id="account" aria-labelledby="account-tab" role="tabpanel">
                                 <form method="post" action="{{url('/admin/add-update-faq')}}">
                                     @csrf
+                                    <input type="hidden" name="audience_id" id="audience_id" value="">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Faq Category</label>
-                                                <select class="form-control" name="faq_category_id" id="faq_category_id">
+                                                <select class="form-control" name="faq_category_id" id="faq_category_id" required onchange="getAudience(this.value);">
                                                     <option value="">Select Faq Category</option>
                                                     @foreach($faq_category as $faq_category_data)
                                                         <option value="{{$faq_category_data->id}}">{{$faq_category_data->name}}</option>
@@ -46,16 +47,16 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <!-- <div class="col-md-6">
+                                        <div class="col-md-6">
                                             <div class="mb-1">
-                                                <label class="form-label" for="name">Question</label>
-                                                <input type="text" class="form-control " placeholder="Page Title" name="page_name" id="page_name" />
+                                                <label class="form-label" for="name">Audience</label>
+                                                <input type="text" class="form-control " placeholder="Audience" id="audience" readonly required/>
                                             </div>
-                                        </div> -->
+                                        </div>
                                         <div class="col-md-12">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Question</label>
-                                                <input type="text" class="form-control " placeholder="Question" name="question" id="question" />
+                                                <input type="text" class="form-control " placeholder="Question" name="question" id="question" required/>
                                             </div>
                                         </div>
 

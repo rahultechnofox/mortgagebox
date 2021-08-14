@@ -22,6 +22,12 @@ class Faq extends Model
     */
     protected $dates = ['deleted_at'];
 
+    public function faq_category(){
+        return $this->hasOne('App\Models\FaqCategory',"id","faq_category_id");
+    }
+    public function audience(){
+        return $this->hasOne('App\Models\Audience',"id","audience_id");
+    }
     public static function getFaq($search){
         try {
             $query = new Self;
@@ -31,7 +37,7 @@ class Faq extends Model
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('status',$search['status']);
             }
-            $data = $query->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            $data = $query->with('faq_category')->with('audience')->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/delete-customer/{id}', '\App\Http\Controllers\UserController@destroy')->name("admin/delete-customer");
     Route::post('admin/updatePassword','\App\Http\Controllers\UserController@updatePassword');
     Route::post('admin/deleteCustomer','\App\Http\Controllers\UserController@deleteCustomer');
+    Route::post('admin/update-user-status','\App\Http\Controllers\UserController@updateStatus');
 
     /******************* User Management **********************/
 
@@ -104,6 +105,7 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/faq/edit/{id}', '\App\Http\Controllers\FaqController@edit')->name("admin/faq/edit");
     Route::post('admin/update-faq','\App\Http\Controllers\FaqController@update');
     Route::post('admin/add-update-faq','\App\Http\Controllers\FaqController@store');
+    Route::post('admin/get-audience','\App\Http\Controllers\FaqController@getAudience');
     Route::post('admin/update-faq-status','\App\Http\Controllers\FaqController@updateFaqStatus');
     /******************* Faq Management **********************/
 

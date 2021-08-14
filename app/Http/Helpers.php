@@ -560,16 +560,15 @@ class Helpers
      * @param $amount
      * @return int|string
      */
-    public static function currency($amount)
-    {
-        if ($amount == '') {
+    public static function currency($amount) {
+        if($amount == ''){
             $amount = 0;
-            $amount = setting('default_currency_code').' '.number_format($amount, 2);
-        } elseif ($amount < 0) {
-            $amount = -$amount;
-            $amount = '-' . setting('default_currency_code').' '.number_format($amount, 2);
-        } else {
-            $amount = setting('default_currency_code').' '.number_format($amount, 2);
+            $amount = config('app.currency').number_format($amount,2);
+        } elseif ($amount < 0){
+            $amount = -($amount);
+            $amount = '-'.config('app.currency').number_format($amount,2);
+        }else{
+            $amount = config('app.currency').number_format($amount,2);
         }
         return $amount;
     }

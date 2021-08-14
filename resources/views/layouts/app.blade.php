@@ -55,6 +55,15 @@
     <script>
         var base_url = '{{url("")}}';
     </script>
+    <style>
+        .recordnotfound{
+            text-align: center;
+            color: red;
+        }
+        .flatpickr-input{
+            background-color: white !important;
+        }
+    </style>
 </head>
 
 <body class="vertical-layout vertical-menu-modern  navbar-floating footer-static  " data-open="click" data-menu="vertical-menu-modern" data-col="">
@@ -85,10 +94,10 @@
                     </a>
                     @endauth
                     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-user">
-                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                        <!-- <a class="dropdown-item" href="{{ route('profile.edit') }}">
                             <i class="me-50" data-feather="user"></i> Profile
                         </a>
-                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-divider"></div> -->
                         <a class="dropdown-item" href="{!! url('/logout') !!}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><i class="me-50" data-feather="power"></i> Logout</a>
                         <form id="logout-form" action="{{ url('/logout') }}" method="POST" class="form-horizontal" style="display: none;">{{ csrf_field() }}</form>
                     </div>

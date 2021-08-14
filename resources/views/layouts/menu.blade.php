@@ -14,7 +14,7 @@
     <a class="d-flex align-items-center" href="{{ route('admin/need') }}"><i data-feather="clipboard"></i><span class="menu-title text-truncate" data-i18n="Need List">Need List</span></a>
 </li>
 
-<li class="{{ Request::is('admin/companies*') ? 'active' : '' }} nav-item">
+<li class="{{ Request::is('admin/companies*') || Request::is('admin/company/show*') ? 'active' : '' }} nav-item">
     <a class="d-flex align-items-center" href="{{ route('admin/companies') }}"><i data-feather="database"></i><span class="menu-title text-truncate" data-i18n="Companies">Companies</span></a>
 </li>
 
@@ -26,11 +26,11 @@
     <a class="d-flex align-items-center" href="{{ route('admin/services') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Services</span></a>
 </li>
 <li class="{{ Request::is('admin/faq-category*') ? 'active' : '' }} nav-item">
-    <a class="d-flex align-items-center" href="{{ route('admin/faq-category') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Faq Categories</span></a>
+    <a class="d-flex align-items-center" href="{{ route('admin/faq-category') }}"><i data-feather="menu"></i><span class="menu-title text-truncate" data-i18n="Services">Faq Categories</span></a>
 </li>
-<li class="{{ Request::is('admin/faq*') ? 'active' : '' }} nav-item">
-    <a class="d-flex align-items-center" href="{{ route('admin/faq') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Faq</span></a>
+<li class="{{ Request::segment(2)=='faq' || Request::segment(3)=='faq' ? 'active' : '' }} nav-item">
+    <a class="d-flex align-items-center" href="{{ route('admin/faq') }}"><i data-feather="server"></i><span class="menu-title text-truncate" data-i18n="Services">Faq</span></a>
 </li>
 <li class="{{ Request::is('admin/setting*') ? 'active' : '' }} nav-item">
-    <a class="d-flex align-items-center" href="{{ url('admin/setting/promotion') }}"><i data-feather="settings"></i><span class="menu-title text-truncate" data-i18n="Services">Promotion</span></a>
+    <a class="d-flex align-items-center" href="{{ url('admin/setting/promotion') }}"><i data-feather="layout"></i><span class="menu-title text-truncate" data-i18n="Services">Promotion</span></a>
 </li>

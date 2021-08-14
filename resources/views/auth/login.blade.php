@@ -31,14 +31,14 @@
                                 {!! csrf_field() !!}
                                 <div class="mb-1">
                                     <label class="form-label" for="login-email">Email</label>
-                                    <input class="form-control {{ $errors->has('email') ? ' is-invalid' : '' }}" placeholder="{{ __('Email') }}" type="email" name="email" value="{{ old('email') }}" value="admin@admin.com" required autofocus />
+                                    <input class="form-control {{ $errors->has('email') ? ' is-invalid' : '' }}" placeholder="{{ __('Email') }}" type="email" name="email" value="{{ old('email') }}" required autofocus />
                                 </div>
                                 <div class="mb-1">
                                     <div class="d-flex justify-content-between">
                                         <label class="form-label" for="login-password">Password</label>
                                     </div>
                                     <div class="input-group input-group-merge form-password-toggle">
-                                        <input class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }} form-control-merge" name="password" placeholder="{{ __('Password') }}" type="password" value="123456" required /><span class="input-group-text cursor-pointer"><i data-feather="eye"></i></span>
+                                        <input class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }} form-control-merge" name="password" placeholder="{{ __('Password') }}" type="password" required /><span class="input-group-text cursor-pointer"><i data-feather="eye"></i></span>
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100" tabindex="4">{{ __('Sign in') }}</button>

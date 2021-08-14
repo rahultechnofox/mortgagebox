@@ -45,7 +45,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Mortgage Size:') }}:</h6>
-                                        <small>{{isset($needDetails->size_want) ? old('name', ucfirst($needDetails->size_want)) : '--'}}</small>
+                                        <small>{{isset($needDetails->size_want) ? old('name', \Helpers::currency($needDetails->size_want)) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -70,7 +70,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Property Value:') }}</h6>
-                                        <small>{{isset($needDetails->property) ? $needDetails->property_currency.''.ucfirst($needDetails->property) : '--' }}</small>
+                                        <small>{{isset($needDetails->property) ? $needDetails->property_currency.''.$needDetails->property : '--' }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -78,7 +78,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Combined Name:') }}</h6>
-                                        <small>{{isset($needDetails->combined_income) ? old('name', ucfirst($needDetails->combined_income)) : '--' }}</small>
+                                        <small>{{isset($needDetails->combined_income) ? \Helpers::currency($needDetails->combined_income) : '--' }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -86,7 +86,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Cost of Lead:') }}</h6>
-                                        <small>{{isset($needDetails->cost_of_lead) ? old('name', ucfirst($needDetails->cost_of_lead)) : '--'}}</small>
+                                        <small>{{isset($needDetails->cost_of_lead) ? old('name', \Helpers::currency($needDetails->cost_of_lead)) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -94,7 +94,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Average Value:') }}</h6>
-                                        <small>{{isset($needDetails->adverse_credit) ? $needDetails->adverse_credit : '--'}}</small>
+                                        <small>{{isset($needDetails->adverse_credit) ? \Helpers::currency($needDetails->adverse_credit) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -102,7 +102,7 @@
                             <div class="col-md-12">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Additional Details:') }}:</h6>
+                                        <h6 class="transaction-title">{{ __('Additional Details:') }}</h6>
                                         <small>{{isset($needDetails->advisor_preference) ? $needDetails->advisor_preference : '--'}}</small>
                                     </div>
                                 </div>
@@ -111,8 +111,11 @@
                             <div class="col-md-12">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Adverse Credit:') }}</h6>
-                                        <small>{{isset($needDetails->adverse_credit) ? $needDetails->adverse_credit : '--'}}</small>
+                                        <h6 class="transaction-title">{{ __('Adverse Credit') }}
+                                        <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="checked" <?php if(isset($needDetails->adverse_credit)){ if($needDetails->adverse_credit==1){ echo "checked"; } }?> >
+                                            </div>
+                                        </h6>
                                     </div>
                                 </div>
                             </div>
@@ -138,7 +141,7 @@
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Accepted:') }}:</h6>
+                                        <h6 class="transaction-title">{{ __('Accepted:') }}</h6>
                                         <small>{{isset($needDetails->totalBids) ? $needDetails->totalBids : '--' }}</small>
                                     </div>
                                 </div>
@@ -164,7 +167,7 @@
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Notes:') }}:</h6>
+                                        <h6 class="transaction-title">{{ __('Notes:') }}</h6>
                                         <small>{{isset($needDetails->notes) ? ucfirst($needDetails->notes): '--' }}</small>
                                     </div>
                                 </div>
@@ -208,9 +211,9 @@
                                                     <td>{{\Helpers::checkNull($bids_data->bid_status)}}</td>
                                                     <td>{{\Helpers::checkEmptydateMdYHIS($bids_data->created_at)}}</td>
                                                     <td>{{\Helpers::checkNull($bids_data->cost_of_lead_drop)}}</td>
-                                                    <td>{{\Helpers::checkNull($bids_data->cost_leads)}}</td>
-                                                    <td>{{\Helpers::checkNull($bids_data->cost_discounted)}}</td>
-                                                    <td>{{\Helpers::checkNull($bids_data->cost_discounted)}}</td>
+                                                    <td>{{\Helpers::currency($bids_data->cost_leads)}}</td>
+                                                    <td>{{\Helpers::currency($bids_data->cost_discounted)}}</td>
+                                                    <td>{{\Helpers::currency($bids_data->cost_discounted)}}</td>
                                                 </tr>
                                                 <?php $i++; ?>
                                             @endforeach

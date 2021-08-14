@@ -98,7 +98,7 @@ class User extends Authenticatable implements JWTSubject
                 $query = $query->whereDate('users.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
             // echo json_encode($search);exit;
-            $data = $query->select('advisor_profiles.*','users.email_verified_at','users.email_status')->where('users.user_role','=',1)
+            $data = $query->select('advisor_profiles.*','users.email_verified_at','users.email_status','users.status as user_status')->where('users.user_role','=',1)
             ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
             ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
             // echo json_encode($data);exit;

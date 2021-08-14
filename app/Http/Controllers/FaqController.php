@@ -18,6 +18,7 @@ class FaqController extends Controller
     public function index(Request $request){
         $post = $request->all();
         $pages = Faq::getFaq($post);
+        // echo json_encode($pages);exit;
         return view('faq.index',['page_list'=>$pages]);
     }
     /**
@@ -53,6 +54,7 @@ class FaqController extends Controller
                 $postData['question'] = $post['question'];
                 $postData['answer'] = $post['answer'];
                 unset($post['_token']);
+                // echo json_encode($post);exit;
                 if(isset($post['id'])){
                     $id = Faq::where('id',$post['id'])->update($postData);
                     if($id){
@@ -63,9 +65,9 @@ class FaqController extends Controller
                         // return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
                     }
                 }else{
-                    $postData['status'] = 1;
-                    $postData['created_at'] = date("Y-m-d H:i:s");
-                    $id = Faq::insertGetId($postData);
+                    $post['status'] = 1;
+                    $post['created_at'] = date("Y-m-d H:i:s");
+                    $id = Faq::insertGetId($post);
                     if($id){
                         return redirect()->to('admin/faq')->with('success','Faq added successfully');
                         
@@ -91,6 +93,12 @@ class FaqController extends Controller
      */
     public function edit($id){
         $data['row'] = Faq::find($id);
+        if($data['row']){
+            $data['row']->faq_category = FaqCategory::where('id',$data['row']->faq_category_id)->first();
+            $data['row']->audience = Audience::where('id',$data['row']->audience_id)->first();
+        }
+        $data['faq_category'] = FaqCategory::where('status',1)->get();
+        // echo json_encode($data['row']);exit;
         return view('faq.edit',$data);
     }
     /**
@@ -115,6 +123,38 @@ class FaqController extends Controller
                 $user = Faq::where('id',$post['id'])->update($post);
                 if($user){
                     return response(\Helpers::sendSuccessAjaxResponse('Status updated successfully.',$user));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
+    }
+    /**
+     * Get audience by category
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getAudience(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                $data = FaqCategory::where('id',$post['id'])->first();
+                if($data){
+                    $audience = Audience::where('id',$data->audience_id)->first();
+                    if($audience){
+                        $data->audience_name = $audience->name;
+                    }
+                    return response(\Helpers::sendSuccessAjaxResponse('Audience fetched successfully.',$data));
                 }else{
                     return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
                 }

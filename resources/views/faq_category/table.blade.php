@@ -26,10 +26,10 @@
                                 <td>{{$users_data->name}}</td>
                                 <td>{{\Helpers::checkEmptydateMdYHIS($users_data->created_at)}}</td>
                                 <td>
-                                    @if($users_data->status == 1) 
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-faq-category-status');">Active</a>
-                                    @else
-                                        <a href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-faq-category-status');">Deactive</a>
+                                    @if($users_data->status == 1)
+                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-faq-category-status');">Active</a>
+                                    @else 
+                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-faq-category-status');">Deactive</a>
                                     @endif
                                 </td>
                                 <td>

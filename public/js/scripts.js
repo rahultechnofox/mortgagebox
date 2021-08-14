@@ -396,6 +396,22 @@ function addUpdateService(formId){
     }
 }
 
+function getAudience(id){
+    showLoader();
+    var data = {};
+    data.id = id;
+    $.ajax({
+        type: 'post',
+        url: base_url +"/admin/get-audience",
+        data: data,
+        success: function (response) {
+            $('#audience_id').val(response.data.audience_id);
+            $('#audience').val(response.data.audience_name);
+            hideLoader();
+        }
+    });
+}
+
 function getServiceData(id){
     showLoader();
     var data = {};

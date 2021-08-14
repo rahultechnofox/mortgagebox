@@ -3,7 +3,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">Users List</h4>
+                    <h4 class="card-title">Customers List</h4>
                     <h6 style="float: right;"> <?php if ($users->firstItem() != null) {?> Showing {{ $users->firstItem() }}-{{ $users->lastItem() }} of {{ $users->total() }} <?php }?></h6>
                 </div>
                 <div class="table-responsive">
@@ -33,17 +33,17 @@
                                 <td>{{$users_data->created_at}}</td>
                                 <td>
                                     @if($users_data->email_status == 0)
-                                        Not Verifed
+                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light">Not Verifed</a>
                                     @else
-                                        Verfied
+                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light">Verfied</a>
                                     @endif
                                 </td>
                                 <td>{{$users_data->last_active}}</td>
                                 <td>
                                     @if($users_data->status == 1)
-                                        Active
+                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-user-status');">Active</a>
                                     @else 
-                                        Deactive
+                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-user-status');">Deactive</a>
                                     @endif
                                 </td>
                                 <td>

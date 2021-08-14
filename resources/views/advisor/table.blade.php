@@ -53,10 +53,10 @@
                                 <td>{{$users_data->value}}</td>
                                 <td>{{$users_data->cost}}</td>
                                 <td>
-                                    @if($users_data->status == 1)
-                                        Active
+                                    @if($users_data->user_status == 1)
+                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->advisorId}}','0','/admin/update-user-status');">Active</a>
                                     @else 
-                                        Deactive
+                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->advisorId}}','1','/admin/update-user-status');">Deactive</a>
                                     @endif
                                 </td>
                             </tr>

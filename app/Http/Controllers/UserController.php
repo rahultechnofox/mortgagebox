@@ -163,4 +163,34 @@ class UserController extends Controller
             return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
         }
     }
+    /**
+     * Update status the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateStatus(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+                'status' => 'required'
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                $user = User::where('id',$post['id'])->update($post);
+                if($user){
+                    return response(\Helpers::sendSuccessAjaxResponse('Status updated successfully.',$user));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
+    }
 }

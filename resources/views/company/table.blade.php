@@ -22,6 +22,7 @@
                                 <th>Success %</th>
                                 <th>Value</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -31,12 +32,13 @@
                             <tr>
                                 <td>{{$users_data->id}}</td>
                                 <td><a href="{{url('/admin/company/show')}}/{{$users_data->id}}">{{$users_data->company_name}}</a></td>
-                                <td>Jhon Blogs</td>
+                                <td>--</td>
                                 <td>{{$users_data->total_advisor}}</td>
                                 <td>{{$users_data->accepted_leads}}</td>
                                 <td>{{$users_data->live_leads}}</td>
                                 <td>{{$users_data->hired}}</td>
                                 <td>{{$users_data->completed}}</td>
+                                <td>--</td>
                                 <td>{{$users_data->value}}</td>
                                 <td>{{$users_data->cost}}</td>
                                 <td>

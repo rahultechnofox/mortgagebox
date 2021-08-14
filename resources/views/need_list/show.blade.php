@@ -213,7 +213,7 @@
                                                     <td>{{\Helpers::checkNull($bids_data->cost_of_lead_drop)}}</td>
                                                     <td>{{\Helpers::currency($bids_data->cost_leads)}}</td>
                                                     <td>{{\Helpers::currency($bids_data->cost_discounted)}}</td>
-                                                    <td>{{\Helpers::currency($bids_data->cost_discounted)}}</td>
+                                                    <td>@if($bids_data->cost_discounted!=0){{\Helpers::currency($bids_data->cost_discounted)}}@else {{\Helpers::currency($bids_data->cost_leads)}} @endif</td>
                                                 </tr>
                                                 <?php $i++; ?>
                                             @endforeach

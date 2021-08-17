@@ -136,6 +136,52 @@ class AdvisorController extends Controller
         $data['message'] = 'Advisor deleted!';
         return redirect()->to('admin/advisors')->with('message', $data['message']);
     }
+
+    /**
+     * Update status the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function resetPassword(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                $data = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcefghijklmnopqrstuvwxyz';
+                $password = substr(str_shuffle($data), 0, 8);
+                $postData['password'] = Hash::make($password);
+                $user = User::where('id',$post['id'])->first();
+                if($user){
+                    $email_id = $user->email;
+                    $data = array(             
+                        'password'=>$password,
+                        'user' =>$user
+                    );
+                    \Mail::send('emails.reset_password', $data, function($message){
+                        $email = "pradosh.soni@gmail.com";
+                        $subject = 'MortgageBox Reset Password';
+                        $message->to($email, "Reset")->subject
+                           ($subject);
+                        $message->from("socialtechnofox@gmail.com","MortgageBox");
+                    });
+                    $userData = User::where('id',$post['id'])->update($postData);
+                    return response(\Helpers::sendSuccessAjaxResponse('Password is reset and sent to email id.'));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse('Something went wrong please try again.'));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
+    }
     function getReviewRating()
     {
 

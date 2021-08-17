@@ -1,4 +1,5 @@
-@extends('layouts.app') @section('content')
+@extends('layouts.app') 
+@section('content')
 <div class="app-content content ">
 	<div class="content-overlay"></div>
 	<div class="header-navbar-shadow"></div>
@@ -120,6 +121,14 @@
 							<div class="col-md-12" style="margin-top: 15px;">
 								<div class="d-flex">
 									<div class="transaction-percentage">
+										<h6 class="transaction-title" style="display: inline-block;">Reset Password:</h6>
+										<button type="button" class="dt-button create-new btn btn-primary" onclick="resetPassword('{{$userDetails->id}}');">Send Reset Password Link</button>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-12" style="margin-top: 15px;">
+								<div class="d-flex">
+									<div class="transaction-percentage">
 										<button type="button" class="dt-button create-new btn btn-primary" onclick="deleteCustomer('{{$userDetails->id}}');">Suspend customer</button>
 									</div>
 								</div>
@@ -134,11 +143,13 @@
 												<th>New Lead</th>
 												<th>Closed</th>
                                             </tr>
+											@if(isset($userDetails->pending_bid) && isset($userDetails->active_bid) && isset($userDetails->closed))
                                             <tr>
-                                                <td>5</td>
-                                                <td>2</td>
-                                                <td>2</td>
+												<td>{{$userDetails->pending_bid}}</td>
+                                                <td>{{$userDetails->active_bid}}</td>
+                                                <td>{{$userDetails->closed}}</td>
                                             </tr>
+											@endif
                                         <table>
 									</div>
 								</div>
@@ -149,4 +160,5 @@
 			</section>
 		</div>
 	</div>
-</div> @endsection
+</div> 
+@endsection

@@ -56,6 +56,8 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/delete-advisor/{id}', '\App\Http\Controllers\AdvisorController@destroy')->name("admin/delete-advisor");
     Route::post('admin/update-fca-verification-status','\App\Http\Controllers\AdvisorController@updateFCAStatus');
     Route::post('admin/update-advisor-status','\App\Http\Controllers\AdvisorController@updateAdvisorStatus');
+    Route::post('admin/reset-password','\App\Http\Controllers\AdvisorController@resetPassword');
+
     /******************* Advisor Management **********************/
 
     /******************* Need Management **********************/

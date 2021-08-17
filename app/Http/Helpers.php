@@ -344,7 +344,7 @@ class Helpers
             $fromEmail ='gaurav@technofox.com';
         }
         try {
-            $fromName = 'Cars';
+            $fromName = 'Mbox';
             $data = \Mail::send($template, $data, function ($message) use($toEmail, $toName, $subject, $data, $fromName, $fromEmail, $attachment) {
                 $message->to($toEmail, $toName);
                 $message->subject($subject);

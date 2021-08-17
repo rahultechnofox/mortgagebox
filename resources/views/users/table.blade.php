@@ -27,7 +27,7 @@
                             @foreach($users as $users_data)
                             <tr>
                                 <td>{{$users_data->id}}</td>
-                                <td>{{$users_data->name}}</td>
+                                <td><a href="{{ route('admin/users/show',$users_data->id) }}">{{$users_data->name}}</a></td>
                                 <td>{{$users_data->post_code}}</td>
                                 <td>{{$users_data->email}}</td>
                                 <td>{{$users_data->created_at}}</td>

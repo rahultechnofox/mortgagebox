@@ -51,13 +51,13 @@
                                         <div class="col-md-6">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Audience</label>
-                                                <input type="text" class="form-control " placeholder="Audience" id="audience" value="<?php if(isset($row->audience) && $row->audience!=''){ echo $row->audience->name; } ?>" required/>
+                                                <input type="text" class="form-control " placeholder="Audience" id="audience" value="<?php if(isset($row->audience) && $row->audience!=''){ echo $row->audience->name; } ?>" required readonly/>
                                             </div>
                                         </div>
                                         <div class="col-md-12">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Question</label>
-                                                <input type="text" class="form-control " readonly placeholder="Question" name="question" id="question" value="{{$row->question}}" required/>
+                                                <input type="text" class="form-control" placeholder="Question" name="question" id="question" value="{{$row->question}}" required/>
                                             </div>
                                         </div>
 

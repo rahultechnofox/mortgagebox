@@ -554,6 +554,21 @@ function addNotes(formId){
     }
 }
 
+function resetPassword(id){
+    showLoader();
+    var data = {};
+    data.id = id;
+    $.ajax({
+        type: 'post',
+        url: base_url +"/admin/reset-password",
+        data: data,
+        success: function (response) {
+            myToastr(response.message,'success');
+            hideLoader();
+        }
+    });
+}
+
 $("#for_all_users").on('change', function () {
     var el = $(this);
     $(".user_group").addClass('hide');

@@ -49,20 +49,16 @@ class FaqController extends Controller
             if ($validator->fails()) {
                 $data['error'] = $validator->errors();
                 return redirect()->to('admin/faq')->with('error',config('constant.common.messages.required_field_missing'));
-                // return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
             }else{
                 $postData['question'] = $post['question'];
                 $postData['answer'] = $post['answer'];
                 unset($post['_token']);
-                // echo json_encode($post);exit;
                 if(isset($post['id'])){
                     $id = Faq::where('id',$post['id'])->update($postData);
                     if($id){
                         return redirect()->to('admin/faq')->with('success','Faq updated successfully');
-                        // return response(\Helpers::sendSuccessAjaxResponse('Faq updated successfully.',[]));
                     }else{
                         return redirect()->to('admin/faq')->with('error',config('constant.common.messages.smothing_went_wrong'));
-                        // return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
                     }
                 }else{
                     $post['status'] = 1;
@@ -70,19 +66,13 @@ class FaqController extends Controller
                     $id = Faq::insertGetId($post);
                     if($id){
                         return redirect()->to('admin/faq')->with('success','Faq added successfully');
-                        
-                        // return response(\Helpers::sendSuccessAjaxResponse('Faq added successfully.',[]));
                     }else{
                         return redirect()->to('admin/faq')->with('error',config('constant.common.messages.smothing_went_wrong'));
-
-                        // return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
                     }
                 }
             }
         } catch (\Exception $ex) {
-                return redirect()->to('admin/faq')->with('error',config('constant.common.messages.there_is_an_error').$ex);
-
-            // return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+            return redirect()->to('admin/faq')->with('error',config('constant.common.messages.there_is_an_error').$ex);
         }
     }
     /**

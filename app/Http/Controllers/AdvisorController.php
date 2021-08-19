@@ -57,6 +57,24 @@ class AdvisorController extends Controller
         return view('advisor.show',$data);
     }
     /**
+     * Display Invoice
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function invoice($id) {
+        $data['adviser'] = User::getAdvisorDetail($id);
+        // echo json_encode($adviser);exit;
+        $data['new_fees'] = array();
+        $data['discount_credits'] = array();
+        if($data['adviser']){
+            $data['invoice'] = DB::table('invoices')->where('advisor_id',$data['adviser']['userDetails']->id)->where('month',date('m'))->first();
+            $data['new_fees'] = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->get();
+            $data['discount_credits'] = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->get();
+        }
+        // echo json_encode($data);exit;
+        return view('advisor.invoice',$data);
+    }
+    /**
      * Update FCA the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -111,8 +129,13 @@ class AdvisorController extends Controller
             }else{
                 unset($post['_token']);
                 $user = User::where('id',$post['id'])->update($post);
+                if($post['status']==1){
+                    $message = "activated";
+                }else{
+                    $message = "suspended";
+                }
                 if($user){
-                    return response(\Helpers::sendSuccessAjaxResponse('Account suspended successfully.',$user));
+                    return response(\Helpers::sendSuccessAjaxResponse('Account '.$message.' successfully.',$user));
                 }else{
                     return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
                 }
@@ -1221,75 +1244,5 @@ class AdvisorController extends Controller
             'message' => 'success',
             'data' => $notification
         ], Response::HTTP_OK);
-    }
-    // Function for invoice generate
-    public function invoice(Request $request) {
-        $user = JWTAuth::parseToken()->authenticate();
-        // $advisor_id = $request->advisor_id;
-        $month = date('m');
-        $year = date('Y');
-        if(isset($request->selected_date) && $request->selected_date !="") {
-            $month = date('m',strtotime($request->selected_date));
-            $year = date('Y',strtotime($request->selected_date));
-        }
-        
-        $total_this_month_cost_of_leads_subtotal = AdvisorBids::where('advisor_id','=',$user->id)
-        ->where('status','>=',1)
-        ->whereMonth('created_at', $month)
-        ->whereYear('created_at', $year)
-        ->sum('cost_leads');
-        // ->get();
-
-        $cost_leads_this_month = AdvisorBids::select('cost_leads','accepted_date','cost_discounted','free_introduction')->where('advisor_id','=',$user->id)
-        ->where('status','>=',1)
-        ->whereMonth('created_at', $month)
-        ->whereYear('created_at', $year)
-        ->get();
-        $cost_of_leads_of_the_monthArr = array();
-        $discount_of_the_monthArr = array();
-        foreach($cost_leads_this_month as $key=> $item) {
-            $cost_of_leads_of_the_monthArr[$key]['message']='Invoice payment received on '.Date('d-M-Y',strtotime($item->accepted_date)).' - Thank you';
-            $cost_of_leads_of_the_monthArr[$key]['cost']=($item->cost_leads!="")?$item->cost_leads:"0";
-        }
-
-
-        // for discount
-
-        $total_this_month_discount_subtotal = AdvisorBids::where('advisor_id','=',$user->id)
-        ->where('status','>=',1)
-        ->whereMonth('created_at', $month)
-        ->whereYear('created_at', $year)
-        ->sum('cost_discounted');
-        
-        // TODO: free introduction
-
-        $subtotal_of_discount_and_credit = $total_this_month_discount_subtotal+0;
-        $total_dues = $total_this_month_cost_of_leads_subtotal-$subtotal_of_discount_and_credit;
-        $total_amount = 0;
-        // Tax Summary... added tax 5% of total dues and 20% extra vat 
-                $tax_on_this_invoice = (5/100)*$total_dues;
-                $vat_on_this_invoice = (20/100)*$total_dues;
-                $total_amount_final = $total_dues+$tax_on_this_invoice+$vat_on_this_invoice;
-                $total_amount_final = number_format((float)($total_amount_final),2,'.','');
-        // end of tax summary...
-        return response()->json([
-            'status' => true,
-            'message' => 'success',
-            'data' => array(
-                'new_fess'=>array('cost_of_leads_of_the_month'=>$cost_of_leads_of_the_monthArr,
-                'cost_of_leads_sub_total'=>$total_this_month_cost_of_leads_subtotal),
-                // add array for discount section
-                'discounts_and_credits'=>array('discount_subtotal'=>$total_this_month_discount_subtotal,
-                'free_introduction_subtotal'=>0,'subtotal'=>$subtotal_of_discount_and_credit),
-                // total dues : subtotal of cost of lead minus discount_and_credit_subtotal
-                'total_dues'=>$total_dues,
-                'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
-                'vat_on_invoice'=>number_format((float)($vat_on_this_invoice),2,'.',''),
-                'total_current_invoice_amount'=>$total_amount_final
-
-                
-            )
-        ], Response::HTTP_OK);
-        
     }
 }

@@ -192,9 +192,9 @@
                                                 <tr>
                                                     <td>{{$company_detail_data->id}}</td>
                                                     <td>{{$company_detail_data->name}}</td>
-                                                    <td>{{$company_detail_data->team_data->role}}</td>
-                                                    <td>{{$company_detail_data->team_data->email_status}}</td>
-                                                    <td>{{$company_detail_data->team_data_advisor_profile->FCA_verified}}</td>
+                                                    <td>@if(isset($company_detail_data->team_data) && $company_detail_data->team_data!=''){{$company_detail_data->team_data->role}}@else -- @endif</td>
+                                                    <td>@if(isset($company_detail_data->team_data) && $company_detail_data->team_data!=''){{$company_detail_data->team_data->email_status}}@else -- @endif</td>
+                                                    <td>@if(isset($company_detail_data->team_data_advisor_profile) && $company_detail_data->team_data_advisor_profile!=''){{$company_detail_data->team_data_advisor_profile->FCA_verified}}@else -- @endif</td>
                                                     <td>{{$company_detail_data->accepted_leads}}</td>
                                                     <td>{{$company_detail_data->live_leads}}</td>
                                                     <td>{{$company_detail_data->hired}}</td>

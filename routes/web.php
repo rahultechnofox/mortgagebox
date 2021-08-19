@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/update-fca-verification-status','\App\Http\Controllers\AdvisorController@updateFCAStatus');
     Route::post('admin/update-advisor-status','\App\Http\Controllers\AdvisorController@updateAdvisorStatus');
     Route::post('admin/reset-password','\App\Http\Controllers\AdvisorController@resetPassword');
-
+    Route::get('admin/advisors/invoice/{id}', '\App\Http\Controllers\AdvisorController@invoice')->name("admin/advisors/invoice");
     /******************* Advisor Management **********************/
 
     /******************* Need Management **********************/

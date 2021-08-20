@@ -153,9 +153,15 @@ class User extends Authenticatable implements JWTSubject
             $data['userDetails'] = $query->where('id','=',$id)->first();
             // echo json_encode($id);exit;
             $advisorProfile = AdvisorProfile::where('advisorId','=',$id)->first();
+            if($advisorProfile){
+                $company = companies::where('id',$advisorProfile->company_id)->first();
+                if($company){
+                    $advisorProfile->adviser_company_name = $company->company_name;
+                }
+            }
             // ->with('notes')
             $data['userDetails'] = (object) $data['userDetails'];
-            $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
+            $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id', 'companies.advisor_id as advisor_id')
             ->join('users', 'advice_areas.user_id', '=', 'users.id')
             ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
             ->where('advisor_bids.advisor_status', '=', 1)

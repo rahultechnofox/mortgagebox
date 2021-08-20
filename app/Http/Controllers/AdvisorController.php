@@ -31,6 +31,7 @@ use Exception;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use App\Models\AppSettings;
 
 class AdvisorController extends Controller
 {
@@ -63,13 +64,37 @@ class AdvisorController extends Controller
      */
     public function invoice($id) {
         $data['adviser'] = User::getAdvisorDetail($id);
-        // echo json_encode($adviser);exit;
+        $data['site_address'] = DB::table('app_settings')->where('key','site_address')->first();
+        $data['site_name'] = DB::table('app_settings')->where('key','mail_from_name')->first();
         $data['new_fees'] = array();
         $data['discount_credits'] = array();
         if($data['adviser']){
             $data['invoice'] = DB::table('invoices')->where('advisor_id',$data['adviser']['userDetails']->id)->where('month',date('m'))->first();
-            $data['new_fees'] = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->get();
-            $data['discount_credits'] = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->get();
+            $previous_month = date('m') - 1;
+            $newTotal = 0;
+            $preTotal = 0;
+            $hourdiff = 0;
+            $discountTotal = 0;
+            $discountArr = array();
+            $bid_data = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->get();
+            foreach($bid_data as $pre){
+                if(date("m",strtotime($pre->created_at))==date("m",strtotime($previous_month))){
+                    $preTotal = $preTotal + $pre->cost_leads;
+                }
+                if(date("m",strtotime($pre->created_at))==date("m")){
+                    $newTotal = $newTotal + $pre->cost_leads;
+                }
+                $date = date('Y-m-d', strtotime($pre->created_at . " +1 days"));
+                if(date("Y-m-d",strtotime($pre->accepted_date))>date("Y-m-d",strtotime($date))){
+                    $discountTotal = $discountTotal + $pre->cost_discounted;
+                    array_push($discountArr,$pre);
+                }
+            }
+            $data['previous_total'] = $preTotal;
+            $data['new_invoice_total'] = $newTotal;
+            $data['discount_total'] = $discountTotal;
+            $data['new_fees'] = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->limit(5)->get();
+            $data['discount_credits'] = $discountArr;
         }
         // echo json_encode($data);exit;
         return view('advisor.invoice',$data);

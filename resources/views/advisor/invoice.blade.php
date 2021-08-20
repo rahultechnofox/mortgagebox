@@ -31,19 +31,16 @@
 									<div>
                                     <div class="logo-wrapper" style="width:80%;float:left;">
                                         <img src="{{url('/argon/img/brand/logo.png')}}" style="width:20%;">
-                                        <h6 class="mb-2">Mortgage Box</h6>
-										<p class="card-text mb-25">123 High Street,</p>
-										<p class="card-text mb-25">Imagnary town surrey, TW122AA,</p>
-										<p class="card-text mb-0">United Kingdom</p>
-                                        <p class="card-text mb-25"></p>
+                                        <h6 class="mb-2">{{$site_name->value}}</h6>
+										<p class="card-text mb-25">{{$site_address->value}}</p>
                                         <p class="card-text mb-0" style="margin-top: 15px;">This is not a payment address</p>
                                         <p class="card-text mb-0" style="margin-top: 15px;">VAT Number: GB1234567890</p>
                                         <p class="card-text mb-0">Company Number: 123456789</p>
 
                                         <h6 class="mb-2" style="margin-top: 15px;">Bill To: </h6>
-										<p class="card-text mb-25">Office 149, 450 South Brand Brooklyn</p>
-										<p class="card-text mb-25">San Diego County, CA 91905, USA</p>
-										<p class="card-text mb-0">+1 (123) 456 7891, +44 (876) 543 2198</p>
+										<p class="card-text mb-25">{{$adviser['userDetails']->company_name}}</p>
+										<p class="card-text mb-25">@if(isset($adviser['userDetails']->address_line1) && $adviser['userDetails']->address_line1!=''){{$adviser['userDetails']->address_line1}}, @endif @if(isset($adviser['userDetails']->address_line2) && $adviser['userDetails']->address_line2!='') {{$adviser['userDetails']->address_line2}} @endif</p>
+										<p class="card-text mb-0">@if(isset($adviser['userDetails']->city) && $adviser['userDetails']->city!='') {{$adviser['userDetails']->city}} @endif @if(isset($adviser['userDetails']->postcode) && $adviser['userDetails']->address_line1!=''){{$adviser['userDetails']->postcode}}@endif</p>
 									</div>
 									<div class="mt-md-0 mt-2" style="width:20%;float:right;">
 										<h4 class="invoice-title">
@@ -75,16 +72,17 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($previous_total)}}</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($previous_total)}}</span></td>
 												</tr>
 											</tbody>
 										</table>
 									</div>
 								</div>
 							</div>
+							
                             <div class="card-body invoice-padding pt-0">
 								<div class="row invoice-spacing">
                                     <h6 class="mb-2">New fees:</h6>
@@ -96,10 +94,10 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($new_invoice_total)}}</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($new_invoice_total)}}</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -118,13 +116,13 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($discount_total)}}</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($discount_total)}}</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($discount_total)}}</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -140,7 +138,32 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold">$12,110.55</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($new_invoice_total)}}</span></td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+							<div class="card-body invoice-padding pt-0">
+								<div class="row invoice-spacing">
+                                    <h3 class="mb-2">Tax Summary:</h3>
+									<div class="col-xl-10">
+										<p class="card-text mb-25">Total taxable amount</p>
+										<p class="card-text mb-25">VAT @ of 20%</p>
+										<p class="card-text mb-25">Total current invoice amount</p>
+									</div>
+									<div class="col-xl-2 p-0 mt-xl-0 mt-2">
+										<table>
+											<tbody>
+												<tr>
+													<td><span class="fw-bold">{{\Helpers::currency(0)}}</span></td>
+												</tr>
+												<tr>
+													<td><span class="fw-bold">{{\Helpers::currency(0)}}</span></td>
+												</tr>
+												<tr>
+													<td><span class="fw-bold">{{\Helpers::currency(0)}}</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -187,7 +210,7 @@
                                                         ?>
                                                     </span> </td>
                                                     <td class="py-1"> <span class="fw-bold">@if(isset($new_fees_data->area) && $new_fees_data->area!=''){{ucfirst($new_fees_data->area->service_type)}} @else -- @endif</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$new_fees_data->cost_leads}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">{{\Helpers::currency($new_fees_data->cost_leads)}}</span> </td>
                                                 </tr>
                                             @endforeach
                                         @else
@@ -196,7 +219,7 @@
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: $60.00</span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: {{\Helpers::currency($new_invoice_total)}}</span> </td>
 										</tr>
 									</tbody>
 								</table>
@@ -239,7 +262,7 @@
                                                         ?>
                                                     </span> </td>
                                                     <td class="py-1"> <span class="fw-bold">@if(isset($discount_credits_data->area) && $discount_credits_data->area!=''){{ucfirst($discount_credits_data->area->service_type)}} @else -- @endif</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->cost_leads}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">{{\Helpers::currency($discount_credits_data->cost_leads)}}</span> </td>
                                                 </tr>
                                             @endforeach
                                         @else
@@ -248,49 +271,11 @@
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: $60.00</span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: {{\Helpers::currency($discount_total)}}</span> </td>
 										</tr>
 									</tbody>
 								</table>
 							</div>
-							<!-- <div class="card-body invoice-padding pb-0">
-								<div class="row invoice-sales-total-wrapper">
-									<div class="col-md-6 order-md-1 order-2 mt-md-0 mt-3">
-										<p class="card-text mb-0"> <span class="fw-bold">Salesperson:</span> <span class="ms-75">Alfie Solomons</span> </p>
-									</div>
-									<div class="col-md-6 d-flex justify-content-end order-md-2 order-1">
-										<div class="invoice-total-wrapper">
-											<div class="invoice-total-item">
-												<p class="invoice-total-title">Subtotal:</p>
-												<p class="invoice-total-amount">$1800</p>
-											</div>
-											<div class="invoice-total-item">
-												<p class="invoice-total-title">Discount:</p>
-												<p class="invoice-total-amount">$28</p>
-											</div>
-											<div class="invoice-total-item">
-												<p class="invoice-total-title">Tax:</p>
-												<p class="invoice-total-amount">21%</p>
-											</div>
-											<hr class="my-50">
-											<div class="invoice-total-item">
-												<p class="invoice-total-title">Total:</p>
-												<p class="invoice-total-amount">$1690</p>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div> -->
-							<!-- Invoice Description ends -->
-							<!-- <hr class="invoice-spacing"> -->
-							<!-- Invoice Note starts -->
-							<!-- <div class="card-body invoice-padding pt-0">
-								<div class="row">
-									<div class="col-12"> <span class="fw-bold">Note:</span> <span>It was a pleasure working with you and your team. We hope you will keep us in mind for future freelance
-                                                projects. Thank You!</span> </div>
-								</div>
-							</div> -->
-							<!-- Invoice Note ends -->
 						</div>
 					</div>
 					<!-- /Invoice -->

@@ -54,6 +54,8 @@ class AdvisorController extends Controller
      */
     public function show($id) {
         $data = User::getAdvisorDetail($id);
+
+        $data['invoice'] = DB::table('invoices')->where('advisor_id',$data['userDetails']->id)->where('month',date('m'))->first();
         // echo json_encode($data);exit;
         return view('advisor.show',$data);
     }

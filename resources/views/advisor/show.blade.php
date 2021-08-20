@@ -329,7 +329,9 @@
                                 @else
                                 <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-advisor-status');">Activate</button>
                                 @endif
-                                <a href="{{url('/admin/advisors/invoice/')}}/{{$userDetails->id}}" class="btn btn-info mb-1 mb-sm-0 me-0 me-sm-1">Invoice</a>
+                                @if(isset($invoice) && $invoice!='')
+                                    <a href="{{url('/admin/advisors/invoice/')}}/{{$userDetails->id}}" class="btn btn-info mb-1 mb-sm-0 me-0 me-sm-1">Invoice</a>
+                                @endif
                             </div>
                         </div>
                     </div>

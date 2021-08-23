@@ -63,6 +63,9 @@
         .flatpickr-input{
             background-color: white !important;
         }
+        .pd-20{
+            padding-left:20px;
+        }
     </style>
 </head>
 

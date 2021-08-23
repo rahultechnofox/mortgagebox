@@ -768,4 +768,40 @@ class Helpers
             return $slug;
         }
     }
+
+    /**
+     * Get month name by number
+     * @param int $length
+     * @return string
+     */
+    public static function getMonth($month)
+    {
+        $month_name = "";
+        if($month==1){
+            $month_name = "January";
+        }else if($month==2){
+            $month_name = "Feburary";
+        }else if($month==3){
+            $month_name = "March";
+        }else if($month==4){
+            $month_name = "April";
+        }else if($month==5){
+            $month_name = "May";
+        }else if($month==6){
+            $month_name = "June";
+        }else if($month==7){
+            $month_name = "July";
+        }else if($month==8){
+            $month_name = "August";
+        }else if($month==9){
+            $month_name = "September";
+        }else if($month==10){
+            $month_name = "October";
+        }else if($month==11){
+            $month_name = "November";
+        }else if($month==12){
+            $month_name = "December";
+        }
+        return $month_name;
+    }
 }

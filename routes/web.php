@@ -116,6 +116,10 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/update-setting','\App\Http\Controllers\AppSettingsController@updateSetting');
     /******************* Faq Management **********************/
 
+    /******************* Invoice Management **********************/
+    Route::get('admin/invoice', '\App\Http\Controllers\InvoiceController@index');
+    /******************* Invoice Management **********************/
+
     Route::get('admin', '\App\Http\Controllers\AdminController@index')->name("admin");
     Route::get('/', '\App\Http\Controllers\AdminController@index');
     Route::get('home', '\App\Http\Controllers\UserController@index')->name("home");

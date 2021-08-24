@@ -1594,97 +1594,97 @@ class ApiController extends Controller
                 }
                 $advice_area[$key]->totalBids = $bidCountArr;
                 $costOfLead = ($item->size_want/100)*0.006;
-            $time1 = Date('Y-m-d H:i:s');
-            $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
-            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
-            $costOfLeadsStr = "";
-            $costOfLeadsDropStr = "";
-            $amount = number_format((float)$costOfLead, 2, '.', '');
-            if($hourdiff < 24) {
-                $costOfLeadsStr = "".$item->size_want_currency.$amount;
-                $in = 24-$hourdiff;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-                $in = 48-$hourdiff;
-                $newAmount = (75 / 100) * $amount;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 48 && $hourdiff < 72) {
-                $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-                $in = 72-$hourdiff;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 72) {
-                $costOfLeadsStr = ""."Free";
+                $time1 = Date('Y-m-d H:i:s');
+                $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
+                $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+                $costOfLeadsStr = "";
                 $costOfLeadsDropStr = "";
-            }
-            
-            $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
-            $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
-            $area_owner_details = User::where('id',$item->user_id)->first();
-            $address = "";
-            if(!empty($area_owner_details)) {
-                $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
-                if(!empty($addressDetails)) {
-                    if($addressDetails->Country != ""){
-                        $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
-                        // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
-                        $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
-                        $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
-                    }
-                    
+                $amount = number_format((float)$costOfLead, 2, '.', '');
+                if($hourdiff < 24) {
+                    $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                    $in = 24-$hourdiff;
+                    $hrArr = explode(".",$in);
+                    $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
                 }
-            }
-            $lead_value = "";
-            $main_value = ($item->size_want/100);
-            $advisorDetaultValue = "";
-            if($item->service_type=="remortgage") {
-                $advisorDetaultValue = "remortgage";
-            }else if($item->service_type=="first time buyer") {
-                $advisorDetaultValue = "first_buyer";
-            }else if($item->service_type=="next time buyer") {
-                $advisorDetaultValue = "next_buyer";
-            }else if($item->service_type=="buy to let") {
-                $advisorDetaultValue = "but_let";
-            }else if($item->service_type=="equity release") {
-                $advisorDetaultValue = "equity_release";
-            }else if($item->service_type=="overseas") {
-                $advisorDetaultValue = "overseas";
-            }else if($item->service_type=="self build") {
-                $advisorDetaultValue = "self_build";
-            }else if($item->service_type=="mortgage protection") {
-                $advisorDetaultValue = "mortgage_protection";
-            }else if($item->service_type=="secured loan") {
-                $advisorDetaultValue = "secured_loan";
-            }else if($item->service_type=="bridging loan") {
-                $advisorDetaultValue = "bridging_loan";
-            }else if($item->service_type=="commercial") {
-                $advisorDetaultValue = "commercial";
-            }else if($item->service_type=="something else") {
-                $advisorDetaultValue = "something_else";
-            }   
-            $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-            
-            $advice_area[$key]->lead_address = $address;
-            $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
-            $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
-            // echo "<br>";
-            // echo "Preference Value==".$AdvisorPreferencesDefault->$advisorDetaultValue;
-            // echo "<br>";
-            // echo "Size want==".$item->size_want;
-            // echo "<br>";
-            // echo "After Calclulate Value==".$main_value;
-            // echo "<br>";
-            // echo "Divided Value==".($item->size_want/100);
-            // echo "<br>";
-            // echo "Final Value==".$lead_value;
-            // echo "<br>";
+                if($hourdiff > 24 && $hourdiff < 48) {
+                    $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                    $in = 48-$hourdiff;
+                    $newAmount = (75 / 100) * $amount;
+                    $hrArr = explode(".",$in);
+                    $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                }
+                if($hourdiff > 48 && $hourdiff < 72) {
+                    $newAmount = (75 / 100) * $amount;
+                    $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                    $in = 72-$hourdiff;
+                    $hrArr = explode(".",$in);
+                    $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                }
+                if($hourdiff > 72) {
+                    $costOfLeadsStr = ""."Free";
+                    $costOfLeadsDropStr = "";
+                }
+                
+                $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
+                $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+                $area_owner_details = User::where('id',$item->user_id)->first();
+                $address = "";
+                if(!empty($area_owner_details)) {
+                    $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
+                    if(!empty($addressDetails)) {
+                        if($addressDetails->Country != ""){
+                            $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                            // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
+                            $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                            $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                        }
+                        
+                    }
+                }
+                $lead_value = "";
+                $main_value = ($item->size_want/100);
+                $advisorDetaultValue = "";
+                if($item->service_type=="remortgage") {
+                    $advisorDetaultValue = "remortgage";
+                }else if($item->service_type=="first time buyer") {
+                    $advisorDetaultValue = "first_buyer";
+                }else if($item->service_type=="next time buyer") {
+                    $advisorDetaultValue = "next_buyer";
+                }else if($item->service_type=="buy to let") {
+                    $advisorDetaultValue = "but_let";
+                }else if($item->service_type=="equity release") {
+                    $advisorDetaultValue = "equity_release";
+                }else if($item->service_type=="overseas") {
+                    $advisorDetaultValue = "overseas";
+                }else if($item->service_type=="self build") {
+                    $advisorDetaultValue = "self_build";
+                }else if($item->service_type=="mortgage protection") {
+                    $advisorDetaultValue = "mortgage_protection";
+                }else if($item->service_type=="secured loan") {
+                    $advisorDetaultValue = "secured_loan";
+                }else if($item->service_type=="bridging loan") {
+                    $advisorDetaultValue = "bridging_loan";
+                }else if($item->service_type=="commercial") {
+                    $advisorDetaultValue = "commercial";
+                }else if($item->service_type=="something else") {
+                    $advisorDetaultValue = "something_else";
+                }   
+                $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
+                
+                $advice_area[$key]->lead_address = $address;
+                $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+                $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+                // echo "<br>";
+                // echo "Preference Value==".$AdvisorPreferencesDefault->$advisorDetaultValue;
+                // echo "<br>";
+                // echo "Size want==".$item->size_want;
+                // echo "<br>";
+                // echo "After Calclulate Value==".$main_value;
+                // echo "<br>";
+                // echo "Divided Value==".($item->size_want/100);
+                // echo "<br>";
+                // echo "Final Value==".$lead_value;
+                // echo "<br>";
             }
         return response()->json([
             'status' => true,

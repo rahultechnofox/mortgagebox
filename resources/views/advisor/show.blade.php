@@ -26,47 +26,6 @@
         <div class="content-body">
             <section class="app-user-edit">
                 <div class="card">
-                    <!-- <div class="card-body">
-                        <div class="d-flex mb-2">
-                            <div class="mt-50">
-                                <h4>Lead Summery</h4>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
-                                        <h6 class="transaction-title">Live Lead:</h6>
-                                        <small>{{isset($userDetails->live_leads) ? $userDetails->live_leads : '--'}}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
-                                        <h6 class="transaction-title">Hired:</h6>
-                                        <small>{{isset($userDetails->hired_leads) ? $userDetails->hired_leads : '--'}}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
-                                        <h6 class="transaction-title">Completed:</h6>
-                                        <small>{{isset($userDetails->completed_leads) ? $userDetails->completed_leads : '--'}}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
-                                        <h6 class="transaction-title">Lost:</h6>
-                                        <small>{{isset($userDetails->lost_leads) ? $userDetails->lost_leads : '--'}}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
                     <div class="card-body">
                         <div class="d-flex mb-2">
                             <div class="mt-50">
@@ -86,7 +45,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Role:') }}</h6>
-                                        <small>{{isset($profile->role) ? $profile->role : '--'}}</small>
+                                        <small>{{isset($profile->role) && $profile->role!='' ? $profile->role : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -95,14 +54,10 @@
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Status:') }}</h6>
                                         <small>
-                                            @if(isset($profile->user_status))
-                                                @if($profile->status==1)
-                                                    Active
-                                                @else
-                                                    Deactive
-                                                @endif
+                                            @if($userDetails->status==1)
+												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
                                             @else
-                                                --
+												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
                                             @endif
                                         </small>
                                     </div>
@@ -129,7 +84,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('FCA Verified:') }}</h6>
-                                        <small>{{isset($profile->language) ? $profile->language : '--'}}</small>
+                                        <small>
+                                            @if(isset($profile->FCA_verified) && $profile->FCA_verified != "")  
+												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                            @else
+												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -138,7 +99,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Email Verified:') }}</h6>
-                                        <small>{{isset($userDetails->created_at) ? $userDetails->created_at : '--'}}</small>
+                                        <small>{{isset($userDetails->created_at) ? \Helpers::formatDateTime($userDetails->created_at) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -180,7 +141,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Last Updated:') }}</h6>
-                                        <small>{{isset($userDetails->last_active) ? $userDetails->last_active : '--'}}</small>
+                                        <small>{{isset($userDetails->last_active) ? \Helpers::formatDateTime($userDetails->updated_at) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -188,7 +149,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Sex:') }}</h6>
-                                        <small>{{isset($profile->gender) ? $profile->gender : '--'}}</small>
+                                        <small>
+                                            @if(isset($profile->gender) && $profile->gender!='') 
+                                                {{$profile->gender}} 
+                                            @else
+                                                --                                            
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -196,7 +163,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Langauge:') }}</h6>
-                                        <small>{{isset($profile->language) ? $profile->language : '--'}}</small>
+                                        <small>
+                                            @if(isset($profile->language) && $profile->language!='') 
+                                                {{$profile->language}} 
+                                            @else
+                                                --                                            
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -205,7 +178,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Joined:') }}</h6>
-                                        <small>{{isset($userDetails->created_at) ? $userDetails->created_at : '--'}}</small>
+                                        <small>{{isset($userDetails->created_at) ? \Helpers::formatDateTime($userDetails->created_at) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -213,7 +186,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Current Balance:') }}</h6>
-                                        <small>{{isset($profile->address_line1) ? $profile->address_line1 : '--'}}</small>
+                                        <small>--</small>
                                     </div>
                                 </div>
                             </div>
@@ -221,7 +194,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('City/Town:') }}</h6>
-                                        <small>{{isset($profile->city) ? $profile->city : '--'}}</small>
+                                        <small>
+                                            @if(isset($profile->city) && $profile->city!='') 
+                                                {{$profile->city}} 
+                                            @else
+                                                --                                            
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -230,7 +209,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Postal Code:') }}</h6>
-                                        <small>{{isset($userDetails->postcode) ? $userDetails->postcode : '--'}}</small>
+                                        <small>
+                                            @if(isset($profile->postcode) && $profile->postcode!='') 
+                                                {{$profile->postcode}} 
+                                            @else
+                                                --                                            
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -238,7 +223,18 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Location:') }}</h6>
-                                        <small>{{isset($profile->address_line1) ? $profile->address_line1 : '--'}}</small>
+                                        <small>
+                                            @if(isset($profile->district) && $profile->district!='' && isset($profile->country) && $profile->country!='')
+                                                @if(isset($profile->district) && $profile->district!='') 
+                                                    {{$profile->district}},                                           
+                                                @endif
+                                                @if(isset($profile->country) && $profile->country!='') 
+                                                    {{$profile->country}}                                           
+                                                @endif
+                                            @else
+                                                --
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -260,7 +256,6 @@
                                             <th>Live</th>
                                             <th>Hired</th>
                                             <th>Completed</th>
-                                            <!-- <th>Not Proceeding</th> -->
                                             <th>Lost</th>
                                         </tr>
                                     </thead>
@@ -272,7 +267,6 @@
                                                 <td>{{isset($userDetails->live_leads) ? $userDetails->live_leads : '--'}}</td>
                                                 <td>{{isset($userDetails->hired_leads) ? $userDetails->hired_leads : '--'}}</td>
                                                 <td>{{isset($userDetails->completed_leads) ? $userDetails->completed_leads : '--'}}</td>
-                                                <!-- <td>--</td> -->
                                                 <td>{{isset($userDetails->lost_leads) ? $userDetails->lost_leads : '--'}}</td>
                                             </tr>
                                         @else

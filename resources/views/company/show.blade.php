@@ -74,7 +74,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Address Line 1:</h6>
-                                        <small>{{isset($company_detail->adviser) ? $company_detail->adviser->address_line1 : '--'}}</small>
+                                        <small>{{isset($company_detail->adviser) && $company_detail->adviser->address_line1!='' ? $company_detail->adviser->address_line1 : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -83,7 +83,7 @@
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Address Line 2:</h6>
                                         <small>
-                                        {{isset($company_detail->adviser) ? $company_detail->adviser->address_line2 : '--' }}
+                                        {{isset($company_detail->adviser) && $company_detail->adviser->address_line2!='' ? $company_detail->adviser->address_line2 : '--' }}
                                         </small>
                                     </div>
                                 </div>
@@ -111,10 +111,10 @@
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Status:</h6>
                                         <small>
-                                            @if($company_detail->status ==1)
-                                                Active
-                                            @else: 
-                                                Deactive
+                                            @if($company_detail->status==1)
+                                                <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                            @else
+                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
                                             @endif
                                         </small>
                                     </div>
@@ -193,19 +193,39 @@
                                                     <td>{{$company_detail_data->id}}</td>
                                                     <td>{{$company_detail_data->name}}</td>
                                                     <td>@if(isset($company_detail_data->team_data) && $company_detail_data->team_data!=''){{$company_detail_data->team_data->role}}@else -- @endif</td>
-                                                    <td>@if(isset($company_detail_data->team_data) && $company_detail_data->team_data!=''){{$company_detail_data->team_data->email_status}}@else -- @endif</td>
-                                                    <td>@if(isset($company_detail_data->team_data_advisor_profile) && $company_detail_data->team_data_advisor_profile!=''){{$company_detail_data->team_data_advisor_profile->FCA_verified}}@else -- @endif</td>
+                                                    <td>
+                                                        @if(isset($company_detail_data->team_data) && $company_detail_data->team_data!='')
+                                                            @if($company_detail_data->team_data->email_status==1)
+                                                                <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                                            @else
+                                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                                            @endif
+                                                        @else 
+                                                            -- 
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if(isset($company_detail_data->team_data_advisor_profile) && $company_detail_data->team_data_advisor_profile!='')
+                                                            @if($company_detail_data->team_data_advisor_profile->FCA_verified != "")  
+                                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                                            @else
+                                                                <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                                            @endif
+                                                        @else 
+                                                            -- 
+                                                        @endif
+                                                    </td>
                                                     <td>{{$company_detail_data->accepted_leads}}</td>
                                                     <td>{{$company_detail_data->live_leads}}</td>
                                                     <td>{{$company_detail_data->hired}}</td>
                                                     <td>{{$company_detail_data->completed}}</td>
-                                                    <td>{{$company_detail_data->value}}</td>
-                                                    <td>{{$company_detail_data->cost}}</td>
+                                                    <td>{{$company_detail_data->success_percent}}%</td>
+                                                    <td>{{\Helpers::currency($company_detail_data->value)}}</td>
                                                     <td>
-                                                        @if ($company_detail_data->status == 1) 
-                                                            Active
+                                                        @if($company_detail_data->status==1)
+                                                            <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
                                                         @else
-                                                            In-Active
+                                                            <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
                                                         @endif
                                                     </td>
                                                 </tr>

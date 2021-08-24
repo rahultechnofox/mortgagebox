@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileRequest;
 use App\Http\Requests\PasswordRequest;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
@@ -26,13 +27,22 @@ class ProfileController extends Controller
      */
     public function update(ProfileRequest $request)
     {
-        if (auth()->user()->id == 1) {
-            return back()->withErrors(['not_allow_profile' => __('You are not allowed to change data for a default user.')]);
-        }
-
-        auth()->user()->update($request->all());
-
-        return back()->withStatus(__('Profile successfully updated.'));
+        $post = $request->all();
+        if(!empty($post)){
+            if(isset($post['name']) && $post['name']!=''){
+                $postUpdate['name'] = $post['name'];
+            }
+            if(isset($post['email']) && $post['email']!=''){
+                $postUpdate['email'] = $post['email'];
+            }
+            if(isset($post['password']) && $post['password']!=''){
+                $postUpdate['password'] = Hash::make($post['password']);
+            }
+            User::where('id',$post['id'])->update($postUpdate);
+            return redirect()->back()->with('success','Profile updated successfully');
+        }else{
+            return redirect()->back()->with('error','Something went wrong please try again');
+        }        
     }
 
     /**

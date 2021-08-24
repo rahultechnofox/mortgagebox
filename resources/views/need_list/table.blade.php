@@ -11,8 +11,8 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Customer Name</th>
                                 <th>Need ID</th>
+                                <th>Customer Name</th>
                                 <th>Request Date</th>
                                 <th>Service</th>
                                 <th>Size</th>
@@ -29,24 +29,23 @@
                             @if(count($userDetails) > 0)
                             @foreach($userDetails as $users_data)
                             <tr>
-                                <td>{{$users_data->name}}</td>
                                 <td>{{$users_data->id}}</td>
-                                <td>{{ $users_data->created_at != "" ? $users_data->created_at : 'N/A' }}</td>
-                                <td>{{ $users_data->service_type != "" ? $users_data->service_type : 'N/A' }}</td>
-                                <td>{{ $users_data->size_want != "" ? $users_data->size_want : 'N/A' }}</td>
+                                <td>{{$users_data->name}}</td>
+                                <td>{{ $users_data->created_at != "" ? \Helpers::formatDateTime($users_data->created_at) : '--' }}</td>
+                                <td>{{ $users_data->service_type != "" ? ucfirst($users_data->service_type) : '--' }}</td>
+                                <td>{{ $users_data->size_want != "" ? \Helpers::currency($users_data->size_want) : '--' }}</td>
                                 <td>{{$users_data->offer_count}}</td>
                                 <td>{{$users_data->active_bids}}</td>
-                                
                                 <td>
                                 @if($users_data->bid_status == 0)
-                                    <a class="btn btn-warning btn-sm waves-effect waves-float waves-light">In-Progress</a>
+                                    <a class="btn btn-warning btn-sm waves-effect waves-float waves-light" style="width: 105px;">In-Progress</a>
                                 @elseif($users_data->bid_status == 1)
                                     <a class="btn btn-success btn-sm waves-effect waves-float waves-light">Accepted</a>
                                 @elseif($users_data->bid_status == 2)
                                     <a class="btn btn-info btn-sm waves-effect waves-float waves-light">Closed</a>
                                 @elseif($users_data->bid_status == 3)
                                     <a class="btn btn-danger btn-sm waves-effect waves-float waves-light">Declined</a> 
-                                @else:
+                                @else
                                     {{$users_data->bid_status}}
                                 @endif
                                 </td>

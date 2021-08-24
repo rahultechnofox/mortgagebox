@@ -36,7 +36,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">0</h4>
+                                                    <h4 class="fw-bolder mb-0">{{$customer}}</h4>
                                                     <p class="card-text font-small-3 mb-0">Total Customers</p>
                                                 </div>
                                             </div>
@@ -51,7 +51,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">0</h4>
+                                                <h4 class="fw-bolder mb-0">{{$adviser}}</h4>
                                                     <p class="card-text font-small-3 mb-0">Total Advisors</p>
                                                 </div>
                                             </div>
@@ -66,7 +66,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">0</h4>
+                                                    <h4 class="fw-bolder mb-0">{{$companies}}</h4>
                                                     <p class="card-text font-small-3 mb-0">Companies</p>
                                                 </div>
                                             </div>
@@ -81,7 +81,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="my-auto">
-                                                    <h4 class="fw-bolder mb-0">0</h4>
+                                                    <h4 class="fw-bolder mb-0">{{$need}}</h4>
                                                     <p class="card-text font-small-3 mb-0">Needs</p>
                                                 </div>
                                             </div>

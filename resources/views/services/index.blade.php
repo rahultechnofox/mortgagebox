@@ -63,13 +63,10 @@
             <input name="id" id="id" type="hidden">
             <div class="modal-body flex-grow-1">
                 <div class="mb-1 parent_id">
+                    <input type="hidden" name="parent_id" id="parent_id" value="{{$services[0]->id}}">
                     <label class="form-label" for="Department">Services</label>
-                    <select class="form-control" name="parent_id" id="parent_id">
-                        <option value="">Select Service</option>
-                        @foreach($services as $service_data)
-                            <option value="{{$service_data->id}}">{{$service_data->name}}</option>
-                        @endforeach
-                    </select>
+                    <input type="text" class="form-control" value="{{$services[0]->name}}" readonly>
+                    
                 </div>
                 <div class="mb-1">
                     <label class="form-label" for="Department">Name</label>

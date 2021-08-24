@@ -69,7 +69,7 @@ class Helpers
     */
     public static function getServiceName($service_id =''){
         if($service_id != ''){
-            $service = ServiceType::findorfail($service_id);
+            $service = ServiceType::where('id',$service_id)->first();
             if($service){
                 return $service->name;
             }else{
@@ -510,9 +510,9 @@ class Helpers
             return date(config('app.date_format_php'), strtotime($date));
         } else {
             if ($not_available == false) {
-                return '';
+                return '--';
             }
-            return '';
+            return '--';
         }
     }
 
@@ -527,9 +527,9 @@ class Helpers
             return date(config('app.date_time_format_php'), strtotime($date));
         } else {
             if ($not_available == false) {
-                return null;
+                return "--";
             }
-            return null;
+            return "--";
         }
     }
 

@@ -82,6 +82,8 @@ return [
 
     'locale' => 'en',
     'currency' => '£',
+    'date_format_php' => 'd M, Y',
+    'date_time_format_php' => 'd M, Y h:i A',
 
     /*
     |--------------------------------------------------------------------------

@@ -87,7 +87,7 @@
                 <li class="nav-item dropdown dropdown-user">
                     @auth
                     <a class="nav-link dropdown-toggle dropdown-user-link" id="dropdown-user" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <div class="user-nav d-sm-flex d-none"><span class="user-name fw-bolder">{!! auth()->user()->name !!}</span><span class="user-status">Admin</span></div><span class="avatar">
+                        <div class="user-nav d-sm-flex d-none"><span class="user-name fw-bolder">{!! auth()->user()->name !!}</span><span class="user-status"></span></div><span class="avatar">
                             @if(auth()->user()->image)
                             <img class="round" src="{{asset('app-assets/images/users/'.auth()->user()->image)}}" alt="avatar" height="40" width="40"><span class="avatar-status-online">
                             @else 
@@ -97,10 +97,10 @@
                     </a>
                     @endauth
                     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-user">
-                        <!-- <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                        <a class="dropdown-item" href="{{ url('/admin/profile') }}">
                             <i class="me-50" data-feather="user"></i> Profile
                         </a>
-                        <div class="dropdown-divider"></div> -->
+                        <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{!! url('/logout') !!}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><i class="me-50" data-feather="power"></i> Logout</a>
                         <form id="logout-form" action="{{ url('/logout') }}" method="POST" class="form-horizontal" style="display: none;">{{ csrf_field() }}</form>
                     </div>

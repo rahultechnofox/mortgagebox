@@ -12,7 +12,7 @@ class FaqCategory extends Model
     use SoftDeletes;
     protected $table = "faq_category";
     protected $fillable = [
-        'name', 'status'
+        'name','audience', 'status'
     ];
     /**
      * The attributes that should be mutated to dates.

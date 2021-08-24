@@ -19,6 +19,14 @@
 					</div>
 				</div>
 			</div>
+			<div class="content-header-right text-md-end col-md-3 col-12 d-md-block">
+                <div class="mb-1 breadcrumb-right">
+                    <a class="btn btn-icon btn-primary" href="{{url('/admin/users')}}">
+                        <i data-feather="arrow-left" class="me-25"></i>
+                        <span>Back to customer list</span>
+                    </a>
+                </div>
+            </div>
 		</div>
 		<div class="content-body">
 			<section class="app-user-edit">
@@ -51,7 +59,7 @@
 							<div class="col-md-6">
 								<div class="d-flex">
 									<div class="transaction-percentage">
-										<h6 class="transaction-title">Location:</h6> <small>{{isset($userDetails->address) ? $userDetails->address : '--'}}</small> </div>
+										<h6 class="transaction-title">Location:</h6> <small><?php if(isset($userDetails->district) && $userDetails->district!=''){ echo $userDetails->district.",";  }else{ echo ''; } ?> {{isset($userDetails->country) && $userDetails->country!='' ? $userDetails->country: '--'}}</small> </div>
 								</div>
 							</div>
 							<hr>
@@ -67,9 +75,9 @@
 										<h6 class="transaction-title">Email Verified:</h6> 
                                         <small>
                                             @if($userDetails->email_verified_at == NULL)
-                                                No
+												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
                                             @else 
-                                                Yes
+												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
                                             @endif
                                         </small> 
                                     </div>
@@ -79,13 +87,13 @@
 							<div class="col-md-6">
 								<div class="d-flex">
 									<div class="transaction-percentage">
-										<h6 class="transaction-title">Last Login:</h6> <small>--</small> </div>
+										<h6 class="transaction-title">Last Login:</h6> <small>{{isset($userDetails->updated_at) ? \Helpers::formatDateTime($userDetails->updated_at) : '--' }}</small> </div>
 								</div>
 							</div>
 							<div class="col-md-6">
 								<div class="d-flex">
 									<div class="transaction-percentage">
-										<h6 class="transaction-title">Joined Dated:</h6> <small>{{isset($userDetails->created_at) ? $userDetails->created_at : '--' }}</small> </div>
+										<h6 class="transaction-title">Joined Dated:</h6> <small>{{isset($userDetails->created_at) ? \Helpers::formatDateTime($userDetails->created_at) : '--' }}</small> </div>
 								</div>
 							</div>
 							<hr>
@@ -94,9 +102,9 @@
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Status:</h6> <small>
                                             @if($userDetails->status ==1)
-                                                Active
+												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
                                             @else: 
-                                                Deactive
+                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
                                             @endif
                                         </small> 
                                     </div>
@@ -105,16 +113,16 @@
 							<div class="col-md-6">
 								<div class="d-flex">
 									<div class="transaction-percentage">
-										<h6 class="transaction-title">Last Active:</h6> <small>{{isset($userDetails->last_active) ? $userDetails->last_active : '--' }}</small> </div>
+										<h6 class="transaction-title">Last Active:</h6> <small>{{isset($userDetails->last_active) ? \Helpers::formatDateTime($userDetails->last_active) : '--' }}</small> </div>
 								</div>
 							</div>
 							<hr>
-							<div class="col-md-6">
-								<div class="d-flex">
+							<div class="col-md-5">
+								<div>
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Password:</h6>
-										<input type="password" name="password" id="password" class="form-control form-control-merge">
-										<button type="button" class="dt-button create-new btn btn-primary" onclick="updatePassword('{{$userDetails->id}}');">Update</button>
+										<input type="password" name="password" id="password" class="form-control form-control-merge" style="float: left;width: 65%;">
+										<button type="button" class="dt-button create-new btn btn-primary" onclick="updatePassword('{{$userDetails->id}}');" style="float: left;width: 35%;">Update</button>
 									</div>
 								</div>
 							</div>
@@ -122,14 +130,18 @@
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title" style="display: inline-block;">Reset Password:</h6>
-										<button type="button" class="dt-button create-new btn btn-primary" onclick="resetPassword('{{$userDetails->id}}');">Send Reset Password Link</button>
+										<button type="button" class="btn btn-secondary btn-sm btn-add-new waves-effect waves-float waves-light" onclick="resetPassword('{{$userDetails->id}}');">Send Reset Password Link</button>
 									</div>
 								</div>
 							</div>
 							<div class="col-md-12" style="margin-top: 15px;">
 								<div class="d-flex">
 									<div class="transaction-percentage">
-										<button type="button" class="dt-button create-new btn btn-primary" onclick="deleteCustomer('{{$userDetails->id}}');">Suspend customer</button>
+										@if($userDetails->status==1)		
+											<button type="button" class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-user-status');">Suspend customer</button>
+										@else
+											<button type="button" class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-user-status');">Activate customer</button>
+										@endif
 									</div>
 								</div>
 							</div>

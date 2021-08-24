@@ -64,11 +64,10 @@
             <div class="modal-body flex-grow-1">
                 <div class="mb-1 audience_id">
                     <label class="form-label" for="Audience">Audience</label>
-                    <select class="form-control" name="audience_id" id="audience_id">
+                    <select class="form-control" name="audience" id="audience">
                         <option value="">Select Audience</option>
-                        @foreach($audience as $audience_data)
-                            <option value="{{$audience_data->id}}">{{$audience_data->name}}</option>
-                        @endforeach
+                        <option value="user">Customer</option>
+                        <option value="adviser">Adviser</option>
                     </select>
                 </div>
                 <div class="mb-1">

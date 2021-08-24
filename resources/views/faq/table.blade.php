@@ -27,14 +27,14 @@
                             <tr>
                                 <td>{{$i}}</td>
                                 <td>{{\Helpers::checkNull($users_data->question)}}</td>
-                                <td>{{\Helpers::checkEmptydateMdYHIS($users_data->created_at)}}</td>
+                                <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
                                 <td>@if(isset($users_data->faq_category) && $users_data->faq_category!=''){{\Helpers::checkNull($users_data->faq_category->name)}}@else -- @endif</td>
-                                <td>@if(isset($users_data->audience) && $users_data->audience!=''){{\Helpers::checkNull($users_data->audience->name)}}@else -- @endif</td>
+                                <td>@if(isset($users_data->audience) && $users_data->audience!=''){{\Helpers::checkNull($users_data->audience)}}@else -- @endif</td>
                                 <td>
                                     @if($users_data->status == 1)
-                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-faq-status');">Active</a>
+                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-faq-status');">Active</a>
                                     @else 
-                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-faq-status');">Deactive</a>
+                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-faq-status');">Deactive</a>
                                     @endif
                                 </td>
                                 <td>

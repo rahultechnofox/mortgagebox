@@ -15,8 +15,8 @@
                                 <th>PostCode</th>
                                 <th>Email</th>
                                 <th>Date Joined</th>
-                                <th>Email Verified</th>
                                 <th>Last Active</th>
+                                <th>Email Verified</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -30,20 +30,20 @@
                                 <td><a href="{{ route('admin/users/show',$users_data->id) }}">{{$users_data->name}}</a></td>
                                 <td>{{$users_data->post_code}}</td>
                                 <td>{{$users_data->email}}</td>
-                                <td>{{$users_data->created_at}}</td>
+                                <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
+                                <td>{{\Helpers::formatDateTime($users_data->last_active)}}</td>
                                 <td>
                                     @if($users_data->email_status == 0)
-                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light">Not Verifed</a>
+                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" style="width: 104px;">Not Verifed</a>
                                     @else
-                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light">Verfied</a>
+                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light">Verfied</a>
                                     @endif
                                 </td>
-                                <td>{{$users_data->last_active}}</td>
                                 <td>
                                     @if($users_data->status == 1)
-                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-user-status');">Active</a>
+                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-user-status');">Active</a>
                                     @else 
-                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-user-status');">Deactive</a>
+                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-user-status');">Deactive</a>
                                     @endif
                                 </td>
                                 <td>
@@ -56,10 +56,6 @@
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a>
-                                            <!-- <a class="dropdown-item" href="#">
-                                                <i data-feather="edit-2" class="me-50"></i>
-                                                <span>Edit</span>
-                                            </a> -->
                                             <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-customer',$users_data->id) }}">
                                                 <i data-feather="trash" class="me-50"></i>
                                                 <span>Delete</span>

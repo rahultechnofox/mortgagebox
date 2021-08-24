@@ -21,8 +21,8 @@
                                 <th>Completed</th>
                                 <th>Success %</th>
                                 <th>Value</th>
+                                <th>Cost</th>
                                 <th>Status</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -38,9 +38,9 @@
                                 <td>{{$users_data->live_leads}}</td>
                                 <td>{{$users_data->hired}}</td>
                                 <td>{{$users_data->completed}}</td>
-                                <td>--</td>
-                                <td>{{$users_data->value}}</td>
-                                <td>{{$users_data->cost}}</td>
+                                <td>{{$users_data->success_percent}}%</td>
+                                <td>{{\Helpers::currency($users_data->value)}}</td>
+                                <td>{{\Helpers::currency($users_data->cost)}}</td>
                                 <td>
                                     @if($users_data->status == 1)
                                         <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-company-status');">Active</a>

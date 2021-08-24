@@ -36,7 +36,7 @@
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Mortgage Type:') }}:</h6>
+                                        <h6 class="transaction-title">{{ __('Mortgage Type:') }}</h6>
                                         <small>{{isset($needDetails->service_type) ? old('name', ucfirst($needDetails->service_type)) : '--'}}</small>
                                     </div>
                                 </div>
@@ -44,7 +44,7 @@
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Mortgage Size:') }}:</h6>
+                                        <h6 class="transaction-title">{{ __('Mortgage Size:') }}</h6>
                                         <small>{{isset($needDetails->size_want) ? old('name', \Helpers::currency($needDetails->size_want)) : '--'}}</small>
                                     </div>
                                 </div>
@@ -61,7 +61,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Date Joined:') }}</h6>
-                                        <small>{{isset($needDetails->created_at) ? ucfirst($needDetails->created_at) : '--'}}</small>
+                                        <small>
+                                            @if(isset($needDetails->created_at)) 
+                                                {{\Helpers::formatDateTime($needDetails->created_at)}} 
+                                            @else
+                                                --
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -86,7 +92,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Cost of Lead:') }}</h6>
-                                        <small>{{isset($needDetails->cost_of_lead) ? old('name', \Helpers::currency($needDetails->cost_of_lead)) : '--'}}</small>
+                                        <small>{{isset($needDetails->cost_of_lead) ? old('name', $needDetails->cost_of_lead) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -103,7 +109,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Additional Details:') }}</h6>
-                                        <small>{{isset($needDetails->advisor_preference) ? $needDetails->advisor_preference : '--'}}</small>
+                                        <small>{{isset($needDetails->description) ? $needDetails->description : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -113,7 +119,7 @@
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Adverse Credit') }}
                                         <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="checked" <?php if(isset($needDetails->adverse_credit)){ if($needDetails->adverse_credit==1){ echo "checked"; } }?> >
+                                                <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="checked" <?php if(isset($needDetails->adverse_credit)){ if($needDetails->adverse_credit==1){ echo "checked"; } }?> disabled>
                                             </div>
                                         </h6>
                                     </div>
@@ -124,7 +130,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('How Soon:') }}</h6>
-                                        <small>{{isset($needDetails->how_soon) ? $needDetails->how_soon : '--'}}</small>
+                                        <small>{{isset($needDetails->request_time) ? $needDetails->request_time : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -151,7 +157,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Active:') }}</h6>
-                                        <small>{{isset($needDetails->bid_status) ? ucfirst($needDetails->bid_status): '--'}}</small>
+                                        <small>
+                                            @if($needDetails->status==1)
+												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                            @else
+												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -173,8 +185,11 @@
                                 </div>
                             </div>
                             <div class="col-12 d-flex flex-sm-row flex-column mt-2">
-                                <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','0','/admin/update-need-status');">Suspend</button>
-                                <button type="button" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','1','/admin/update-need-status');">Activate</button>
+                                @if($needDetails->status==1)
+                                    <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','1','/admin/update-need-status');">Activate</button>
+                                @else
+                                    <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','0','/admin/update-need-status');">Suspend</button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -207,10 +222,10 @@
                                             @foreach($needDetails->bids as $bids_data)
                                                 <tr>
                                                     <td>{{$i}}</td>
-                                                    <td>{{\Helpers::checkNull($bids_data->advisor_name)}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->adviser_name)}}</td>
                                                     <td>{{\Helpers::checkNull($bids_data->bid_status)}}</td>
-                                                    <td>{{\Helpers::checkEmptydateMdYHIS($bids_data->created_at)}}</td>
-                                                    <td>{{\Helpers::checkNull($bids_data->cost_of_lead_drop)}}</td>
+                                                    <td>{{\Helpers::formatDateTime($bids_data->created_at)}}</td>
+                                                    <td>{{\Helpers::checkNull($bids_data->leads_status)}}</td>
                                                     <td>{{\Helpers::currency($bids_data->cost_leads)}}</td>
                                                     <td>{{\Helpers::currency($bids_data->cost_discounted)}}</td>
                                                     <td>@if($bids_data->cost_discounted!=0){{\Helpers::currency($bids_data->cost_discounted)}}@else {{\Helpers::currency($bids_data->cost_leads)}} @endif</td>

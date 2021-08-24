@@ -51,8 +51,8 @@ class FaqCategoryController extends Controller
                 return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
             }else{
                 $postData['name'] = $post['name'];
-                if(isset($post['audience_id']) && $post['audience_id']!=''){
-                    $postData['audience_id'] = $post['audience_id'];
+                if(isset($post['audience']) && $post['audience']!=''){
+                    $postData['audience'] = $post['audience'];
                 }
                 unset($post['_token']);
                 if(isset($post['id'])){

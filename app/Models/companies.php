@@ -44,12 +44,19 @@ class companies extends Model
                 $row->live_leads = 0;
                 $row->hired = 0;
                 $row->completed = 0;
+                $row->success_percent = 0;
+                $success_per = 0;
                 if(isset($row->adviser) && count($row->adviser)>0){
                     foreach($row->adviser as $adviser_data){
                         $row->accepted_leads = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->where('status',1)->count();
                         $row->value = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->sum('cost_leads');
                         $row->cost = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->sum('cost_discounted');
                         $row->completed = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->where('status',2)->count();
+                        $total_bids = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->where('advisor_status', '=', 1)->count();
+                        if($total_bids!=0){
+                            $success_per = ($row->accepted_leads / $total_bids) * 100;
+                        }
+                        $row->success_percent = $success_per;
                     }
                 }
             }
@@ -64,6 +71,7 @@ class companies extends Model
             $query = new Self;
             $data = $query->where('id',$id)->with('team_members')->with('notes')->first();
             $teamadmin = 0;
+            $success_per = 0;
             if($data){
                 $data->total_advisor = count($data->team_members);
                 // $accepted_leads = 0;
@@ -84,8 +92,13 @@ class companies extends Model
                     $team_members_data->value = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->sum('cost_leads');
                     $team_members_data->cost = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->sum('cost_discounted');
                     $team_members_data->completed = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->where('status',2)->count();
-                }
-                $data->adviser = AdvisorProfile::where('advisorId',$teamadmin)->where('company_id',$data->id)->first();
+                    $total_bids = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->where('advisor_status', '=', 1)->count();
+                    if($total_bids!=0){
+                        $success_per = ($team_members_data->accepted_leads / $total_bids) * 100;
+                    }
+                    $team_members_data->success_percent = $success_per; 
+                    }
+                    $data->adviser = AdvisorProfile::where('advisorId',$teamadmin)->where('company_id',$data->id)->first();
             }
             // foreach($data as $row){
             //     $row->total_advisor = count($row->adviser);

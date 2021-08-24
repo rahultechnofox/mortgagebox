@@ -26,22 +26,7 @@ class NeedController extends Controller
     public function index(Request $request){
         $post = $request->all();
         $advice_area = Advice_area::getNeedList($post);
-        // $advice_area = Advice_area::select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-        // ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
-        // foreach ($advice_area as $key => $item) {
-        //     $offer_count = AdvisorBids::where('area_id','=',$item->id)->count();
-        //     $active_bids = AdvisorBids::where('area_id','=',$item->id)->where('status',1)->where('advisor_status',1)->count();
-        //     $bidDetails = AdvisorBids::where('area_id','=',$item->id)->where('status','>','0')->first();
-        //     if(!empty($bidDetails)) {
-        //         $advice_area[$key]->bid_status = $bidDetails->status;
-        //     }else{
-        //         $advice_area[$key]->bid_status ="N/A";
-        //     }
-        //     $advice_area[$key]->offer_count = $offer_count;
-        //     $advice_area[$key]->active_bids = $active_bids;
-        // }
         $data = $advice_area;   
-        // echo json_encode($data);exit; 
         return view('need_list.index',$data);
     }
     /**
@@ -54,6 +39,8 @@ class NeedController extends Controller
         ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
         ->leftJoin('user_notes', 'advice_areas.id', '=', 'user_notes.advice_id')
         ->first();
+        $costOfLeadsStr = "";
+        $costOfLeadsDropStr = "";
         $bidCountArr = array();
         $adviceBid = AdvisorBids::where('area_id',$needDetails->id)->get();
         $adviceBidCount = AdvisorBids::where('area_id',$needDetails->id)->count();
@@ -61,7 +48,13 @@ class NeedController extends Controller
         if(count($adviceBid)>0){
             
             foreach($adviceBid as $advice_data){
-                $advisors = AdvisorProfile::where('advisorId',$needDetails->advisor_id)->first();
+                
+                $advisors = AdvisorProfile::where('advisorId',$advice_data->advisor_id)->first();
+                if($advisors){
+                    $advice_data->adviser_name = $advisors->display_name;
+                }else{
+                    $advice_data->adviser_name = "";
+                }
                 $costOfLead = ($needDetails->size_want/100)*0.006;
                 $time1 = Date('Y-m-d H:i:s',strtotime($advice_data->created_at));
                 $time2 = Date('Y-m-d H:i:s',strtotime($advice_data->accepted_date));
@@ -98,12 +91,16 @@ class NeedController extends Controller
                     $costOfLeadsStr = ""."Free";
                     $costOfLeadsDropStr = "";
                 }
-                $advice_data->cost_of_lead = $costOfLeadsStr;
+                $advice_data->leads_status = $costOfLeadsStr;
                 $advice_data->cost_of_lead_drop = $costOfLeadsDropStr;
+                
             }
 
         }
+        $needDetails->cost_of_lead = $costOfLeadsStr;
+        $needDetails->cost_of_lead_drop = $costOfLeadsDropStr;
         $needDetails->bids = $adviceBid;
+        // echo json_encode($needDetails);exit;
         return view('need_list.show',['needDetails'=>$needDetails]);
     }
     /**

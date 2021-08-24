@@ -10,6 +10,8 @@ use App\Models\ChatChannel;
 use App\Models\ChatModel;
 use App\Models\ReviewRatings;
 use App\Models\Notifications;
+use App\Models\PostalCodes;
+
 use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
@@ -45,6 +47,11 @@ class UserController extends Controller
      */
     public function show($id) {
         $userDetails = User::where('id','=',$id)->first();
+        if($userDetails){
+            $postCode = PostalCodes::select('District','Country')->where('Postcode',$userDetails->post_code)->first();
+            $userDetails->district = $postCode->District;
+            $userDetails->country = $postCode->Country;
+        }
         $advice_area =  Advice_area::select('advice_areas.*')
             ->where('advice_areas.user_id', '=', $id)
             ->get();
@@ -63,6 +70,7 @@ class UserController extends Controller
         $userDetails->closed = $adviceBidClosed;
         $userDetails->active_bid = $adviceBidActive;
         $userDetails->pending_bid = $pendingBidCount;
+        // echo json_encode($userDetails);exit;
         return view('users.show',['userDetails'=>$userDetails]);
     }
     /**

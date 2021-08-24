@@ -69,6 +69,7 @@ class CompanyController extends Controller
      */
     public function show($id) {
         $data['company_detail'] = companies::getCompanyDetail($id);
+        
         return view('company.show',$data);
     }
     /**

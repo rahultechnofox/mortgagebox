@@ -140,10 +140,6 @@ class FaqController extends Controller
             }else{
                 $data = FaqCategory::where('id',$post['id'])->first();
                 if($data){
-                    $audience = Audience::where('id',$data->audience_id)->first();
-                    if($audience){
-                        $data->audience_name = $audience->name;
-                    }
                     return response(\Helpers::sendSuccessAjaxResponse('Audience fetched successfully.',$data));
                 }else{
                     return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));

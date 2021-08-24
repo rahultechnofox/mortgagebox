@@ -10,6 +10,7 @@ use App\Models\AdvisorBids;
 use App\Models\AdvisorProfile;
 use App\Models\Notes;
 use App\Models\Advice_area;
+use App\Models\PostalCodes;
 use DB;
 
 class User extends Authenticatable implements JWTSubject
@@ -88,9 +89,9 @@ class User extends Authenticatable implements JWTSubject
             if(isset($search['search']) && $search['search']!=''){
                 $query = $query->where('users.name', 'like', '%' .strtolower($search['search']). '%');
             }
-            // if(isset($search['email_status']) && $search['email_status']!=''){
-            //     $query = $query->where('users.email_status',$search['email_status']);
-            // }
+            if(isset($search['email_status']) && $search['email_status']!=''){
+                $query = $query->where('users.email_status',$search['email_status']);
+            }
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('users.status',$search['status']);
             }
@@ -102,7 +103,7 @@ class User extends Authenticatable implements JWTSubject
             ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
             ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
             // echo json_encode($data);exit;
-
+            $success_per = 0;
             foreach($data as $row){
                 $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
                 ->join('users', 'advice_areas.user_id', '=', 'users.id')
@@ -140,6 +141,11 @@ class User extends Authenticatable implements JWTSubject
                 $cost = AdvisorBids::where('advisor_id','=',$row->id)->sum('cost_discounted');
                 $row->value = $value;
                 $row->cost = $cost;
+                $total_bids = AdvisorBids::where('advisor_id',$row->id)->where('advisor_status', '=', 1)->count();
+                if($total_bids!=0){
+                    $success_per = ($row->accepted_leads / $total_bids) * 100;
+                }
+                $row->success_percent = $success_per; 
             }
             return $data;
         }catch (\Exception $e) {
@@ -158,10 +164,18 @@ class User extends Authenticatable implements JWTSubject
                 if($company){
                     $advisorProfile->adviser_company_name = $company->company_name;
                 }
+                $postCode = PostalCodes::select('District','Country')->where('Postcode',$advisorProfile->post_code)->first();
+                if($postCode){
+                    $advisorProfile->district = $postCode->District;
+                    $advisorProfile->country = $postCode->Country;
+                }else{
+                    $advisorProfile->district = "";
+                    $advisorProfile->country = "";
+                }
             }
             // ->with('notes')
             $data['userDetails'] = (object) $data['userDetails'];
-            $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id', 'companies.advisor_id as advisor_id')
+            $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address','users.status as user_status', 'advisor_bids.advisor_id as advisor_id', 'companies.advisor_id as advisor_id')
             ->join('users', 'advice_areas.user_id', '=', 'users.id')
             ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
             ->where('advisor_bids.advisor_status', '=', 1)

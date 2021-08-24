@@ -21,10 +21,10 @@
             </div>
             <div class="content-header-right text-md-end col-md-3 col-12 d-md-block">
                 <div class="mb-1 breadcrumb-right">
-                    <!-- <button class="btn btn-icon btn-primary" type="button" >
+                    <!-- <a class="btn btn-icon btn-primary" href="{{url('/admin/users')}}">
                         <i data-feather="plus" class="me-25"></i>
-                        <span>Add User</span>
-                    </button> -->
+                        <span>Back to customer list</span>
+                    </a> -->
                 </div>
             </div>
             <div class="content-header-right text-md-end col-md-12 col-12 d-md-block mb-1">

@@ -32,24 +32,26 @@
                             <tr>
                                 <td>{{$users_data->id}}</td>
                                 <td><a href="{{ route('admin/advisors/show',$users_data->advisorId) }}">{{$users_data->display_name}}</a></td>
-                                <td>{{$users_data->role != "" ? $users_data->role : 'N/A' }}</td>
+                                <td>{{$users_data->role != "" ? $users_data->role : '--' }}</td>
                                 <td>
-                                    @if($users_data->email_status!='')
-                                        @if($users_data->email_status==1)
-                                            Yes
-                                        @else
-                                            No
-                                        @endif
+                                    @if($users_data->email_status==1)
+                                        <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
                                     @else
-                                        N/A
+                                        <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
                                     @endif
                                 </td>
-                                <td>{{$users_data->FCA_verified != "" ? $users_data->FCA_verified : 'N/A' }}</td>
+                                <td>
+                                @if($users_data->FCA_verified != "")  
+                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                @else
+                                    <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                @endif
+                                </td>
                                 <td>{{$users_data->accepted_leads}}</td>
                                 <td>{{$users_data->live_leads}}</td>
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
-                                <td>10%</td>
+                                <td>{{$users_data->success_percent}}%</td>
                                 <td>{{$users_data->value}}</td>
                                 <td>{{$users_data->cost}}</td>
                                 <td>

@@ -405,8 +405,7 @@ function getAudience(id){
         url: base_url +"/admin/get-audience",
         data: data,
         success: function (response) {
-            $('#audience_id').val(response.data.audience_id);
-            $('#audience').val(response.data.audience_name);
+            $('#audience').val(response.data.audience);
             hideLoader();
         }
     });
@@ -448,7 +447,7 @@ function addUpdateFaqCategory(formId){
     var data = getFormData($form);
     if(data.name == ''){
         myToastr('Enter name','error');
-    }else if(data.audience_id == ''){
+    }else if(data.audience == ''){
         myToastr('Select audience','error');
     }else{
         showLoader();
@@ -461,7 +460,7 @@ function addUpdateFaqCategory(formId){
                     hideLoader();
                     myToastr(response.message,'error');
                 }else{
-                    location.reload();                   
+                    // location.reload();                   
                     myToastr(response.message,'success');
                 }
             }
@@ -481,8 +480,8 @@ function getFaqCategoryData(id){
             $('#exampleModalLabel').html('Edit Faq Category');
             $('#id').val(response.data.id);
             $('#name').val(response.data.name);  
-            if(response.data.audience_id!=0){
-                $('#audience_id').val(response.data.audience_id);
+            if(response.data.audience!=0){
+                $('#audience').val(response.data.audience);
                 $('.audience_id').show();
             }else{
                 $('.audience_id').hide();

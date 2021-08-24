@@ -39,6 +39,10 @@ Route::get("/verify-success",function(){
 });
 
 Route::middleware('auth')->group(function(){
+    /******************* Admin Profile Management **********************/
+    Route::get('admin/profile', '\App\Http\Controllers\ProfileController@edit');
+    Route::post('admin/updateProfile','\App\Http\Controllers\ProfileController@update');
+    /******************* Admin Profile Management **********************/
 
     /******************* User Management **********************/
     Route::get('admin/users', '\App\Http\Controllers\UserController@index')->name("admin/users");

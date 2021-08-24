@@ -34,7 +34,6 @@
                             <div class="tab-pane active" id="account" aria-labelledby="account-tab" role="tabpanel">
                                 <form method="post" action="{{url('/admin/add-update-faq')}}">
                                     @csrf
-                                    <input type="hidden" name="audience_id" id="audience_id" value="">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-1">
@@ -50,7 +49,7 @@
                                         <div class="col-md-6">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Audience</label>
-                                                <input type="text" class="form-control " placeholder="Audience" id="audience" readonly required/>
+                                                <input type="text" class="form-control " name="audience" placeholder="Audience" id="audience" readonly required/>
                                             </div>
                                         </div>
                                         <div class="col-md-12">

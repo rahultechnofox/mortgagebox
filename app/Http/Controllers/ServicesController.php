@@ -28,6 +28,7 @@ class ServicesController extends Controller
         $post = $request->all();
         $data['page_list'] = ServiceType::getServices($post);
         $data['services'] = ServiceType::where('parent_id',0)->where('status',1)->get();
+        // echo json_encode($data);exit;
         return view('services.index',$data);
     }
     /**

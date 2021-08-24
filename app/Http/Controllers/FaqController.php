@@ -52,6 +52,12 @@ class FaqController extends Controller
             }else{
                 $postData['question'] = $post['question'];
                 $postData['answer'] = $post['answer'];
+                if(isset($post['faq_category_id']) && $post['faq_category_id']!=''){
+                    $postData['faq_category_id'] = $post['faq_category_id'];
+                }
+                if(isset($post['audience']) && $post['audience']!=''){
+                    $postData['audience'] = $post['audience'];
+                }
                 unset($post['_token']);
                 if(isset($post['id'])){
                     $id = Faq::where('id',$post['id'])->update($postData);
@@ -85,7 +91,6 @@ class FaqController extends Controller
         $data['row'] = Faq::find($id);
         if($data['row']){
             $data['row']->faq_category = FaqCategory::where('id',$data['row']->faq_category_id)->first();
-            $data['row']->audience = Audience::where('id',$data['row']->audience_id)->first();
         }
         $data['faq_category'] = FaqCategory::where('status',1)->get();
         // echo json_encode($data['row']);exit;

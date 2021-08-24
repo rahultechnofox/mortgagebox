@@ -34,3 +34,6 @@
 <li class="{{ Request::is('admin/setting*') ? 'active' : '' }} nav-item">
     <a class="d-flex align-items-center" href="{{ url('admin/setting/promotion') }}"><i data-feather="layout"></i><span class="menu-title text-truncate" data-i18n="Services">Promotion</span></a>
 </li>
+<li class="{{ Request::is('admin/invoice*') ? 'active' : '' }} nav-item">
+    <a class="d-flex align-items-center" href="{{ url('admin/invoice') }}"><i data-feather="layout"></i><span class="menu-title text-truncate" data-i18n="Services">Invoice</span></a>
+</li>

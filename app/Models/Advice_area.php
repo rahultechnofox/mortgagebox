@@ -40,7 +40,7 @@ class Advice_area extends Model
                 $query = $query->whereDate('advice_areas.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
             $advice_area = $query->select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-            ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            ->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             foreach ($advice_area as $key => $item) {
                 $offer_count = AdvisorBids::where('area_id','=',$item->id)->count();
                 $active_bids = AdvisorBids::where('area_id','=',$item->id)->where('status',1)->where('advisor_status',1)->count();

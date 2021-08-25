@@ -66,7 +66,7 @@
                     <label class="form-label" for="Audience">Audience</label>
                     <select class="form-control" name="audience" id="audience">
                         <option value="">Select Audience</option>
-                        <option value="user">Customer</option>
+                        <option value="customer">Customer</option>
                         <option value="adviser">Adviser</option>
                     </select>
                 </div>

@@ -320,10 +320,13 @@ function deleteCustomer(id) {
     })
 }
 
-function updateStatus(id,status,url){
+function updateStatus(id,status,url,suspended=false,suspended_reason=""){
     var data = {};
     data.id = id;
     data.status = status;
+    if(suspended==true){
+        data.suspend_reason = $("#"+suspended_reason).val();
+    }
     var api_url = base_url+''+url;
     if(data.status == ''){
         myToastr('Something went wrong please refresh page','error');

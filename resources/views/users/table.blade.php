@@ -41,9 +41,9 @@
                                 </td>
                                 <td>
                                     @if($users_data->status == 1)
-                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-user-status');">Active</a>
+                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light">Active</a>
                                     @else 
-                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-user-status');">Deactive</a>
+                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light">Deactive</a>
                                     @endif
                                 </td>
                                 <td>

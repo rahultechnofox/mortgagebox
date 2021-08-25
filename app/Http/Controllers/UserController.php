@@ -49,8 +49,13 @@ class UserController extends Controller
         $userDetails = User::where('id','=',$id)->first();
         if($userDetails){
             $postCode = PostalCodes::select('District','Country')->where('Postcode',$userDetails->post_code)->first();
-            $userDetails->district = $postCode->District;
-            $userDetails->country = $postCode->Country;
+            if($postCode){
+                $userDetails->district = $postCode->District;
+                $userDetails->country = $postCode->Country;
+            }else{
+                $userDetails->district = "";
+                $userDetails->country = "";
+            }
         }
         $advice_area =  Advice_area::select('advice_areas.*')
             ->where('advice_areas.user_id', '=', $id)

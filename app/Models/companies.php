@@ -35,7 +35,7 @@ class companies extends Model
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('status',$search['status']);
             }
-            $data = $query->with('adviser')->with('team_members')->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            $data = $query->with('adviser')->with('team_members')->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             foreach($data as $row){
                 $row->total_advisor = count($row->adviser);
                 $row->accepted_leads = 0;

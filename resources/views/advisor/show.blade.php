@@ -72,6 +72,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @if($userDetails->status==0)
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
@@ -80,6 +81,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @endif
                             <div class="col-md-3">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
@@ -319,9 +321,9 @@
                                  onclick="validFCANumber(1,'{{isset($profile) ? $profile->id : ''}}');">Valid FCA number</button>
                                 <button type="button" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1" onclick="validFCANumber(2,'{{isset($profile) ? $profile->id : ''}}');">Invalid FCA number</button>
                                 @if($userDetails->status==1)
-                                <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-advisor-status');">Suspend</button>
+                                    <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-advisor-status');">Suspend</button>
                                 @else
-                                <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-advisor-status');">Activate</button>
+                                    <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-advisor-status');">Activate</button>
                                 @endif
                                 @if(isset($invoice) && $invoice!='')
                                     <a href="{{url('/admin/advisors/invoice/')}}/{{$userDetails->id}}" class="btn btn-info mb-1 mb-sm-0 me-0 me-sm-1">Invoice</a>

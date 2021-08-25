@@ -278,10 +278,39 @@
                                     </div>
                                 </div>
                             </form>
+                            <div class="col-12 d-flex flex-sm-row flex-column mt-2">
+                                @if($company_detail->status==1)
+                                <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" data-bs-toggle="modal" data-bs-target="#inlineForm">Suspend</button>
+                                <!-- onclick="updateStatus('{{$company_detail->id}}','0','/admin/update-company-status');" -->
+                                @else
+                                <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$company_detail->id}}','1','/admin/update-company-status');">Activate</button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
+        </div>
+    </div>
+</div>
+<div class="modal fade text-start" id="inlineForm" tabindex="-1" aria-labelledby="myModalLabel33" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel33">Suspend Company</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="#">
+                <div class="modal-body">
+                    <label>Suspend Reason</label>
+                    <div class="mb-1">
+                        <textarea placeholder="Suspended reason" class="form-control" name="suspend_reason" id="suspend_reason"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger waves-effect waves-float waves-light" onclick="updateStatus('{{$company_detail->id}}','0','/admin/update-company-status',true,'suspend_reason');">Suspend</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

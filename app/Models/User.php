@@ -63,7 +63,6 @@ class User extends Authenticatable implements JWTSubject
     public static function getLists($search){
         try {
             $query = new Self;
-            // echo json_encode($search);exit;
             if(isset($search['search']) && $search['search']!=''){
                 $query = $query->where('name', 'like', '%' .strtolower($search['search']). '%')->orWhere('email', 'like', '%' .strtolower($search['search']). '%')->orWhere('post_code', 'like', '%' .strtolower($search['search']). '%');
             }
@@ -76,7 +75,7 @@ class User extends Authenticatable implements JWTSubject
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
-            $data = $query->where('user_role','=',0)->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            $data = $query->where('user_role','=',0)->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
@@ -101,7 +100,7 @@ class User extends Authenticatable implements JWTSubject
             // echo json_encode($search);exit;
             $data = $query->select('advisor_profiles.*','users.email_verified_at','users.email_status','users.status as user_status')->where('users.user_role','=',1)
             ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
-            ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            ->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             // echo json_encode($data);exit;
             $success_per = 0;
             foreach($data as $row){

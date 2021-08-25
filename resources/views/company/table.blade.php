@@ -43,9 +43,9 @@
                                 <td>{{\Helpers::currency($users_data->cost)}}</td>
                                 <td>
                                     @if($users_data->status == 1)
-                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','0','/admin/update-company-status');">Active</a>
+                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light">Active</a>
                                     @else 
-                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-company-status');">Deactive</a>
+                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light">Deactive</a>
                                     @endif
                                 </td>
                             </tr>

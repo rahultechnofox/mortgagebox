@@ -21,7 +21,7 @@ class StaticPage extends Model
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('status',$search['status']);
             }
-            $data = $query->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            $data = $query->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

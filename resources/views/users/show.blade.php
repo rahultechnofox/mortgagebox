@@ -138,7 +138,7 @@
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										@if($userDetails->status==1)		
-											<button type="button" class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-user-status');">Suspend customer</button>
+											<button type="button" class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" data-bs-toggle="modal" data-bs-target="#inlineForm">Suspend customer</button>
 										@else
 											<button type="button" class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-user-status');">Activate customer</button>
 										@endif
@@ -173,4 +173,25 @@
 		</div>
 	</div>
 </div> 
+<div class="modal fade text-start" id="inlineForm" tabindex="-1" aria-labelledby="myModalLabel33" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel33">Suspend Customer</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="#">
+                <div class="modal-body">
+                    <label>Suspend Reason</label>
+                    <div class="mb-1">
+                        <textarea placeholder="Suspended reason" class="form-control" name="suspend_reason" id="suspend_reason"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger waves-effect waves-float waves-light" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-user-status',true,'suspend_reason');">Suspend</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection

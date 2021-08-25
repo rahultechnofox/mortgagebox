@@ -27,7 +27,7 @@ class AdvisorProfile extends Model
             // echo json_encode($search);exit;
             $data = $query->select('advisor_profiles.*','users.email_verified_at','users.email_status')->where('users.user_role','=',1)
             ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
-            ->orderBy('id','DESC')->paginate(config('constant.paginate.num_per_page'));
+            ->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             // echo json_encode($data);exit;
 
             foreach($data as $row){

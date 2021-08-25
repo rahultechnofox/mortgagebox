@@ -157,12 +157,23 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Active:') }}</h6>
-                                        <small>
-                                            @if($needDetails->status==1)
+                                        <small> 
+                                            @if($needDetails->bid_status == 0)
+                                                <a class="btn btn-warning btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">In-Progress</a>
+                                            @elseif($needDetails->bid_status == 1)
+                                                <a class="btn btn-success btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">Accepted</a>
+                                            @elseif($needDetails->bid_status == 2)
+                                                <a class="btn btn-info btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">Closed</a>
+                                            @elseif($needDetails->bid_status == 3)
+                                                <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">Declined</a> 
+                                            @else
+                                                {{$needDetails->bid_status}}
+                                            @endif
+                                            <!-- @if($needDetails->status==1)
 												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
                                             @else
 												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
-                                            @endif
+                                            @endif -->
                                         </small>
                                     </div>
                                 </div>
@@ -184,13 +195,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-12 d-flex flex-sm-row flex-column mt-2">
+                            <!-- <div class="col-12 d-flex flex-sm-row flex-column mt-2">
                                 @if($needDetails->status==1)
                                     <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','1','/admin/update-need-status');">Activate</button>
                                 @else
                                     <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','0','/admin/update-need-status');">Suspend</button>
                                 @endif
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                 </div>

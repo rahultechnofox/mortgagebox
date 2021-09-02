@@ -34,9 +34,9 @@
                                 <td>{{\Helpers::formatDateTime($users_data->last_active)}}</td>
                                 <td>
                                     @if($users_data->email_status == 0)
-                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" style="width: 104px;">Not Verifed</a>
+                                        <span class="badge rounded-pill badge-light-danger me-1">Not Verifed</span>
                                     @else
-                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light">Verfied</a>
+                                        <span class="badge rounded-pill badge-light-success me-1">Verfied</span>
                                     @endif
                                 </td>
                                 <td>

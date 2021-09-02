@@ -149,6 +149,27 @@
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Need Summary:</h6>
+										<table class="table table-striped">	
+											<tr>
+												<th>Pending</th>
+												<th>New Lead</th>
+												<th>Closed</th>
+                                            </tr>
+											@if(isset($userDetails->pending_bid) && isset($userDetails->active_bid) && isset($userDetails->closed))
+												<tr>
+													<td>{{$userDetails->pending_bid}}</td>
+													<td>{{$userDetails->active_bid}}</td>
+													<td>{{$userDetails->closed}}</td>
+												</tr>
+											@endif
+										</table>
+									</div>
+								</div>
+							</div>
+							<!-- <div class="col-md-6" style="margin-top: 15px;">
+								<div class="d-flex">
+									<div class="transaction-percentage">
+										<h6 class="transaction-title">Need Summary:</h6>
 										<table class="table table-striped">
 											<tr>
 												<th>Pending</th>
@@ -165,7 +186,7 @@
                                         <table>
 									</div>
 								</div>
-							</div>
+							</div> -->
 						</div>
 					</div>
 				</div>

@@ -66,6 +66,12 @@
         .pd-20{
             padding-left:20px;
         }
+        .disabled-checkbox{
+            opacity:1 !important;
+        }
+        .mb-10{
+            margin-bottom:10px !important;
+        }
     </style>
 </head>
 

@@ -7,10 +7,14 @@ use App\Models\AdvisorBids;
 use App\Models\AdvisorProfile;
 use App\Models\AdvisorPreferencesCustomer;
 use App\Models\AdvisorPreferencesProducts;
+use App\Models\AdvisorPreferencesDefault;
+
 use App\Models\companies;
 use App\Models\CompanyTeamMembers;
 use App\Models\StaticPage;
 use App\Models\ServiceType;
+use App\Models\UserNotes;
+
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -27,6 +31,7 @@ class NeedController extends Controller
         $post = $request->all();
         $advice_area = Advice_area::getNeedList($post);
         $data = $advice_area;   
+        // echo json_encode($data);exit;
         return view('need_list.index',$data);
     }
     /**
@@ -42,12 +47,86 @@ class NeedController extends Controller
         $costOfLeadsStr = "";
         $costOfLeadsDropStr = "";
         $bidCountArr = array();
-        $adviceBid = AdvisorBids::where('area_id',$needDetails->id)->get();
+        $adviceBids = AdvisorBids::where('area_id',$needDetails->id)->get();
         $adviceBidCount = AdvisorBids::where('area_id',$needDetails->id)->count();
         $needDetails->totalBids = $adviceBidCount;
-        if(count($adviceBid)>0){
+        $bidCountArr = array();
+        if($needDetails!=''){
+            $adviceBid = AdvisorBids::where('area_id',$needDetails->id)->orderBy('status','ASC')->get();
+            foreach($adviceBid as $bid) {
+                $bidCountArr[] = ($bid->status == 3)? 0:1;
+            }
+            $needDetails->totalBids = $bidCountArr;
+            $costOfLead = ($needDetails->size_want/100)*0.006;
+            $time1 = Date('Y-m-d H:i:s');
+            $time2 = Date('Y-m-d H:i:s',strtotime($needDetails->created_at));
+            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+            $costOfLeadsStr1 = "";
+            $costOfLeadsDropStr1 = "";
+            $amount = number_format((float)$costOfLead, 2, '.', '');
+
+            if($hourdiff < 24) {
+                $costOfLeadsStr1 = "".$needDetails->size_want_currency.$amount;
+                $in = 24-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr1 = "Cost of lead drops to ".$needDetails->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 24 && $hourdiff < 48) {
+                $costOfLeadsStr1 = "".$needDetails->size_want_currency.($amount/2)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
+                $in = 48-$hourdiff;
+                $newAmount = (75 / 100) * $amount;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr1 = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 48 && $hourdiff < 72) {
+                $newAmount = (75 / 100) * $amount;
+                $costOfLeadsStr1 = "".($amount-$newAmount)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
+                $in = 72-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr1 = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 72) {
+                $costOfLeadsStr1 = ""."Free";
+                $costOfLeadsDropStr1 = "";
+            }
+            $needDetails->cost_of_lead = $costOfLeadsStr1;
+            $needDetails->cost_of_lead_drop = $costOfLeadsDropStr1;
+            // $lead_value = "";
+            // $main_value = ($needDetails->size_want/100);
+            // $advisorDetaultValue = "";
+            // if($needDetails->service_type=="remortgage") {
+            //     $advisorDetaultValue = "remortgage";
+            // }else if($needDetails->service_type=="first time buyer") {
+            //     $advisorDetaultValue = "first_buyer";
+            // }else if($needDetails->service_type=="next time buyer") {
+            //     $advisorDetaultValue = "next_buyer";
+            // }else if($needDetails->service_type=="buy to let") {
+            //     $advisorDetaultValue = "but_let";
+            // }else if($needDetails->service_type=="equity release") {
+            //     $advisorDetaultValue = "equity_release";
+            // }else if($needDetails->service_type=="overseas") {
+            //     $advisorDetaultValue = "overseas";
+            // }else if($needDetails->service_type=="self build") {
+            //     $advisorDetaultValue = "self_build";
+            // }else if($needDetails->service_type=="mortgage protection") {
+            //     $advisorDetaultValue = "mortgage_protection";
+            // }else if($needDetails->service_type=="secured loan") {
+            //     $advisorDetaultValue = "secured_loan";
+            // }else if($needDetails->service_type=="bridging loan") {
+            //     $advisorDetaultValue = "bridging_loan";
+            // }else if($needDetails->service_type=="commercial") {
+            //     $advisorDetaultValue = "commercial";
+            // }else if($needDetails->service_type=="something else") {
+            //     $advisorDetaultValue = "something_else";
+            // }  
+            // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$needDetails->user_id)->first();
+            // // echo json_encode($AdvisorPreferencesDefault);exit;
+            // $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            // $needDetails->lead_value = $lead_value;
+        }
+        if(count($adviceBids)>0){
             
-            foreach($adviceBid as $advice_data){
+            foreach($adviceBids as $advice_data){
                 
                 $advisors = AdvisorProfile::where('advisorId',$advice_data->advisor_id)->first();
                 if($advisors){
@@ -58,9 +137,12 @@ class NeedController extends Controller
                 $costOfLead = ($needDetails->size_want/100)*0.006;
                 $time1 = Date('Y-m-d H:i:s',strtotime($advice_data->created_at));
                 $time2 = Date('Y-m-d H:i:s',strtotime($advice_data->accepted_date));
-                $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+                $hourdiff = round((strtotime($time2) - strtotime($time1))/3600, 1);
                 $costOfLeadsStr = "";
                 $costOfLeadsDropStr = "";
+                $priceDrop = '0.00';
+                $final_amount_after_discount = '';
+
                 $amount = number_format((float)$costOfLead, 2, '.', '');
                 if(!empty($advice_data)) {
                     $advice_data->bid_status =  ($advice_data->status == 2)? "Closed":"Active";
@@ -71,35 +153,71 @@ class NeedController extends Controller
                     $costOfLeadsStr = "".$needDetails->size_want_currency.$amount;
                     $in = 24-$hourdiff;
                     $hrArr = explode(".",$in);
-                    $costOfLeadsDropStr = "Cost of lead drops to ".$needDetails->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                    $priceDrop = '0.00';
+                    $final_amount_after_discount = $amount;
+                    $costOfLeadsDropStr = "1st Cycle - Full Cost";
                 }
                 if($hourdiff > 24 && $hourdiff < 48) {
-                    $costOfLeadsStr = "".$needDetails->size_want_currency.($amount/2)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
+                    $costOfLeadsStr = "2nd Cycle Saved 50%, was".$needDetails->size_want_currency.($amount/2);
                     $in = 48-$hourdiff;
-                    $newAmount = (75 / 100) * $amount;
+                    $newAmount = (50 / 100) * $amount;
                     $hrArr = explode(".",$in);
-                    $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                    $priceDrop = $newAmount;
+                    $final_amount_after_discount = $amount-$newAmount;
+
+                    $costOfLeadsDropStr = "2nd Cycle Saved 50%, was ".$needDetails->size_want_currency.($amount-$newAmount);
                 }
                 if($hourdiff > 48 && $hourdiff < 72) {
                     $newAmount = (75 / 100) * $amount;
-                    $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
+                    $costOfLeadsStr = "".($amount-$newAmount)." (Save 75%, was ".$needDetails->size_want_currency.$amount.")";
                     $in = 72-$hourdiff;
                     $hrArr = explode(".",$in);
-                    $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                    $final_amount_after_discount = $amount-$newAmount;
+                    $priceDrop = $newAmount;
+                    $costOfLeadsDropStr = "3rd Cycle Saved 75% was ".$needDetails->size_want_currency.($amount-$newAmount);
                 }
                 if($hourdiff > 72) {
-                    $costOfLeadsStr = ""."Free";
-                    $costOfLeadsDropStr = "";
+                    $costOfLeadsStr = "4th Cycle Saved 100%";
+                    $costOfLeadsDropStr = "4th Cycle Saved 100%";
+                    $priceDrop = $amount;
+                    $final_amount_after_discount = "0.00";
+
                 }
+                // if($hourdiff < 24) {
+                //     $costOfLeadsStr = "".$needDetails->size_want_currency.$amount;
+                //     $in = 24-$hourdiff;
+                //     $hrArr = explode(".",$in);
+                //     $costOfLeadsDropStr = "Cost of lead drops to ".$needDetails->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                // }
+                // if($hourdiff > 24 && $hourdiff < 48) {
+                //     $costOfLeadsStr = "".$needDetails->size_want_currency.($amount/2)." (Save 50%, was ".$needDetails->size_want_currency.$amount.")";
+                //     $in = 48-$hourdiff;
+                //     $newAmount = (50 / 100) * $amount;
+                //     $hrArr = explode(".",$in);
+                //     $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                // }
+                // if($hourdiff > 48 && $hourdiff < 72) {
+                //     $newAmount = (75 / 100) * $amount;
+                //     $costOfLeadsStr = "".($amount-$newAmount)." (Save 75%, was ".$needDetails->size_want_currency.$amount.")";
+                //     $in = 72-$hourdiff;
+                //     $hrArr = explode(".",$in);
+                //     $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                // }
+                // if($hourdiff > 72) {
+                //     $costOfLeadsStr = ""."Free";
+                //     $costOfLeadsDropStr = "";
+                // }
                 $advice_data->leads_status = $costOfLeadsStr;
                 $advice_data->cost_of_lead_drop = $costOfLeadsDropStr;
+                $advice_data->price_drop = $priceDrop;
+                $advice_data->final_amount_after_discount = $final_amount_after_discount;
                 
             }
-
         }
-        $needDetails->cost_of_lead = $costOfLeadsStr;
-        $needDetails->cost_of_lead_drop = $costOfLeadsDropStr;
-        $needDetails->bids = $adviceBid;
+        // $needDetails->cost_of_lead = $costOfLeadsStr;
+        // $needDetails->cost_of_lead_drop = $costOfLeadsDropStr;
+        $needDetails->bids = $adviceBids;
+        $needDetails->notes = UserNotes::where('advice_id',$needDetails->id)->get();
         // echo json_encode($needDetails);exit;
         return view('need_list.show',['needDetails'=>$needDetails]);
     }

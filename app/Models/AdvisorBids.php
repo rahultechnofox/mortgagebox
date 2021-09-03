@@ -49,11 +49,7 @@ class AdvisorBids extends Model
                 $explode = explode("to",$search['date']);
                 $from = trim($explode[0]);
                 $to = trim($explode[1]);
-                // echo json_encode($from);
-                // echo json_encode($to);exit;
                 if(isset($explode[0]) && $explode[0]!='' && isset($explode[1]) && $explode[1]!=''){
-                    // $from = trim($explode[0]);
-                    // $to = trim($explode[1]);
                     $start = date("Y-m-d",strtotime($from));
                     $end = date('Y-m-d',strtotime($to));
                     $query = $query->whereBetween('created_at', [$start, $end]);

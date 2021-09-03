@@ -25,8 +25,8 @@
                             @foreach($page_list as $users_data)
                             <tr>
                                 <td>{{$i}}</td>
-                                <td>{{\Helpers::getServiceName($users_data->parent_id)}}</td>
                                 <td>{{$users_data->name}}</td>
+                                <td>{{\Helpers::getServiceName($users_data->parent_id)}}</td>
                                 <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
                                 <td>
                                     @if($users_data->status == 1)

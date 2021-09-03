@@ -32,13 +32,13 @@
                             <tr>
                                 <td>{{$users_data->id}}</td>
                                 <td><a href="{{url('/admin/company/show')}}/{{$users_data->id}}">{{$users_data->company_name}}</a></td>
-                                <td>--</td>
+                                <td>{{\Helpers::checknull($users_data->company_admin_name)}}</td>
                                 <td>{{$users_data->total_advisor}}</td>
                                 <td>{{$users_data->accepted_leads}}</td>
                                 <td>{{$users_data->live_leads}}</td>
-                                <td>{{$users_data->hired}}</td>
-                                <td>{{$users_data->completed}}</td>
-                                <td>{{$users_data->success_percent}}%</td>
+                                <td>{{$users_data->hired_leads}}</td>
+                                <td>{{$users_data->completed_leads}}</td>
+                                <td>@if($users_data->success_percent!=0){{number_format($users_data->success_percent,2)}}@else{{$users_data->success_percent}}@endif%</td>
                                 <td>{{\Helpers::currency($users_data->value)}}</td>
                                 <td>{{\Helpers::currency($users_data->cost)}}</td>
                                 <td>

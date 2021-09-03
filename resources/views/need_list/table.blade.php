@@ -29,13 +29,13 @@
                             @if(count($userDetails) > 0)
                             @foreach($userDetails as $users_data)
                             <tr>
-                                <td>{{$users_data->id}}</td>
+                                <td><a href="{{ route('admin/need/show',$users_data->id) }}">{{$users_data->id}}</a></td>
                                 <td>{{$users_data->name}}</td>
                                 <td>{{ $users_data->created_at != "" ? \Helpers::formatDateTime($users_data->created_at) : '--' }}</td>
                                 <td>{{ $users_data->service_type != "" ? ucfirst($users_data->service_type) : '--' }}</td>
                                 <td>{{ $users_data->size_want != "" ? \Helpers::currency($users_data->size_want) : '--' }}</td>
                                 <td>{{$users_data->offer_count}}</td>
-                                <td>{{$users_data->active_bids}}</td>
+                                <td>{{$users_data->active_count}}</td>
                                 <td>
                                 @if($users_data->bid_status == 0)
                                     <a class="btn btn-warning btn-sm waves-effect waves-float waves-light" style="width: 105px;">In-Progress</a>
@@ -49,7 +49,7 @@
                                     {{$users_data->bid_status}}
                                 @endif
                                 </td>
-                                <td>N/A</td>
+                                <td>@if(isset($users_data->selected_pro) && $users_data->selected_pro!=''){{\Helpers::checkNull($users_data->selected_pro->advisor_name)}}@else -- @endif</td>
                                 <td>N/A</td>
                                 <td>
                                     <div class="dropdown">
@@ -61,10 +61,6 @@
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a>
-                                            <!-- <a class="dropdown-item" href="#">
-                                                <i data-feather="edit-2" class="me-50"></i>
-                                                <span>Edit</span>
-                                            </a> -->
                                             <a class="dropdown-item" onclick="return confirm('Are you sure you want to delete?')" href="{{ route('admin/delete-need',$users_data->id) }}">
                                                 <i data-feather="trash" class="me-50"></i>
                                                 <span>Delete</span>

@@ -188,7 +188,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Current Balance:') }}</h6>
-                                        <small>--</small>
+                                        <small>
+                                            @if(isset($total_due))
+                                                {{\Helpers::currency($total_due)}}
+                                            @else
+                                                --                                            
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -293,7 +299,7 @@
                                     <div class="col-md-12">
                                         <div class="mb-1">
                                             <div class="transaction-percentage">
-                                                <input class="form-control" value="{{$notes_data->notes}}" readonly>
+                                                <input class="form-control" value="{{date('M d, Y',strtotime($notes_data->created_at))}} - {{$notes_data->notes}}" readonly>
                                             </div>
                                         </div>
                                     </div>

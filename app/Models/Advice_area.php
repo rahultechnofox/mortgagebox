@@ -41,8 +41,18 @@ class Advice_area extends Model
             }
             $advice_area = $query->select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
+            $count = 0;
             foreach ($advice_area as $key => $item) {
-                $offer_count = AdvisorBids::where('area_id','=',$item->id)->count();
+                $advisers = AdvisorBids::where('area_id','=',$item->id)->get();
+                $date = date('Y-m-d H:i:s');
+                $offer_count = count($advisers);
+                foreach($advisers as $adviser_data){
+                    $active_time = date('Y-m-d H:i:s',strtotime('+5 minutes', strtotime($adviser_data->last_active)));
+                    if($date<$active_time){
+                        $count = $count + 1;
+                    }
+                }
+                $item->active_count = $count;
                 $active_bids = AdvisorBids::where('area_id','=',$item->id)->where('status',1)->where('advisor_status',1)->count();
                 $bidDetails = AdvisorBids::where('area_id','=',$item->id)->where('status','>','0')->first();
                 if(!empty($bidDetails)) {
@@ -52,6 +62,8 @@ class Advice_area extends Model
                 }
                 $advice_area[$key]->offer_count = $offer_count;
                 $advice_area[$key]->active_bids = $active_bids;
+                $advice_area[$key]->selected_pro = AdvisorBids::where('area_id',$item->id)->where('advisor_bids.advisor_status',1)->where('advisor_bids.status','!=',0)->leftJoin('users', 'advisor_bids.advisor_id', '=', 'users.id')->select('advisor_bids.*','users.name as advisor_name')->first();
+                
             }
             $data['userDetails'] = $advice_area;
             return $data;

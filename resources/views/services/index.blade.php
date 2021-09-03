@@ -22,7 +22,7 @@
             </div>
             <div class="content-header-right text-md-end col-md-3 col-12 d-md-block">
                 <div class="mb-1 breadcrumb-right">
-                    <button class="btn btn-icon btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modals-slide-in">
+                    <button class="btn btn-icon btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modals-slide-in" onclick="resetServiceForm();">
                         <i data-feather="plus" class="me-25"></i>
                         <span>Add Service</span>
                     </button>
@@ -65,7 +65,12 @@
                 <div class="mb-1 parent_id">
                     <input type="hidden" name="parent_id" id="parent_id" value="{{$services[0]->id}}">
                     <label class="form-label" for="Department">Services</label>
-                    <input type="text" class="form-control" value="{{$services[0]->name}}" readonly>
+                    <select class="form-control" name="parent_id" disabled>
+                        @foreach($services as $service_data)
+                            <option value="{{$service_data->id}}" @if($service_data->id==$services[0]->id) checked @endif>{{$service_data->name}}</option>
+                        @endforeach
+                    </select>
+                    <!-- <input type="text" class="form-control" value="{{$services[0]->name}}" readonly> -->
                     
                 </div>
                 <div class="mb-1">

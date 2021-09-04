@@ -143,4 +143,15 @@ class ServicesController extends Controller
         ServiceType::where('id', '=', $id)->delete();
         return redirect()->to('admin/services')->with('success','Service deleted successfully');
     }
+
+    public function updateSequence(Request $request)
+    {
+        $posts = ServiceType::all();
+        foreach ($posts as $post) {
+            foreach ($request->order as $order) {
+                ServiceType::where('id',$order['id'])->update(['sequence' => $order['position']]);
+            }
+        }
+        return response("Update Successfully.",200);
+    }
 }

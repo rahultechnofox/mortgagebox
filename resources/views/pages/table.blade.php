@@ -24,7 +24,7 @@
                             @foreach($page_list as $users_data)
                             <tr>
                                 <td>{{$i}}</td>
-                                <td>{{$users_data->page_name}}</td>
+                                <td><a href="{{ route('admin/pages/edit',$users_data->id) }}">{{$users_data->page_name}}</a></td>
                                 <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
                                 <td>
                                     @if($users_data->status == 1)

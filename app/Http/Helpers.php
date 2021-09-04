@@ -2,6 +2,7 @@
 use App\Models\User;
 use App\Models\UserAuthLogin;
 use App\Models\ServiceType;
+use App\Models\AdvisorBids;
 
 class Helpers
 {
@@ -553,6 +554,22 @@ class Helpers
             $date = '';
         }
         return $date;
+    }
+
+    public static function getLiveLeads($keyword)
+    {
+        try {
+            $liveLead = 0;
+            $count = AdvisorBids::where('area_id',$keyword)->where('status',1)->where('advisor_status',1)->get();
+            if(count($count)){
+                $liveLead = 1;
+            }else{
+                $liveLead = 0;
+            }
+        } catch (Exception $e) {
+            $liveLead = 0;
+        }
+        return $liveLead;
     }
 
     /**

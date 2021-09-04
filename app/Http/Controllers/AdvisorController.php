@@ -54,7 +54,7 @@ class AdvisorController extends Controller
      */
     public function show($id) {
         $data = User::getAdvisorDetail($id);
-        $data['invoice'] = DB::table('invoices')->where('advisor_id',$data['userDetails']->id)->where('month',date('m'))->first();
+        $data['invoice'] = DB::table('invoices')->where('advisor_id',$id)->where('month',date('m'))->first();
         return view('advisor.show',$data);
     }
     /**
@@ -185,8 +185,10 @@ class AdvisorController extends Controller
                 $user = User::where('id',$post['id'])->update($post);
                 if($post['status']==1){
                     $message = "activated";
-                }else{
+                }else if($post['status']==0){
                     $message = "suspended";
+                }else{
+                    $message = "marked inactive"; 
                 }
                 if($user){
                     return response(\Helpers::sendSuccessAjaxResponse('Account '.$message.' successfully.',$user));

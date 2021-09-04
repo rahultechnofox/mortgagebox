@@ -37,17 +37,11 @@
                                 <td>{{$users_data->offer_count}}</td>
                                 <td>{{$users_data->active_count}}</td>
                                 <td>
-                                @if($users_data->bid_status == 0)
-                                    <a class="btn btn-warning btn-sm waves-effect waves-float waves-light" style="width: 105px;">In-Progress</a>
-                                @elseif($users_data->bid_status == 1)
-                                    <a class="btn btn-success btn-sm waves-effect waves-float waves-light">Accepted</a>
-                                @elseif($users_data->bid_status == 2)
-                                    <a class="btn btn-info btn-sm waves-effect waves-float waves-light">Closed</a>
-                                @elseif($users_data->bid_status == 3)
-                                    <a class="btn btn-danger btn-sm waves-effect waves-float waves-light">Declined</a> 
-                                @else
-                                    {{$users_data->bid_status}}
-                                @endif
+                                    @if(isset($users_data->offer_count) && $users_data->offer_count!=0)
+                                        <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Matched</span>
+                                    @else
+                                        <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Unmatched</span>
+                                    @endif
                                 </td>
                                 <td>@if(isset($users_data->selected_pro) && $users_data->selected_pro!=''){{\Helpers::checkNull($users_data->selected_pro->advisor_name)}}@else -- @endif</td>
                                 <td>N/A</td>

@@ -441,7 +441,7 @@ function resetFaqCategoryForm(){
     $("#faqCategoryForm").closest('form').find("input[type=text], input[type=number], input[type=file], textarea").val("");
     $("#faqCategoryForm").closest('form').find("input[type=checkbox]").removeAttr("checked");
     $('#id').val('');
-    $('#audience_id').val('');
+    $('#audience').val('');
     $('#exampleModalLabel').html('Add Faq Category');
 }
 
@@ -463,7 +463,7 @@ function addUpdateFaqCategory(formId){
                     hideLoader();
                     myToastr(response.message,'error');
                 }else{
-                    // location.reload();                   
+                    location.reload();                   
                     myToastr(response.message,'success');
                 }
             }
@@ -569,6 +569,24 @@ function resetPassword(id){
             hideLoader();
         }
     });
+}
+
+function selectValue(value){
+    if(value!='Other'){
+        $("#suspend_reason").val(value);
+        $("#suspend_reason").html(value);
+        $(".reason").addClass('hide');
+    }else{
+        $("#suspend_reason").val('');
+        $("#suspend_reason").html('');
+        $(".reason").removeClass('hide');
+    }
+}
+
+function resetSuspended(formId){
+    $("#"+formId).closest('form').find("input[type=text], input[type=number], input[type=file], textarea").val("");
+    $("#reason").val('');
+    $("#suspend_reason").html('');
 }
 
 $("#for_all_users").on('change', function () {

@@ -33,7 +33,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Company Name:</h6>
@@ -41,7 +41,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <small>
@@ -53,7 +53,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">FCA Number:</h6>
@@ -61,7 +61,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Network:</h6>
@@ -70,7 +70,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Address Line 1:</h6>
@@ -78,7 +78,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Address Line 2:</h6>
@@ -89,7 +89,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Town/City:</h6>
@@ -97,7 +97,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Postcode:</h6>
@@ -106,7 +106,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Status:</h6>
@@ -114,7 +114,7 @@
                                             @if($company_detail->status==1)
                                                 <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
                                             @else
-                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
+                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
                                             @endif
                                         </small>
                                     </div>
@@ -131,7 +131,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Name:</h6>
@@ -139,7 +139,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Contact No.:</h6>
@@ -148,7 +148,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Email:</h6>

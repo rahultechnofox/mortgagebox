@@ -37,39 +37,39 @@
 								<h4>Customer Detail</h4> </div>
 						</div>
 						<div class="row">
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Customer Name:</h6> <small>{{isset($userDetails->name) ? $userDetails->name : '--'}}</small> </div>
 								</div>
 							</div>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Customer ID:</h6> <small>{{isset($userDetails->id) ? $userDetails->id : '--'}}</small> </div>
 								</div>
 							</div>
 							<hr>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Postcode:</h6> <small>{{isset($userDetails->post_code) ? $userDetails->post_code : '--'}}</small> </div>
 								</div>
 							</div>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Location:</h6> <small><?php if(isset($userDetails->district) && $userDetails->district!=''){ echo $userDetails->district.",";  }else{ echo ''; } ?> {{isset($userDetails->country) && $userDetails->country!='' ? $userDetails->country: '--'}}</small> </div>
 								</div>
 							</div>
 							<hr>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Email:</h6> <small>{{isset($userDetails->email) ? $userDetails->email : '--'}}</small> </div>
 								</div>
 							</div>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Email Verified:</h6> 
@@ -84,40 +84,44 @@
 								</div>
 							</div>
 							<hr>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Last Login:</h6> <small>{{isset($userDetails->updated_at) ? \Helpers::formatDateTime($userDetails->updated_at) : '--' }}</small> </div>
 								</div>
 							</div>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Joined Dated:</h6> <small>{{isset($userDetails->created_at) ? \Helpers::formatDateTime($userDetails->created_at) : '--' }}</small> </div>
 								</div>
 							</div>
 							<hr>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Status:</h6> <small>
                                             @if($userDetails->status ==1)
-												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
-                                            @else: 
-                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
+												@if($userDetails->email_verified_at!=null)
+													<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+												@else
+													<span class="badge rounded-pill badge-light-warning me-1" style="margin-bottom: 10px;">Pending</span>
+												@endif
+                                            @else
+                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
                                             @endif
                                         </small> 
                                     </div>
 								</div>
 							</div>
-							<div class="col-md-6">
+							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Last Active:</h6> <small>{{isset($userDetails->last_active) ? \Helpers::formatDateTime($userDetails->last_active) : '--' }}</small> </div>
 								</div>
 							</div>
 							<hr>
-							<div class="col-md-5">
+							<div class="col-md-5 mb-1">
 								<div>
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Password:</h6>
@@ -126,7 +130,7 @@
 									</div>
 								</div>
 							</div>
-							<div class="col-md-12" style="margin-top: 15px;">
+							<div class="col-md-12 mb-1" style="margin-top: 15px;">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title" style="display: inline-block;">Reset Password:</h6>
@@ -134,7 +138,7 @@
 									</div>
 								</div>
 							</div>
-							<div class="col-md-12" style="margin-top: 15px;">
+							<div class="col-md-12 mb-1" style="margin-top: 15px;">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										@if($userDetails->status==1)		
@@ -145,7 +149,7 @@
 									</div>
 								</div>
 							</div>
-							<div class="col-md-6" style="margin-top: 15px;">
+							<div class="col-md-6 mb-1" style="margin-top: 15px;">
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title">Need Summary:</h6>
@@ -166,27 +170,6 @@
 									</div>
 								</div>
 							</div>
-							<!-- <div class="col-md-6" style="margin-top: 15px;">
-								<div class="d-flex">
-									<div class="transaction-percentage">
-										<h6 class="transaction-title">Need Summary:</h6>
-										<table class="table table-striped">
-											<tr>
-												<th>Pending</th>
-												<th>New Lead</th>
-												<th>Closed</th>
-                                            </tr>
-											@if(isset($userDetails->pending_bid) && isset($userDetails->active_bid) && isset($userDetails->closed))
-                                            <tr>
-												<td>{{$userDetails->pending_bid}}</td>
-                                                <td>{{$userDetails->active_bid}}</td>
-                                                <td>{{$userDetails->closed}}</td>
-                                            </tr>
-											@endif
-                                        <table>
-									</div>
-								</div>
-							</div> -->
 						</div>
 					</div>
 				</div>

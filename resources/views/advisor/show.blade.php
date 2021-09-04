@@ -33,7 +33,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Name:') }}</h6>
@@ -41,7 +41,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Role:') }}</h6>
@@ -49,22 +49,28 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Status:') }}</h6>
                                         <small>
                                             @if($userDetails->status==1)
-												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                                @if($userDetails->email_verified_at!='' && $profile->FCA_verified!='')
+												    <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                                @else
+												    <span class="badge rounded-pill badge-light-warning me-1" style="margin-bottom: 10px;">Pending</span>
+                                                @endif
+                                            @elseif($userDetails->status==0)
+												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
                                             @else
-												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
+                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Inactive</span>
                                             @endif
                                         </small>
                                     </div>
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Active Team Members:') }}</h6>
@@ -73,16 +79,16 @@
                                 </div>
                             </div>
                             @if($userDetails->status==0)
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Additional Info:') }}</h6>
-                                        <small>{{isset($profile->description) ? $profile->description : '--'}}</small>
+                                        <small>{{isset($userDetails->suspend_reason) ? $userDetails->suspend_reason : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
                             @endif
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('FCA Verified:') }}</h6>
@@ -97,7 +103,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Email Verified:') }}</h6>
@@ -114,7 +120,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Email:') }}</h6>
@@ -122,7 +128,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Contact Number:') }}</h6>
@@ -130,7 +136,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('FCA Number:') }}</h6>
@@ -139,7 +145,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Last Updated:') }}</h6>
@@ -147,7 +153,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Sex:') }}</h6>
@@ -161,7 +167,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Langauge:') }}</h6>
@@ -176,7 +182,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Joined:') }}</h6>
@@ -184,7 +190,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Current Balance:') }}</h6>
@@ -198,7 +204,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('City/Town:') }}</h6>
@@ -213,7 +219,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Postal Code:') }}</h6>
@@ -227,7 +233,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Location:') }}</h6>
@@ -260,7 +266,6 @@
                                     <thead>
                                         <tr>
                                             <th>Active</th>
-                                            <th>Closed</th>
                                             <th>Live</th>
                                             <th>Hired</th>
                                             <th>Completed</th>
@@ -271,7 +276,6 @@
                                         @if($userDetails)
                                             <tr>
                                                 <td>{{isset($userDetails->accepted_leads) ? $userDetails->accepted_leads : '--'}}</td>
-                                                <td>{{isset($userDetails->closed) ? $userDetails->closed : '--'}}</td>
                                                 <td>{{isset($userDetails->live_leads) ? $userDetails->live_leads : '--'}}</td>
                                                 <td>{{isset($userDetails->hired_leads) ? $userDetails->hired_leads : '--'}}</td>
                                                 <td>{{isset($userDetails->completed_leads) ? $userDetails->completed_leads : '--'}}</td>
@@ -325,10 +329,16 @@
                             <div class="col-12 d-flex flex-sm-row flex-column mt-2">
                                 <button type="button" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1"
                                  onclick="validFCANumber(1,'{{isset($profile) ? $profile->id : ''}}');">Valid FCA number</button>
-                                <button type="button" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1" onclick="validFCANumber(2,'{{isset($profile) ? $profile->id : ''}}');">Invalid FCA number</button>
+                                <button type="button" class="btn btn-secondary mb-1 mb-sm-0 me-0 me-sm-1" onclick="validFCANumber(2,'{{isset($profile) ? $profile->id : ''}}');">Invalid FCA number</button>
+                                @if($userDetails->status==0)
+                                    <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-advisor-status');">Activate</button>
+                                @endif
                                 @if($userDetails->status==1)
-                                    <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-advisor-status');">Suspend</button>
-                                @else
+                                    <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1"  data-bs-toggle="modal" data-bs-target="#inlineForm" onclick="resetSuspended('advisor_suspended');">Suspend</button>
+                                    <button type="button" class="btn btn-dark mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','2','/admin/update-advisor-status');">Inactive</button>
+                                @endif
+                                @if($userDetails->status==2)
+                                    <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1"  data-bs-toggle="modal" data-bs-target="#inlineForm" onclick="resetSuspended('advisor_suspended');">Suspend</button>
                                     <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-advisor-status');">Activate</button>
                                 @endif
                                 @if(isset($invoice) && $invoice!='')
@@ -339,6 +349,36 @@
                     </div>
                 </div>
             </section>
+        </div>
+    </div>
+</div>
+<div class="modal fade text-start" id="inlineForm" tabindex="-1" aria-labelledby="myModalLabel33" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel33">Suspend Customer</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="resetSuspended('advisor_suspended');"></button>
+            </div>
+            <form id="advisor_suspended">
+                <div class="modal-body">
+                    <label>Suspend Reason</label>
+                    <div class="mb-1">
+                        <select class="form-control" name="reason" id="reason" onchange="selectValue(this.value);">
+                            <option value="">Select Reason</option>
+                            <option value="Unpaid Invoice">Unpaid Invoice</option>
+                            <option value="T & C Broken">T & C Broken</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <label class="reason hide">Suspend Reason</label>
+                    <div class="mb-1 reason hide">
+                        <textarea placeholder="Suspended reason" class="form-control" name="suspend_reason" id="suspend_reason"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger waves-effect waves-float waves-light" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-advisor-status',true,'suspend_reason');">Suspend</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

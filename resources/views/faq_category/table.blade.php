@@ -23,7 +23,7 @@
                             @foreach($page_list as $users_data)
                             <tr>
                                 <td>{{$i}}</td>
-                                <td>{{$users_data->name}}</td>
+                                <td><a href="javascript:;" onclick="getFaqCategoryData('{{$users_data->id}}')" data-bs-toggle="modal" data-bs-target="#modals-slide-in">{{$users_data->name}}</a></td>
                                 <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
                                 <td>
                                     @if($users_data->status == 1)

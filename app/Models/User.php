@@ -175,8 +175,8 @@ class User extends Authenticatable implements JWTSubject
             // ->with('notes')
             $data['userDetails'] = (object) $data['userDetails'];
             
-            if($data['profile']){
-                $data['profile']->notes = Notes::where('company_id',$data['profile']->company_id)->get();
+            if($advisorProfile){
+                $advisorProfile->notes = Notes::where('company_id',$advisorProfile->company_id)->get();
             }
 
             $data['invoice'] = DB::table('invoices')->where('advisor_id',$data['userDetails']->id)->where('month',date('m'))->first();
@@ -193,6 +193,53 @@ class User extends Authenticatable implements JWTSubject
                 }
             }            
             $data['total_due'] = $newTotal - $discountTotal;
+            $data['profile'] = $advisorProfile;
+            $success_per = 0;
+            if($data['userDetails']){
+                $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address','users.status as user_status', 'advisor_bids.advisor_id as advisor_id', 'companies.advisor_id as advisor_id')
+                ->join('users', 'advice_areas.user_id', '=', 'users.id')
+                ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+                ->where('advisor_bids.advisor_status', '=', 1)
+                ->where('advisor_bids.advisor_id', '=', $data['userDetails']->id)
+                ->count();
+                // $row->live_leads = $advice_areaCount;
+                $data['userDetails']->accepted_leads = $advice_areaCount;
+                
+                $live_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
+                ->where('status', '=', 0)
+                ->where('advisor_status', '=', 1)
+                ->count();
+                $data['userDetails']->live_leads = $live_leads;
+
+                $hired_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
+                ->where('status', '=', 1)
+                ->where('advisor_status', '=', 1)
+                ->count();
+                $data['userDetails']->hired_leads = $hired_leads;
+
+                $completed_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
+                ->where('status', '=', 2)
+                ->where('advisor_status', '=', 1)
+                ->count();
+                $data['userDetails']->completed_leads = $completed_leads;
+
+                $lost_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
+                ->where('status', '=', 3)
+                ->where('advisor_status', '=', 1)
+                ->count();
+                $data['userDetails']->lost_leads = $lost_leads;
+                
+                $value = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)->sum('cost_leads');
+                $cost = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)->sum('cost_discounted');
+                $data['userDetails']->value = $value;
+                $data['userDetails']->cost = $cost;
+                $total_bids = AdvisorBids::where('advisor_id',$data['userDetails']->id)->where('advisor_status', '=', 1)->count();
+                if($total_bids!=0){
+                    $success_per = ($data['userDetails']->completed_leads / $total_bids) * 100;
+                }
+                $data['userDetails']->success_percent = $success_per;
+            }
+            
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

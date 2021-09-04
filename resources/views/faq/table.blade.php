@@ -26,7 +26,7 @@
                             @foreach($page_list as $users_data)
                             <tr>
                                 <td>{{$i}}</td>
-                                <td>{{\Helpers::checkNull($users_data->question)}}</td>
+                                <td><a href="{{ route('admin/faq/edit',$users_data->id) }}">{{\Helpers::checkNull($users_data->question)}}</a></td>
                                 <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
                                 <td>@if(isset($users_data->faq_category) && $users_data->faq_category!=''){{\Helpers::checkNull($users_data->faq_category->name)}}@else -- @endif</td>
                                 <td>@if(isset($users_data->audience) && $users_data->audience!=''){{\Helpers::checkNull($users_data->audience)}}@else -- @endif</td>
@@ -43,10 +43,6 @@
                                             <i data-feather="more-vertical"></i>
                                         </button>
                                         <div class="dropdown-menu">
-                                            <!-- <a class="dropdown-item" href="#">
-                                                <i data-feather="eye" class="me-50"></i>
-                                                <span>Detail</span>
-                                            </a> -->
                                             <a class="dropdown-item"  href="{{ route('admin/faq/edit',$users_data->id) }}">
                                                 <i data-feather="edit-2" class="me-50"></i>
                                                 <span>Edit</span>

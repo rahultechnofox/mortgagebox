@@ -19,13 +19,13 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tablecontents">
                             <?php $i = 1; ?>
                             @if(count($page_list) > 0)
                             @foreach($page_list as $users_data)
-                            <tr>
+                            <tr role="row" class="row1" data-id="{{ $users_data->id }}">
                                 <td>{{$i}}</td>
-                                <td>{{$users_data->name}}</td>
+                                <td><a href="javascript:;" onclick="getServiceData('{{$users_data->id}}')" data-bs-toggle="modal" data-bs-target="#modals-slide-in">{{$users_data->name}}</a></td>
                                 <td>{{\Helpers::getServiceName($users_data->parent_id)}}</td>
                                 <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
                                 <td>
@@ -35,7 +35,7 @@
                                         <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->id}}','1','/admin/update-service-status');">Deactive</a>
                                     @endif
                                 </td>
-                                <td>{{$i}}</td>
+                                <td>{{$users_data->sequence}}</td>
                                 <td>
                                     <div class="dropdown">
                                         <button type="button" class="btn btn-sm dropdown-toggle hide-arrow" data-bs-toggle="dropdown">

@@ -40,10 +40,14 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($users_data->status == 1)
-                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light">Active</a>
+                                    @if($users_data->status ==1)
+                                        @if($users_data->email_verified_at!=null)
+                                            <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                        @else
+                                            <span class="badge rounded-pill badge-light-warning me-1" style="margin-bottom: 10px;">Pending</span>
+                                        @endif
                                     @else 
-                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light">Deactive</a>
+                                        <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
                                     @endif
                                 </td>
                                 <td>

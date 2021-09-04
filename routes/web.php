@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/delete-service/{id}', '\App\Http\Controllers\ServicesController@destroy')->name("admin/delete-service");
     Route::post('admin/add-update-service','\App\Http\Controllers\ServicesController@store');
     Route::post('admin/get-service','\App\Http\Controllers\ServicesController@show');
+    Route::post('admin/updateSequence','\App\Http\Controllers\ServicesController@updateSequence');
     Route::post('admin/update-service-status','\App\Http\Controllers\ServicesController@updateServiceStatus');
     /******************* Services Management **********************/
 

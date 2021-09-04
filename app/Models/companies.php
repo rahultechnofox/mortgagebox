@@ -81,7 +81,7 @@ class companies extends Model
                     $success_per = ($row->completed_leads / $total_bids) * 100;
                 }
                 $row->success_percent = $success_per;
-                // $row->total_advisor = count($row->adviser);
+                $row->total_advisor = count($row->adviser);
                 // $row->accepted_leads = 0;
                 // $row->value = 0;
                 // $row->cost = 0;
@@ -113,10 +113,11 @@ class companies extends Model
     public static function getCompanyDetail($id){
         try {
             $query = new Self;
-            $data = $query->where('id',$id)->with('team_members')->with('notes')->first();
+            $data = $query->where('id',$id)->with('team_members')->with('adviser')->with('notes')->first();
             $teamadmin = 0;
             $success_per = 0;
             if($data){
+                $data->adviser = $data->adviser[0];
                 $data->total_advisor = count($data->team_members);
                 // $accepted_leads = 0;
                 // $value = 0;

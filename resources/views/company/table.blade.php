@@ -43,9 +43,9 @@
                                 <td>{{\Helpers::currency($users_data->cost)}}</td>
                                 <td>
                                     @if($users_data->status == 1)
-                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light">Active</a>
+                                        <a class="badge rounded-pill badge-light-success me-1">Active</a>
                                     @else 
-                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light">Deactive</a>
+                                        <a class="badge rounded-pill badge-light-danger me-1">Suspended</a>
                                     @endif
                                 </td>
                             </tr>

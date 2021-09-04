@@ -65,13 +65,11 @@
                 <div class="mb-1 parent_id">
                     <input type="hidden" name="parent_id" id="parent_id" value="{{$services[0]->id}}">
                     <label class="form-label" for="Department">Services</label>
-                    <select class="form-control" name="parent_id" disabled>
+                    <select class="form-control" name="parent_id">
                         @foreach($services as $service_data)
-                            <option value="{{$service_data->id}}" @if($service_data->id==$services[0]->id) checked @endif>{{$service_data->name}}</option>
+                            <option value="{{$service_data->id}}" selected>{{$service_data->name}}</option>
                         @endforeach
-                    </select>
-                    <!-- <input type="text" class="form-control" value="{{$services[0]->name}}" readonly> -->
-                    
+                    </select>                    
                 </div>
                 <div class="mb-1">
                     <label class="form-label" for="Department">Name</label>
@@ -83,4 +81,44 @@
         </form>
     </div>
 </div>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+<script src="{{asset('app-assets/vendors/js/tables/datatable/jquery.dataTables.min.js')}}"></script>
+<script type="text/javascript">
+    $("#tablecontents" ).sortable({
+        items: "tr",
+        cursor: 'move',
+        opacity: 0.6,
+        update: function() {
+            sendOrderToServer();
+        }
+    });
+
+    function sendOrderToServer() {
+        var order = [];
+        var token = $('meta[name="csrf-token"]').attr('content');
+        $('tr.row1').each(function(index,element) {
+            order.push({
+            id: $(this).attr('data-id'),
+            position: index+1
+            });
+        });
+        $.ajax({
+            type: "POST", 
+            dataType: "json", 
+            url: "{{ url('admin/updateSequence') }}",
+                data: {
+                order: order,
+                _token: token
+            },
+            success: function(response) {
+                if (response.status == "success") {
+                    console.log(response);
+                } else {
+                    console.log(response);
+                }
+            }
+        });
+    }
+</script>
 @endsection

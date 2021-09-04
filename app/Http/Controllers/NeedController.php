@@ -60,7 +60,7 @@ class NeedController extends Controller
             $costOfLead = ($needDetails->size_want/100)*0.006;
             $time1 = Date('Y-m-d H:i:s');
             $time2 = Date('Y-m-d H:i:s',strtotime($needDetails->created_at));
-            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+            $hourdiff = round((strtotime($time2) - strtotime($time1))/3600, 1);
             $costOfLeadsStr1 = "";
             $costOfLeadsDropStr1 = "";
             $amount = number_format((float)$costOfLead, 2, '.', '');

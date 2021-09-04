@@ -33,7 +33,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Mortgage Type:') }}</h6>
@@ -41,7 +41,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Mortgage Size:') }}</h6>
@@ -49,7 +49,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Customer Name:') }}:</h6>
@@ -57,7 +57,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Date Joined:') }}</h6>
@@ -72,7 +72,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Property Value:') }}</h6>
@@ -80,7 +80,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Combined Name:') }}</h6>
@@ -88,7 +88,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Cost of Lead:') }}</h6>
@@ -96,7 +96,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Average Value:') }}</h6>
@@ -105,7 +105,7 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-12 mb-10">
+                            <div class="col-md-12 mb-10 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Additional Details:') }}</h6>
@@ -113,7 +113,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-12">
+                            <div class="col-md-12 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         @if(isset($needDetails) && ($needDetails->self_employed!=0 || $needDetails->non_uk_citizen!=0 || $needDetails->adverse_credit!=0))
@@ -135,19 +135,12 @@
                                                 <label class="form-check-label" for="inlineCheckbox3">Adverse Credit</label>
                                             </div>
                                             @endif
-                                        @else
-                                            --
                                         @endif
-                                        <!-- <h6 class="transaction-title">{{ __('Adverse Credit') }}
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox1" value="checked" <?php if(isset($needDetails->adverse_credit)){ if($needDetails->adverse_credit==1){ echo "checked"; } }?> disabled>
-                                            </div>
-                                        </h6> -->
                                     </div>
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-12">
+                            <div class="col-md-12 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('How Soon:') }}</h6>
@@ -156,74 +149,64 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-12">
+                            <div class="col-md-12 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Preference:') }}</h6>
                                         <small class="mb-10">
-                                            @if(isset($needDetails) && ($needDetails->contact_preference_face_to_face!=0 || $needDetails->contact_preference_online!=0 || $needDetails->contact_preference_telephone!=0 || $needDetails->contact_preference_evening_weekend!=0))
-                                                @if($needDetails->contact_preference_face_to_face!=0)
-                                                <div class="form-check form-check-inline mb-10">
-                                                    <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox1" value="checked" disabled checked>
-                                                    <label class="form-check-label" for="inlineCheckbox1">Face to Face  </label>
-                                                </div>
-                                                @endif
-                                                @if($needDetails->contact_preference_online!=0)
-                                                <div class="form-check form-check-inline mb-10">
-                                                    <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox2" value="checked" disabled checked>
-                                                    <label class="form-check-label" for="inlineCheckbox2">Online</label>
-                                                </div>
-                                                @endif
-                                                @if($needDetails->contact_preference_telephone!=0)
-                                                <div class="form-check form-check-inline mb-10">
-                                                    <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox3" value="checked" disabled checked>
-                                                    <label class="form-check-label" for="inlineCheckbox3">Telephone</label>
-                                                </div>
-                                                @endif
-                                                @if($needDetails->contact_preference_evening_weekend!=0)
-                                                <div class="form-check form-check-inline mb-10">
-                                                    <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox4" value="checked" disabled checked>
-                                                    <label class="form-check-label" for="inlineCheckbox4">Evening Weekend</label>
-                                                </div>
-                                                @endif
-                                            @else
-                                                --
+                                            @if($needDetails->contact_preference_face_to_face!=0)
+                                            <div class="form-check form-check-inline mb-10">
+                                                <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox1" value="checked" disabled checked>
+                                                <label class="form-check-label" for="inlineCheckbox1">Face to Face  </label>
+                                            </div>
+                                            @endif
+                                            @if($needDetails->contact_preference_online!=0)
+                                            <div class="form-check form-check-inline mb-10">
+                                                <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox2" value="checked" disabled checked>
+                                                <label class="form-check-label" for="inlineCheckbox2">Online</label>
+                                            </div>
+                                            @endif
+                                            @if($needDetails->contact_preference_telephone!=0)
+                                            <div class="form-check form-check-inline mb-10">
+                                                <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox3" value="checked" disabled checked>
+                                                <label class="form-check-label" for="inlineCheckbox3">Telephone</label>
+                                            </div>
+                                            @endif
+                                            @if($needDetails->contact_preference_evening_weekend!=0)
+                                            <div class="form-check form-check-inline mb-10">
+                                                <input class="form-check-input disabled-checkbox" type="checkbox" id="inlineCheckbox4" value="checked" disabled checked>
+                                                <label class="form-check-label" for="inlineCheckbox4">Evening Weekend</label>
+                                            </div>
                                             @endif
                                         </small>
                                     </div>
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
+                            <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Accepted:') }}</h6>
-                                        <small></small>
+                                        <small>{{isset($needDetails->totalBids) ? count($needDetails->totalBids) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Active:') }}</h6>
+                                        <h6 class="transaction-title">{{ __('Status:') }}</h6>
                                         <small> 
-                                            @if($needDetails->bid_status == 0)
-                                                <a class="btn btn-warning btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">In-Progress</a>
-                                            @elseif($needDetails->bid_status == 1)
-                                                <a class="btn btn-success btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">Accepted</a>
-                                            @elseif($needDetails->bid_status == 2)
-                                                <a class="btn btn-info btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">Closed</a>
-                                            @elseif($needDetails->bid_status == 3)
-                                                <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" style="margin-bottom: 10px;">Declined</a> 
+                                            @if(isset($needDetails->bids) && count($needDetails->bids)>0)
+                                                <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Matched</span>
                                             @else
-                                                {{$needDetails->bid_status}}
+                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Unmatched</span>
                                             @endif
                                         </small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Feedback:') }}</h6>
@@ -232,33 +215,24 @@
                                 </div>
                             </div>
                             <hr>
-                            <div class="col-md-3">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Notes:') }}</h6>
-                                        @if(count($needDetails->notes)>0)
-                                            @foreach($needDetails->notes as $notes_data)
-                                                <div class="col-md-12">
-                                                    <div class="mb-1">
-                                                        <div class="transaction-percentage">
-                                                            <input class="form-control" value="{{date('M d, Y',strtotime($notes_data->created_at))}} - {{$notes_data->notes}}" readonly>
-                                                        </div>
+                            <div class="col-md-12 mb-1">
+                                <div class="transaction-percentage">
+                                    <h6 class="transaction-title">{{ __('Notes:') }}</h6>
+                                    @if(count($needDetails->notes)>0)
+                                        @foreach($needDetails->notes as $notes_data)
+                                            <div class="col-md-12">
+                                                <div class="mb-1">
+                                                    <div class="transaction-percentage">
+                                                        <input class="form-control" value="{{date('M d, Y',strtotime($notes_data->created_at))}} - {{$notes_data->notes}}" readonly>
                                                     </div>
                                                 </div>
-                                            @endforeach
-                                        @else
-                                            --
-                                        @endif
-                                    </div>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        --
+                                    @endif
                                 </div>
                             </div>
-                            <!-- <div class="col-12 d-flex flex-sm-row flex-column mt-2">
-                                @if($needDetails->status==1)
-                                    <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','1','/admin/update-need-status');">Activate</button>
-                                @else
-                                    <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$needDetails->id}}','0','/admin/update-need-status');">Suspend</button>
-                                @endif
-                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -291,7 +265,22 @@
                                                 <tr>
                                                     <td>{{$i}}</td>
                                                     <td>{{\Helpers::checkNull($bids_data->adviser_name)}}</td>
-                                                    <td>{{\Helpers::checkNull($bids_data->bid_status)}}</td>
+                                                    <td>
+                                                        <?php
+                                                            $live_leads = \Helpers::getLiveLeads($needDetails->how_soon);
+                                                        ?>
+                                                        @if($live_leads==1)
+                                                            <span class="badge rounded-pill badge-light-primary me-1" style="margin-bottom: 10px;">Live Leads</span>
+                                                        @elseif($bids_data->status==1 && $bids_data->advisor_status==1)
+                                                            <span class="badge rounded-pill badge-light-info me-1" style="margin-bottom: 10px;">Hired</span>
+                                                        @elseif($bids_data->status==2 && $bids_data->advisor_status==1)
+                                                            <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Completed</span>
+                                                        @elseif($bids_data->status==3 || $bids_data->advisor_status==1)
+                                                            <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Not Proceeding</span>
+                                                        @elseif($bids_data->status==1 || $bids_data->advisor_status==2)
+                                                            <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Lost</span>
+                                                        @endif
+                                                    </td>
                                                     <td>{{\Helpers::formatDateTime($bids_data->created_at)}}</td>
                                                     <td>{{\Helpers::checkNull($bids_data->cost_of_lead_drop)}}</td>
                                                     <td>{{\Helpers::currency($bids_data->cost_leads)}}</td>

@@ -34,7 +34,7 @@
                                 <td><a href="{{ route('admin/advisors/show',$users_data->advisorId) }}">{{$users_data->display_name}}</a></td>
                                 <td>{{$users_data->role != "" ? $users_data->role : '--' }}</td>
                                 <td>
-                                    @if($users_data->email_status==1)
+                                    @if($users_data->email_verified_at!='')
                                         <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
                                     @else
                                         <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
@@ -42,9 +42,9 @@
                                 </td>
                                 <td>
                                 @if($users_data->FCA_verified != "")  
-                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
-                                @else
                                     <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                @else
+                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
                                 @endif
                                 </td>
                                 <td>{{$users_data->accepted_leads}}</td>
@@ -52,13 +52,19 @@
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
                                 <td>{{$users_data->success_percent}}%</td>
-                                <td>{{$users_data->value}}</td>
-                                <td>{{$users_data->cost}}</td>
+                                <td>{{\Helpers::currency($users_data->value)}}</td>
+                                <td>{{\Helpers::currency($users_data->cost)}}</td>
                                 <td>
-                                    @if($users_data->user_status == 1)
-                                        <a class="btn btn-success btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->advisorId}}','0','/admin/update-user-status');">Active</a>
-                                    @else 
-                                        <a class="btn btn-danger btn-sm waves-effect waves-float waves-light" href="javascript:;" onclick="updateStatus('{{$users_data->advisorId}}','1','/admin/update-user-status');">Deactive</a>
+                                    @if($users_data->user_status==1)
+                                        @if($users_data->email_verified_at!='' && $users_data->FCA_verified!='')
+                                            <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                        @else
+                                            <span class="badge rounded-pill badge-light-warning me-1" style="margin-bottom: 10px;">Pending</span>
+                                        @endif
+                                    @elseif($users_data->user_status==0)
+                                        <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
+                                    @else
+                                        <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Inactive</span>
                                     @endif
                                 </td>
                             </tr>

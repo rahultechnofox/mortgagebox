@@ -22,7 +22,7 @@
             </div>
             <div class="content-header-right text-md-end col-md-3 col-12 d-md-block">
                 <div class="mb-1 breadcrumb-right">
-                    <button class="btn btn-icon btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modals-slide-in">
+                    <button class="btn btn-icon btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modals-slide-in" onclick="resetFaqCategoryForm();">
                         <i data-feather="plus" class="me-25"></i>
                         <span>Add Faq Category</span>
                     </button>

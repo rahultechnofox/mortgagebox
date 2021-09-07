@@ -58,7 +58,7 @@
                 </form> -->
             </div>
         </div>
-        @include('invoice.table')
+        @include('invoice.invoice_table')
     </div>
 </div>
 @endsection

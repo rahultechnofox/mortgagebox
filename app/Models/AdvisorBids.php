@@ -24,37 +24,40 @@ class AdvisorBids extends Model
     public static function getInvoice($search){
         try {
             $query = new Self;
+            if(isset($search['id']) && $search['id']!=''){
+                $query = $query->where('invoices.id',$search['id']);
+            }
             // if(isset($search['search']) && $search['search']!=''){
             //     $query = $query->where('advisor_profiles.name', 'like', '%' .strtolower($search['search']). '%');
             // }
-            if(isset($search['status']) && $search['status']!=''){
-                $query = $query->where('advisor_bids.status',$search['status']);
-            }
-            $adviserArr = array();
-            if(isset($search['post_code']) && $search['post_code']!=''){
-                $adviser = AdvisorProfile::where('postcode',$search['post_code'])->get();
-                foreach($adviser as $adviser_data){
-                    if(!in_array($adviser_data->advisorId,$adviserArr)){
-                        array_push($adviserArr,$adviser_data->advisorId);
-                    }
-                }
-                if(count($adviserArr)){
-                    $query = $query->whereIn('advisor_id',$adviserArr);
-                }
-            }
-            if(isset($search['advisor_id']) && $search['advisor_id']!=''){
-                $query = $query->where('advisor_id',$search['advisor_id']);
-            }
-            if(isset($search['date']) && $search['date']!=''){
-                $explode = explode("to",$search['date']);
-                $from = trim($explode[0]);
-                $to = trim($explode[1]);
-                if(isset($explode[0]) && $explode[0]!='' && isset($explode[1]) && $explode[1]!=''){
-                    $start = date("Y-m-d",strtotime($from));
-                    $end = date('Y-m-d',strtotime($to));
-                    $query = $query->whereBetween('created_at', [$start, $end]);
-                }
-            }
+            // if(isset($search['status']) && $search['status']!=''){
+            //     $query = $query->where('advisor_bids.status',$search['status']);
+            // }
+            // $adviserArr = array();
+            // if(isset($search['post_code']) && $search['post_code']!=''){
+            //     $adviser = AdvisorProfile::where('postcode',$search['post_code'])->get();
+            //     foreach($adviser as $adviser_data){
+            //         if(!in_array($adviser_data->advisorId,$adviserArr)){
+            //             array_push($adviserArr,$adviser_data->advisorId);
+            //         }
+            //     }
+            //     if(count($adviserArr)){
+            //         $query = $query->whereIn('advisor_id',$adviserArr);
+            //     }
+            // }
+            // if(isset($search['advisor_id']) && $search['advisor_id']!=''){
+            //     $query = $query->where('advisor_id',$search['advisor_id']);
+            // }
+            // if(isset($search['date']) && $search['date']!=''){
+            //     $explode = explode("to",$search['date']);
+            //     $from = trim($explode[0]);
+            //     $to = trim($explode[1]);
+            //     if(isset($explode[0]) && $explode[0]!='' && isset($explode[1]) && $explode[1]!=''){
+            //         $start = date("Y-m-d",strtotime($from));
+            //         $end = date('Y-m-d',strtotime($to));
+            //         $query = $query->whereBetween('created_at', [$start, $end]);
+            //     }
+            // }
             
             // if(isset($search['created_at']) && $search['created_at']!=''){
             //     $query = $query->whereDate('advisor_profiles.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));

@@ -123,6 +123,8 @@ Route::middleware('auth')->group(function(){
 
     /******************* Invoice Management **********************/
     Route::get('admin/invoice', '\App\Http\Controllers\InvoiceController@index');
+    Route::get('admin/invoice-list/{month}', '\App\Http\Controllers\InvoiceController@list');
+    Route::get('admin/invoice-detail/{invoice_id}', '\App\Http\Controllers\InvoiceController@show');
     /******************* Invoice Management **********************/
 
     Route::get('admin', '\App\Http\Controllers\AdminController@index')->name("admin");

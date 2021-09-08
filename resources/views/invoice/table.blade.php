@@ -25,22 +25,14 @@
                             @foreach($result as $users_data)
                             <tr>
                                 <td><a href="{{url('/admin/invoice-list')}}/{{$users_data->month}}">{{\Helpers::getMonth($users_data->month)}} {{date("Y",strtotime($users_data->year))}}</a></td>
-                                <td><?php echo \Helpers::currency(json_encode($users_data->invoice_data->new_fess->cost_of_leads_sub_total)); ?></td>
-                                <td><?php echo \Helpers::currency(json_encode($users_data->invoice_data->discounts_and_credits->subtotal)); ?></td>
-                                <td><?php echo \Helpers::currency(json_encode($users_data->invoice_data->total_dues)); ?></td>
+                                <td><?php echo \Helpers::currency($users_data->subtotal_month); ?></td>
+                                <td><?php echo \Helpers::currency($users_data->discount_month); ?></td>
+                                <td><?php echo \Helpers::currency($users_data->total_due_month); ?></td>
                                 <td>
-                                    @if($users_data->is_paid==1)
-                                        <?php echo \Helpers::currency(json_encode($users_data->invoice_data->total_dues)); ?>
-                                    @else
-                                        {{\Helpers::currency(0)}}
-                                    @endif
+                                    <?php echo \Helpers::currency($users_data->received_month); ?>
                                 </td>
                                 <td>
-                                    @if($users_data->is_paid==0)
-                                        <?php echo \Helpers::currency(json_encode($users_data->invoice_data->total_dues)); ?>
-                                    @else
-                                        {{\Helpers::currency(0)}}
-                                    @endif
+                                    <?php echo \Helpers::currency($users_data->outstanding_month); ?>
                                 </td>
                                 <td>{{date("d-M-Y",strtotime($users_data->created_at))}}</td>
                             </tr>

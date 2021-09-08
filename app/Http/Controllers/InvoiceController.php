@@ -50,7 +50,6 @@ class InvoiceController extends Controller
         foreach($data['result'] as $row){
             $row->invoice_data = json_decode($row->invoice_data);
         }
-        // echo json_encode($data);exit;
         return view('invoice.index',$data);
     }
     /**
@@ -60,12 +59,16 @@ class InvoiceController extends Controller
      */
     public function list($month,Request $request) {
         $post = $request->all();
-        $post['month'] = $month;
+        if(isset($_GET['month']) && $_GET['month']!=''){
+            $post['month'] = $_GET['month'];
+        }else{
+            $post['month'] = $month;
+        }
         $data['result'] = Invoice::getInvoiceDetailBasisOfMonth($post);
         foreach($data['result'] as $row){
             $row->invoice_data = json_decode($row->invoice_data);
         }
-        // echo json_encode($data);exit;
+        $data['adviser'] = User::where('user_role',1)->where('status',1)->with('advisor_profile')->get();
         return view('invoice.invoice_list',$data);
     }
     /**
@@ -79,9 +82,6 @@ class InvoiceController extends Controller
         if($data['row']){
             $data['row']->invoice_data = json_decode($data['row']->invoice_data);
         }
-        // $data['post_code'] = PostalCodes::get();
-        // $data['adviser_data'] = User::where('user_role',1)->get();
-        // echo json_encode($data);exit;
         return view('invoice.show',$data);
     }
 }

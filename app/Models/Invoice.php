@@ -17,6 +17,13 @@ class Invoice extends Model
         try {
             $query = new Self;
             $data = $query->groupBy('month')->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
+            foreach($data as $row){
+                $row->subtotal_month = DB::table('invoices')->where('month',$row->month)->where('year',$row->year)->sum('subtotal');
+                $row->discount_month = DB::table('invoices')->where('month',$row->month)->where('year',$row->year)->sum('discount');
+                $row->total_due_month = DB::table('invoices')->where('month',$row->month)->where('year',$row->year)->sum('total_due');
+                $row->received_month = DB::table('invoices')->where('month',$row->month)->where('year',$row->year)->where('is_paid',1)->sum('total_due');
+                $row->outstanding_month = DB::table('invoices')->where('month',$row->month)->where('year',$row->year)->where('is_paid',0)->sum('total_due');
+            }
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
@@ -26,8 +33,17 @@ class Invoice extends Model
     public static function getInvoiceDetailBasisOfMonth($search){
         try {
             $query = new Self;
+            if(isset($search['is_paid']) && $search['is_paid']!=''){
+                $query = $query->where('is_paid',$search['is_paid']);
+            }
+            if(isset($search['advisor_id']) && $search['advisor_id']!=''){
+                $query = $query->where('advisor_id',$search['advisor_id']);
+            }
             if(isset($search['month']) && $search['month']!=''){
                 $query = $query->where('month',$search['month']);
+            }
+            if(isset($search['year']) && $search['year']!=''){
+                $query = $query->where('year',$search['year']);
             }
             $data = $query->orderBy('id','DESC')->with('adviser')->paginate(config('constants.paginate.num_per_page'));
             return $data;
@@ -43,6 +59,10 @@ class Invoice extends Model
                 $query = $query->where('id',$id);
             }
             $data = $query->with('adviser')->first();
+            if($data){
+                $data->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
+                $data->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
+            }
             // if($data){
             //     $previous_month = $data->month - 1;
             //     $newTotal = 0;

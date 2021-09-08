@@ -12,7 +12,7 @@
 							<ol class="breadcrumb">
 								<li class="breadcrumb-item"><a href="{{'/'}}">Dashboard</a> </li>
 								<li class="breadcrumb-item {{ Request::is('admin/invoice*') ? 'active' : '' }}"><a href="{!! url('admin/invoice') !!}">Invoice </a> </li>
-								<li class="breadcrumb-item {{ Request::is('admin/invoice-list*') ? 'active' : '' }}"><a href="{!! url('admin/invoice-list') !!}">Invoice List</a> </li>
+								@if(isset($row->month) && $row->month!='')<li class="breadcrumb-item {{ Request::is('admin/invoice-list*') ? 'active' : '' }}"><a href="{!! url('admin/invoice-list') !!}/{{$row->month}}">Invoice List</a> </li>@endif
 								<li class="breadcrumb-item active">Invoice Info </li>
 							</ol>
 						</div>
@@ -75,16 +75,16 @@
                                     <h3 class="mb-2">Account Summary:</h3>
 									<div class="col-xl-10">
 										<p class="card-text mb-25">Previous balance</p>
-										<p class="card-text mb-25">Invoice Payment received till  - Thank you</p>
+										<p class="card-text mb-25">Invoice Payment received</p>
 									</div>
 									<div class="col-xl-2 p-0 mt-xl-0 mt-2">
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency(json_encode($row->invoice_data->total_dues)); ?></span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($row->unpaid_prevoius_invoice)}}</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold">{{\Helpers::currency(0)}}</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($row->paid_prevoius_invoice)}}</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -103,11 +103,10 @@
 										<table>
 											<tbody>
 												<tr>
-													<?php $cost_of_leads_of_the_month =  floatval(json_encode($row->invoice_data->new_fess->cost_of_leads_of_the_month[0]->cost)); ?>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($cost_of_leads_of_the_month); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->cost_of_lead); ?></span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency(json_encode($row->invoice_data->new_fess->cost_of_leads_sub_total)); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->subtotal); ?></span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -126,13 +125,14 @@
 										<table>
 											<tbody>
 											<tr>	
-													<td><span class="fw-bold"><?php echo \Helpers::currency(json_encode($row->invoice_data->discounts_and_credits->discount_subtotal)); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->discount); ?></span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency(json_encode($row->invoice_data->discounts_and_credits->free_introduction_subtotal)); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->free_introduction); ?></span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency(json_encode($row->invoice_data->discounts_and_credits->subtotal)); ?></span></td>
+													<?php $discount_subtotal = $row->discount + $row->free_introduction; ?>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($discount_subtotal); ?></span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -148,7 +148,7 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency(json_encode($row->invoice_data->total_dues)); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->total_due); ?></span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -167,18 +167,13 @@
 										<table>
 											<tbody>
 												<tr>
-													<?php $total_taxable_amount =  (float)json_encode($row->invoice_data->total_taxable_amount);
-													?>
-												 
-													<td><span class="fw-bold"><?php echo \Helpers::currency($total_taxable_amount); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->total_taxable_amount); ?></span></td>
 												</tr>
 												<tr>
-													<?php $vat_on_invoice =  floatval(json_encode($row->invoice_data->vat_on_invoice)); ?>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($vat_on_invoice); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->vat); ?></span></td>
 												</tr>
 												<tr>
-													<?php $total_current_invoice_amount =  floatval(json_encode($row->invoice_data->total_current_invoice_amount)); ?>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($total_current_invoice_amount); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($row->total_current_invoice); ?></span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -220,7 +215,7 @@
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: <?php echo \Helpers::currency(json_encode($row->invoice_data->total_dues)); ?></span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: <?php echo \Helpers::currency($row->subtotal); ?></span> </td>
 										</tr>
 									</tbody>
 								</table>
@@ -256,7 +251,7 @@
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: <?php echo \Helpers::currency(json_encode($row->invoice_data->discounts_and_credits->subtotal)); ?></span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: <?php echo \Helpers::currency($row->discount); ?></span> </td>
 										</tr>
 									</tbody>
 								</table>

@@ -28,26 +28,47 @@
                 </div>
             </div>
             <div class="content-header-right text-md-end col-md-12 col-12 d-md-block mb-1">
-                <!-- <form role="form" method="get">
+                <form role="form" method="get">
                     <div class="form-group row">
-                        <div class="col-md-3 col-12">
-                            <input type="text" class="form-control" value="<?php if(isset($_GET['search']) && $_GET['search']!=''){ echo $_GET['search']; } ?>" name="search" placeholder="Search">
-                        </div>
-                        <div class="col-md-3 col-12">
-                            <input type="text" id="fp-default" value="<?php if(isset($_GET['created_at']) && $_GET['created_at']!=''){ echo date("Y-m-d",strtotime($_GET['created_at'])); } ?>" name="created_at" class="form-control flatpickr-basic" placeholder="Date" />
-                        </div>
                         <div class="col-md-2 col-12">
-                            <select class="form-select" id="" name="email_status">
-                                <option value="">Email Verified</option>
-                                <option value="1" <?php if(isset($_GET['email_status']) && $_GET['email_status']!=''){ if($_GET['email_status']==1){ echo "selected"; } } ?>>Yes</option>
-                                <option value="0" <?php if(isset($_GET['email_status']) && $_GET['email_status']!=''){ if($_GET['email_status']==0){ echo "selected"; } } ?>>No</option>
+                            <select class="form-select" name="is_paid">
+                                <option value="">Payment Status</option>
+                                <option value="1" <?php if(isset($_GET['is_paid']) && $_GET['is_paid']!=''){ if($_GET['is_paid']==1){ echo "selected"; } } ?>>Paid</option>
+                                <option value="0" <?php if(isset($_GET['is_paid']) && $_GET['is_paid']!=''){ if($_GET['is_paid']==0){ echo "selected"; } } ?>>Not Paid</option>
                             </select>
                         </div>
                         <div class="col-md-2 col-12">
-                            <select class="form-select" id="" name="status">    
-                                <option value="">Status</option>
-                                <option value="1" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>>Active</option>
-                                <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==0){ echo "selected"; } } ?>>Deactive</option>
+                            <select class="form-select" id="" name="advisor_id">    
+                                <option value="">Adviser</option>
+                                @foreach($adviser as $adviser_data)
+                                    <option value="{{$adviser_data->id}}" <?php if(isset($_GET['advisor_id']) && $_GET['advisor_id']!=''){ if($_GET['advisor_id']==$adviser_data->id){ echo "selected"; } } ?>>@if(isset($adviser_data->advisor_profile) && $adviser_data->advisor_profile!=''){{$adviser_data->advisor_profile->display_name}}@endif</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-12">
+                            <select class="form-select" id="" name="month">    
+                                <option value="">Month</option>
+                                <option value="1" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==1){ echo "selected"; } } ?>>Jan</option>
+                                <option value="2" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==2){ echo "selected"; } } ?>>Feb</option>
+                                <option value="3" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==3){ echo "selected"; } } ?>>Mar</option>
+                                <option value="4" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==4){ echo "selected"; } } ?>>April</option>
+                                <option value="5" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==5){ echo "selected"; } } ?>>May</option>
+                                <option value="6" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==6){ echo "selected"; } } ?>>June</option>
+                                <option value="7" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==7){ echo "selected"; } } ?>>Jul</option>
+                                <option value="8" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==8){ echo "selected"; } } ?>>Aug</option>
+                                <option value="9" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==9){ echo "selected"; } } ?>>Sep</option>
+                                <option value="10" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==10){ echo "selected"; } } ?>>Oct</option>
+                                <option value="11" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==11){ echo "selected"; } } ?>>Nov</option>
+                                <option value="12" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==12){ echo "selected"; } } ?>>Dec</option>
+                            </select>
+                        </div>
+                        <?php $firstYear = (int)date('Y') - 20; ?>
+                        <div class="col-md-2 col-12">
+                            <select class="form-select" id="" name="year">    
+                                <option value="">Year</option>
+                                <?php for($i=$firstYear;$i<=date('Y');$i++){ ?>
+                                    <option value="<?php echo $i;?>" <?php if(isset($_GET['year']) && $_GET['year']!=''){ if($_GET['year']==$i){ echo "selected"; } } ?>><?php echo $i;?></option>
+                                <?php }?>
                             </select>
                         </div>
                         <div class="col-md-2 col-12">
@@ -55,7 +76,7 @@
                             <a href="javascript:;" onclick="resetFilter()" class="btn btn-outline-secondary"><i data-feather="refresh-ccw"></i></a>
                         </div>
                     </div>
-                </form> -->
+                </form>
             </div>
         </div>
         @include('invoice.invoice_table')

@@ -20,6 +20,7 @@ use App\Models\AdvisorPreferencesDefault;
 use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
+use App\Models\CompanyTeamMembers;
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -63,6 +64,8 @@ class ApiController extends Controller
         //     $message->subject('Welcome Mail');
         // });
         $dataUser = User::find($user);
+        
+        
         $msg = "";
         $msg .= "Welcome\n\n";
         $msg .= "Hello ".ucfirst($request->name)."\n\n";
@@ -406,6 +409,15 @@ class ApiController extends Controller
             'password' => bcrypt($request->password)
         ]);
         $advisor_id = $user->id;
+        CompanyTeamMembers::create([
+            'company_id' => $company_data_new->id,
+            'name' => $request->name,
+            'email' => $request->email,
+            'advisor_id' => $user->id,
+            'isCompanyAdmin'=>1,
+            'status'=>1
+        ]);
+
         //Request is valid, create new user
         $profile = AdvisorProfile::create([
             'advisorId' => $advisor_id,
@@ -420,6 +432,9 @@ class ApiController extends Controller
             'description' => $description
 
         ]);
+        if($dataUser){
+            
+        }
         $msg = "";
         $msg .= "Welcome\n\n";
         $msg .= "Hello ".ucfirst($request->name).",\n\n";

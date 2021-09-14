@@ -31,7 +31,6 @@ class NeedController extends Controller
         $post = $request->all();
         $advice_area = Advice_area::getNeedList($post);
         $data = $advice_area;   
-        // echo json_encode($data);exit;
         return view('need_list.index',$data);
     }
     /**

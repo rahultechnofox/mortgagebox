@@ -44,7 +44,7 @@
                                     @endif
                                 </td>
                                 <td>@if(isset($users_data->selected_pro) && $users_data->selected_pro!=''){{\Helpers::checkNull($users_data->selected_pro->advisor_name)}}@else -- @endif</td>
-                                <td>N/A</td>
+                                <td>@if(isset($users_data->close_type) && $users_data->close_type!=''){{\Helpers::checkNull($users_data->close_type)}}@else -- @endif</td>
                                 <td>
                                     <div class="dropdown">
                                         <button type="button" class="btn btn-sm dropdown-toggle hide-arrow" data-bs-toggle="dropdown">

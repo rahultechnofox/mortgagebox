@@ -69,6 +69,24 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-3 mb-1">
+                                <div class="d-flex">
+                                    <div class="transaction-percentage">
+                                        <small>
+                                            @if(isset($profile) && $profile->image!='')
+                                            <?php $url = url('storage/advisor/'.$profile->image); ?>
+                                                @if(file_exists($url))
+                                                    <img src="{{$url}}" style="width: 80px;">
+                                                @else
+                                                    <img src="{{url('no-image.png')}}" style="width: 80px;">
+                                                @endif
+                                            @else
+                                                <img src="{{url('no-image.png')}}" style="width: 80px;">
+                                            @endif
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                             <hr>
                             <div class="col-md-3 mb-1">
                                 <div class="d-flex">

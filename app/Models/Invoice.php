@@ -63,63 +63,107 @@ class Invoice extends Model
                 $data->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
                 $data->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
             }
-            // if($data){
-            //     $previous_month = $data->month - 1;
-            //     $newTotal = 0;
-            //     $preTotal = 0;
-            //     $prePaidTotal = 0;
-            //     $hourdiff = 0;
-            //     $discountCreditTotal = 0;
-            //     $discountTotal = 0;
-            //     $discountBidTotal = 0;
-            //     $freeIntroductionTotal = 0;
-            //     $discountArr = array();
-            //     $bid_data = AdvisorBids::where('advisor_id',$data->advisor_id)->with('area')->get();
-            //     foreach($bid_data as $pre){
-            //         if(date("m",strtotime($pre->created_at))<date("m",strtotime($previous_month))){
-            //             $preTotal = $preTotal + $pre->cost_leads;
-            //         }
-            //         if(date("m",strtotime($pre->created_at))<date("m",strtotime($previous_month)) && $pre->is_paid_invoice){
-            //             $prePaidTotal = $prePaidTotal + $pre->cost_leads;
-            //         }
-            //         if(date("m",strtotime($pre->created_at))==date("m")){
-            //             $newTotal = $newTotal + $pre->cost_leads;
-            //         }
-            //         $date = date('Y-m-d', strtotime($pre->created_at . " +1 days"));
-            //         if(date("Y-m-d",strtotime($pre->accepted_date))>$date){
-            //             if($pre->free_introduction==1){
-            //                 $freeIntroductionTotal = $freeIntroductionTotal + $pre->cost_discounted;
-            //             }else{
-            //                 $discountBidTotal = $discountBidTotal + $pre->cost_leads;
-            //             }
-            //             $discountTotal = $discountTotal + $pre->cost_discounted;
-            //             $discountCreditTotal = $discountCreditTotal + $pre->cost_leads;
-            //             array_push($discountArr,$pre);
-            //         }
-            //     }
-            //     $data['previous_total'] = $preTotal;
-            //     $data['previous_invoice_paid_till'] = \Helpers::getMonth($previous_month);
-            //     $data['previous_paid_total'] = $prePaidTotal;
-            //     $data['new_invoice_total'] = $newTotal;
-            //     $data['discount_credit_total'] = $discountCreditTotal;
-            //     $data['discount_total'] = $discountTotal;
-            //     $data['free_introductions_total'] = $freeIntroductionTotal;
-            //     $data['discount_bid_total'] = $discountBidTotal;
-            //     $data['sub_total_discount'] = $data['discount_bid_total'] - $data['free_introductions_total'];
-            //     $data['new_fees'] = AdvisorBids::where('advisor_id',$data->advisor_id)->with('area')->get();
-            //     $data['discount_credits'] = $discountArr;
-            //     $data['tax_amount'] = 0;
-            //     $data['taxable_amount'] = 0;
-            //     $data['tax'] = 0;
-            //     $data['total_due'] = $data['new_invoice_total'] - $data['discount_total'];
-            //     $tax = DB::table('app_settings')->select('value')->where('key','tax_amount')->first();
-            //     if($tax){
-            //         $tax_cal = $data['total_due']/(1+($tax->value/100));
-            //         $data['taxable_amount'] = $tax_cal;
-            //         $data['tax_amount'] = $data['total_due'] - $tax_cal;
-            //         $data['tax'] = $tax->value;
-            //     }
-            // }
+            return $data;
+        }catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
+        }
+    }
+
+    public static function getOverAllInvoice($search){
+        try {
+            $query = new Self;
+            if(isset($search['status']) && $search['status']!=''){
+                $query = $query->where('advisor_bids.status',$search['status']);
+            }
+            $adviserArr = array();
+            if(isset($search['post_code']) && $search['post_code']!=''){
+                $adviser = AdvisorProfile::where('postcode',$search['post_code'])->get();
+                foreach($adviser as $adviser_data){
+                    if(!in_array($adviser_data->advisorId,$adviserArr)){
+                        array_push($adviserArr,$adviser_data->advisorId);
+                    }
+                }
+                if(count($adviserArr)){
+                    $query = $query->whereIn('advisor_id',$adviserArr);
+                }
+            }
+            if(isset($search['advisor_id']) && $search['advisor_id']!=''){
+                $query = $query->where('advisor_id',$search['advisor_id']);
+            }
+            if(isset($search['date']) && $search['date']!=''){
+                $explode = explode("to",$search['date']);
+                $from = trim($explode[0]);
+                $to = trim($explode[1]);
+                if(isset($explode[0]) && $explode[0]!='' && isset($explode[1]) && $explode[1]!=''){
+                    $start = date("Y-m-d",strtotime($from));
+                    $end = date('Y-m-d',strtotime($to));
+                    $query = $query->whereBetween('created_at', [$start, $end]);
+                }
+            }
+            
+            if(isset($search['created_at']) && $search['created_at']!=''){
+                $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
+            }
+            if(isset($search['month']) && $search['month']!=''){
+                $query = $query->where('month',$search['month']);
+            }
+            if(isset($search['year']) && $search['year']!=''){
+                $query = $query->where('year',$search['year']);
+            }
+            $data = $query->with('adviser')->get();
+            if(count($data)){
+                $cost_of_lead = 0;
+                $subtotal = 0;
+                $discount = 0;
+                $free_introduction = 0;
+                $total_taxable_amount = 0;
+                $vat = 0;
+                $total_current_invoice = 0;
+                $total_due = 0;
+                $paid_prevoius_invoice = 0;
+                $unpaid_prevoius_invoice = 0;
+                $new_lead = array();
+                $discount_lead = array();
+                foreach($data as $row){
+                    $row->invoice_data = json_decode($row->invoice_data);
+                    $cost_of_lead = $cost_of_lead + $row->cost_of_lead;
+                    $subtotal = $subtotal + $row->subtotal;
+                    $discount = $discount + $row->discount;
+                    $free_introduction = $free_introduction + $row->free_introduction;
+                    $total_taxable_amount = $total_taxable_amount + $row->total_taxable_amount;
+                    $vat = $vat + $row->vat;
+                    $total_current_invoice = $total_current_invoice + $row->total_current_invoice;
+                    $total_due = $total_due + $row->total_due;
+                    $cost_of_lead = $cost_of_lead + $row->cost_of_lead;
+                    $cost_of_lead = $cost_of_lead + $row->cost_of_lead;
+                    $unpaid_prevoius_invoice_sum = DB::table('invoices')->where('is_paid',0)->where('month','<',$row->month)->sum('total_due');
+                    $unpaid_prevoius_invoice = $unpaid_prevoius_invoice + $unpaid_prevoius_invoice_sum;
+                    $paid_prevoius_invoice_sum = DB::table('invoices')->where('is_paid',1)->where('month','<',$row->month)->sum('total_due');
+                    $paid_prevoius_invoice = $paid_prevoius_invoice + $paid_prevoius_invoice_sum;
+                    if(isset($row->invoice_data->new_fees_data) && count($row->invoice_data->new_fees_data)){
+                        foreach($row->invoice_data->new_fees_data as $new_fees_data){
+                            array_push($new_lead,$new_fees_data);
+                        }
+                    }
+                    if(isset($row->invoice_data->discount_credit_data) && count($row->invoice_data->discount_credit_data)){
+                        foreach($row->invoice_data->discount_credit_data as $discount_credits_data){
+                            array_push($discount_lead,$discount_credits_data);
+                        }
+                    }
+                }
+                $data['cost_of_lead'] = $cost_of_lead;
+                $data['subtotal'] = $subtotal;
+                $data['discount'] = $discount;
+                $data['free_introduction'] = $free_introduction;
+                $data['total_taxable_amount'] = $total_taxable_amount;
+                $data['vat'] = $vat;
+                $data['total_current_invoice'] = $total_current_invoice;
+                $data['total_due'] = $total_due;
+                $data['paid_prevoius_invoice'] = $paid_prevoius_invoice;
+                $data['unpaid_prevoius_invoice'] = $unpaid_prevoius_invoice;
+                $data['new_fees_data'] = $new_lead;
+                $data['discount_credit_data'] = $discount_lead;
+            }
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

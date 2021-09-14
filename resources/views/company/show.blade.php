@@ -45,7 +45,15 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <small>
-                                            @if(isset($company_detail->id))
+
+                                            @if(isset($company_detail->adviser) && $company_detail->adviser->company_logo!='')
+                                            <?php $url = url('storage/advisor/'.$company_detail->adviser->company_logo); ?>
+                                                @if(file_exists($url))
+                                                    <img src="{{$url}}" style="width: 80px;">
+                                                @else
+                                                    <img src="{{url('no-image.png')}}" style="width: 80px;">
+                                                @endif
+                                            @else
                                                 <img src="{{url('no-image.png')}}" style="width: 80px;">
                                             @endif
                                         </small>
@@ -186,12 +194,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        
                                         <?php $i = 1; ?>
                                         @if(count($company_detail->team_members) > 0)
                                             @foreach($company_detail->team_members as $company_detail_data)
                                                 <tr>
-                                                    <td>{{$company_detail_data->id}}</td>
-                                                    <td>{{$company_detail_data->name}}</td>
+                                                    <td>{{$i}}</td>
+                                                    <td>@if(isset($company_detail_data->name) && $company_detail_data->name!=''){{$company_detail_data->name}}@endif</td>
                                                     <td>@if(isset($company_detail_data->team_data) && $company_detail_data->team_data!=''){{$company_detail_data->team_data->role}}@else -- @endif</td>
                                                     <td>
                                                         @if(isset($company_detail_data->team_data) && $company_detail_data->team_data!='')
@@ -215,17 +224,21 @@
                                                             -- 
                                                         @endif
                                                     </td>
-                                                    <td>{{$company_detail_data->accepted_leads}}</td>
-                                                    <td>{{$company_detail_data->live_leads}}</td>
-                                                    <td>{{$company_detail_data->hired}}</td>
-                                                    <td>{{$company_detail_data->completed}}</td>
-                                                    <td>{{$company_detail_data->success_percent}}%</td>
-                                                    <td>{{\Helpers::currency($company_detail_data->value)}}</td>
+                                                    <td>@if(isset($company_detail_data->accepted_leads) && $company_detail_data->accepted_leads!=''){{$company_detail_data->accepted_leads}}@else 0 @endif</td>
+                                                    <td>@if(isset($company_detail_data->live_leads) && $company_detail_data->live_leads!=''){{$company_detail_data->live_leads}}@else 0 @endif</td>
+                                                    <td>@if(isset($company_detail_data->hired) && $company_detail_data->hired!=''){{$company_detail_data->hired}}@else 0 @endif</td>
+                                                    <td>@if(isset($company_detail_data->completed) && $company_detail_data->completed!=''){{$company_detail_data->completed}}@else 0 @endif</td>
+                                                    <td>@if(isset($company_detail_data->success_percent) && $company_detail_data->success_percent!=''){{$company_detail_data->success_percent}}%@else 0% @endif</td>
+                                                    <td>@if(isset($company_detail_data->value) && $company_detail_data->value!=''){{\Helpers::currency($company_detail_data->value)}}@else {{\Helpers::currency(0)}} @endif</td>
                                                     <td>
-                                                        @if($company_detail_data->status==1)
-                                                            <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                                        @if(isset($company_detail_data->status) && $company_detail_data->status!='')
+                                                            @if($company_detail_data->status==1)
+                                                                <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                                            @else
+                                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
+                                                            @endif
                                                         @else
-                                                            <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Deactive</span>
+                                                            --
                                                         @endif
                                                     </td>
                                                 </tr>

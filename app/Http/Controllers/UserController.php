@@ -64,10 +64,11 @@ class UserController extends Controller
         $adviceBidClosed = 0;
         $adviceBidActive = 0;
         $pendingBidCount = 0;
+        
         foreach($advice_area as $items) {
             $adviceBidCl= AdvisorBids::where('area_id',$items->id)->where('status','=','2')->get();
             $adviceBidClosed = $adviceBidClosed+count($adviceBidCl);
-            $adviceBidAc= AdvisorBids::where('area_id',$items->id)->where('status','=','1')->get();
+            $adviceBidAc= Advice_area::where('id',$items->id)->where('status','=','1')->get();
             $adviceBidActive = $adviceBidActive+count($adviceBidAc);
             $pendingCount= AdvisorBids::where('area_id',$items->id)->where('status','=','0')->get();
             $pendingBidCount = $pendingBidCount+count($pendingCount);
@@ -77,6 +78,35 @@ class UserController extends Controller
         $userDetails->pending_bid = $pendingBidCount;
         // echo json_encode($userDetails);exit;
         return view('users.show',['userDetails'=>$userDetails]);
+    }
+
+    function verifyEmail($id){
+        $user = User::where('id',$id)->first();
+        if($user){
+            $msg = "To verify your email \n Please click below link ";
+            $msg .= config('constants.urls.email_verification_url');
+
+            $msg .= $this->getEncryptedId($user->id);
+            $msg = wordwrap($msg, 70);
+            mail($user->email, "Email Verification", $msg);
+        }
+        return redirect()->back()->with('message',"Verification link is set to registered email id");
+        
+    }
+
+    function getEncryptedId($id)
+    {
+        // Store the cipher method 
+        $ciphering = "AES-256-CTR";
+        // Use OpenSSl Encryption method 
+        $iv_length = openssl_cipher_iv_length($ciphering);
+        $options = 0;
+        // Non-NULL Initialization Vector for encryption 
+        $encryption_iv = 'a9qDc#G@9$bOpPnR';
+        // Store the encryption key 
+        $encryption_key = "&*(#Pp@IND";
+        // Use openssl_encrypt() function to encrypt the data 
+        return base64_encode(openssl_encrypt($id, $ciphering, $encryption_key, $options, $encryption_iv));
     }
     /**
      * Remove the specified resource from storage.

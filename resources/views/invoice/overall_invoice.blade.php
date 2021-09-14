@@ -7,12 +7,11 @@
 			<div class="content-header-left col-md-9 col-12 mb-2">
 				<div class="row breadcrumbs-top">
 					<div class="col-12">
-						<h2 class="content-header-title float-start mb-0">Professional</h2>
+						<h2 class="content-header-title float-start mb-0">Invoice</h2>
 						<div class="breadcrumb-wrapper">
 							<ol class="breadcrumb">
 								<li class="breadcrumb-item"><a href="{{'/'}}">Dashboard</a> </li>
-								<li class="breadcrumb-item {{ Request::is('admin/advisors*') ? 'active' : '' }}"><a href="{!! url('admin/advisors') !!}">Professionals List</a> </li>
-								<li class="breadcrumb-item active">Professional Info </li>
+								<li class="breadcrumb-item active">Invoice Info </li>
 							</ol>
 						</div>
 					</div>
@@ -21,7 +20,48 @@
 			<div class="content-header-right text-md-end col-md-12 col-12 d-md-block mb-1">
                 <form role="form" method="get">
                     <div class="form-group row">
-                        <div class="col-md-2 col-12">
+						<div class="col-md-3 col-12" style="margin-top: 15px;">
+                            <select class="form-select" id="" name="discount">
+                                <option value="">Discount</option>
+								<option value="">50%</option>
+								<option value="">75%</option>
+								<option value="">Free</option>
+                            </select>
+                        </div>
+						<div class="col-md-3 col-12" style="margin-top: 15px;">
+                            <select class="form-select" id="" name="service_type">
+                                <option value="">Fee type</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-12" style="margin-top: 15px;">
+                            <select class="form-select" id="" name="status">    
+                                <option value="">Status</option>
+                                <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==0){ echo "selected"; } } ?>>In-Progress</option>
+                                <option value="1" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>>Accepted</option>
+								<option value="2" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==2){ echo "selected"; } } ?>>Closed</option>
+                                <option value="3" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==3){ echo "selected"; } } ?>>Decline</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-12" style="margin-top: 15px;">
+                            <select class="form-select" id="" name="post_code">
+                                <option value="">Region</option>
+								@foreach($post_code as $post_code_data)
+                                <option value="{{$post_code_data->Postcode}}" <?php if(isset($_GET['post_code']) && $_GET['post_code']!=''){ if($_GET['post_code']==$post_code_data->Postcode){ echo "selected"; } } ?>>{{$post_code_data->Postcode}}</option>
+								@endforeach
+                            </select>
+                        </div>
+						<div class="col-md-4 col-12" style="margin-top: 15px;">
+							<input type="text" id="fp-range" class="form-control flatpickr-range" name="date" placeholder="YYYY-MM-DD to YYYY-MM-DD" value="<?php if(isset($_GET['date']) && $_GET['date']!=''){ echo $_GET['date']; } ?>"/>
+                        </div>
+						<div class="col-md-2 col-12" style="margin-top: 15px;">
+                            <select class="form-select" id="" name="advisor_id">
+                                <option value="">Adviser</option>
+                                @foreach($adviser_data as $adviser_data_data)
+                                <option value="{{$adviser_data_data->id}}" <?php if(isset($_GET['advisor_id']) && $_GET['advisor_id']!=''){ if($_GET['advisor_id']==$adviser_data_data->id){ echo "selected"; } } ?>>{{$adviser_data_data->name}}</option>
+								@endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-12" style="margin-top: 15px;">
                             <select class="form-select" id="" name="month">    
                                 <option value="">Month</option>
                                 <option value="1" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==1){ echo "selected"; } } ?>>Jan</option>
@@ -39,7 +79,7 @@
                             </select>
                         </div>
                         <?php $firstYear = (int)date('Y') - 20; ?>
-                        <div class="col-md-2 col-12">
+                        <div class="col-md-2 col-12" style="margin-top: 15px;">
                             <select class="form-select" id="" name="year">    
                                 <option value="">Year</option>
                                 <?php for($i=$firstYear;$i<=date('Y');$i++){ ?>
@@ -47,7 +87,7 @@
                                 <?php }?>
                             </select>
                         </div>
-                        <div class="col-md-2 col-12">
+                        <div class="col-md-2 col-12" style="margin-top: 15px;">
                             <button type="submit" name="submit" value="Search" id="submit" class="dt-button create-new btn btn-primary"><i data-feather="search"></i></button>
                             <a href="javascript:;" onclick="resetFilter()" class="btn btn-outline-secondary"><i data-feather="refresh-ccw"></i></a>
                         </div>
@@ -61,52 +101,8 @@
 				<div class="row invoice-preview">
 					<!-- Invoice -->
 					<div class="col-xl-12 col-md-12 col-12">
-						@if(isset($invoice) && $invoice!='')
-						<div class="card invoice-preview-card">
-							<div class="card-body invoice-padding pb-0">
-								<!-- Header starts -->
-								<div class="d-flex justify-content-between flex-md-row flex-column invoice-spacing mt-0">
-									<div>
-                                    <div class="logo-wrapper" style="width:80%;float:left;">
-                                        <img src="{{url('/argon/img/brand/logo.png')}}" style="width:20%;">
-                                        <!-- <h6 class="mb-2"></h6> -->
-										<?php
-											if(json_encode($invoice->invoice_data->seller_address)!=''){
-												$explode = explode("\\n",json_encode($invoice->invoice_data->seller_address));
-											}
-										?>
-										@if(isset($explode) && count($explode))
-											@foreach($explode as $explode_data)
-												<p class="card-text mb-25">{{$explode_data}}</p>
-											@endforeach
-										@else
-											<p class="card-text mb-25"><?php echo json_encode($invoice->invoice_data->seller_address); ?></p>
-										@endif
-
-                                        <h6 class="mb-2" style="margin-top: 15px;">Bill To: </h6>
-										<p class="card-text mb-25">{{$adviser['userDetails']->company_name}}</p>
-										<p class="card-text mb-25">@if(isset($adviser['userDetails']->address_line1) && $adviser['userDetails']->address_line1!=''){{$adviser['userDetails']->address_line1}}, @endif @if(isset($adviser['userDetails']->address_line2) && $adviser['userDetails']->address_line2!='') {{$adviser['userDetails']->address_line2}} @endif</p>
-										<p class="card-text mb-0">@if(isset($adviser['userDetails']->city) && $adviser['userDetails']->city!='') {{$adviser['userDetails']->city}} @endif @if(isset($adviser['userDetails']->postcode) && $adviser['userDetails']->address_line1!=''){{$adviser['userDetails']->postcode}}@endif</p>
-									</div>
-									<div class="mt-md-0 mt-2" style="width:20%;float:right;">
-										<h4 class="invoice-title">
-                                                Invoice
-                                                <span class="invoice-number">@if(isset($invoice) && $invoice!='') #{{$invoice->invoice_number}} @endif</span>
-                                            </h4>
-										<div class="invoice-date-wrapper">
-											<p class="invoice-date-title">Date Issued:</p>
-											<p class="invoice-date">@if(isset($invoice) && $invoice!='') {{$invoice->created_at}} @endif</p>
-										</div>
-										<!-- <div class="invoice-date-wrapper">
-											<p class="invoice-date-title">Due Date:</p>
-											<p class="invoice-date">29/08/2020</p>
-										</div> -->
-									</div>
-								</div>
-								<!-- Header ends -->
-							</div>
-							<hr class="invoice-spacing">
-							<!-- Address and Contact starts -->
+						@if(isset($invoice) && count($invoice))
+						<div class="card invoice-preview-card">							
 							<div class="card-body invoice-padding pt-0">
 								<div class="row invoice-spacing">
                                     <h3 class="mb-2">Account Summary:</h3>
@@ -118,10 +114,10 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold">{{\Helpers::currency($invoice->unpaid_prevoius_invoice)}}</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($invoice['unpaid_prevoius_invoice'])}}</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold">{{\Helpers::currency($invoice->paid_prevoius_invoice)}}</span></td>
+													<td><span class="fw-bold">{{\Helpers::currency($invoice['paid_prevoius_invoice'])}}</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -140,10 +136,10 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->cost_of_lead); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['cost_of_lead']); ?></span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->subtotal); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['subtotal']); ?></span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -162,13 +158,13 @@
 										<table>
 											<tbody>
 											<tr>	
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->discount); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['discount']); ?></span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->free_introduction); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['free_introduction']); ?></span></td>
 												</tr>
                                                 <tr>
-													<?php $discount_subtotal = $invoice->discount + $invoice->free_introduction; ?>
+													<?php $discount_subtotal = $invoice['discount'] + $invoice['free_introduction']; ?>
 													<td><span class="fw-bold"><?php echo \Helpers::currency($discount_subtotal); ?></span></td>
 												</tr>
 											</tbody>
@@ -185,7 +181,7 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->total_due); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['total_due']); ?></span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -204,13 +200,13 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->total_taxable_amount); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['total_taxable_amount']); ?></span></td>
 												</tr>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->vat); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['vat']); ?></span></td>
 												</tr>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice->total_current_invoice); ?></span></td>
+													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['total_current_invoice']); ?></span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -235,8 +231,8 @@
 										</tr>
 									</thead>
 									<tbody>
-                                        @if(isset($invoice->invoice_data->new_fees_data) && count($invoice->invoice_data->new_fees_data)>0)
-                                            @foreach($invoice->invoice_data->new_fees_data as $new_fees_data)
+                                        @if(isset($invoice['new_fees_data']) && count($invoice['new_fees_data'])>0)
+                                            @foreach($invoice['new_fees_data'] as $new_fees_data)
                                                 <tr>
                                                     <td class="py-1"> <span class="fw-bold">{{$new_fees_data->date}}</span> </td>
                                                     <td class="py-1"> <span class="fw-bold">{{$new_fees_data->customer}}</span> </td>
@@ -252,7 +248,7 @@
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: <?php echo \Helpers::currency($invoice->subtotal); ?></span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: <?php echo \Helpers::currency($invoice['subtotal']); ?></span> </td>
 										</tr>
 									</tbody>
 								</table>
@@ -272,8 +268,8 @@
 										</tr>
 									</thead>
 									<tbody>
-                                        @if(isset($invoice->invoice_data->discount_credit_data) && count($invoice->invoice_data->discount_credit_data)>0)
-                                            @foreach($invoice->invoice_data->discount_credit_data as $discount_credits_data)
+                                        @if(isset($invoice['discount_credit_data']) && count($invoice['discount_credit_data'])>0)
+                                            @foreach($invoice['discount_credit_data'] as $discount_credits_data)
 												<tr>
                                                     <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->date}}</span> </td>
                                                     <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->customer}}</span> </td>
@@ -288,7 +284,7 @@
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: <?php echo \Helpers::currency($invoice->discount); ?></span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: <?php echo \Helpers::currency($invoice['discount']); ?></span> </td>
 										</tr>
 									</tbody>
 								</table>
@@ -300,10 +296,8 @@
 						</div>
 						@endif
 					</div>
-					<!-- /Invoice -->
 				</div>
 			</section>
-			<!-- Send Invoice Sidebar -->
 			<div class="modal modal-slide-in fade" id="send-invoice-sidebar" aria-hidden="true">
 				<div class="modal-dialog sidebar-lg">
 					<div class="modal-content p-0">
@@ -328,8 +322,8 @@
 									<textarea class="form-control" name="invoice-message" id="invoice-message" cols="3" rows="11" placeholder="Message...">Dear Queen Consolidated, Thank you for your business, always a pleasure to work with you! We have generated a new invoice in the amount of $95.59 We would appreciate payment of this invoice by 05/11/2019</textarea>
 								</div>
 								<div class="mb-1"> <span class="badge badge-light-primary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link me-25"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                                            <span class="align-middle">Invoice Attached</span> </span>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link me-25"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+									<span class="align-middle">Invoice Attached</span> </span>
 								</div>
 								<div class="mb-1 d-flex flex-wrap mt-2">
 									<button type="button" class="btn btn-primary me-1 waves-effect waves-float waves-light" data-bs-dismiss="modal">Send</button>
@@ -386,7 +380,5 @@
 			</div>
 			<!-- /Add Payment Sidebar -->
 		</div>
-
-		
 	</div>
 </div> @endsection

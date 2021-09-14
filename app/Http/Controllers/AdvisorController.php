@@ -54,6 +54,7 @@ class AdvisorController extends Controller
      */
     public function show($id) {
         $data = User::getAdvisorDetail($id);
+        // echo json_encode($data);exit;
         $data['invoice'] = DB::table('invoices')->where('advisor_id',$id)->where('month',date('m'))->first();
         return view('advisor.show',$data);
     }
@@ -62,70 +63,32 @@ class AdvisorController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function invoice($id) {
+    public function invoice($id,Request $request) {
         $data['adviser'] = User::getAdvisorDetail($id);
         $data['site_address'] = DB::table('app_settings')->where('key','site_address')->first();
         $data['site_name'] = DB::table('app_settings')->where('key','mail_from_name')->first();
         $data['new_fees'] = array();
+        if(isset($_GET['month']) && $_GET['month']!=''){
+            $post['month'] = $_GET['month'];
+        }else{
+            $post['month'] = date('m');
+        }
+        if(isset($_GET['year']) && $_GET['year']!=''){
+            $post['year'] = $_GET['year'];
+        }else{
+            $post['year'] = date('Y');
+        }
         $data['discount_credits'] = array();
         if($data['adviser']){
-            $data['invoice'] = DB::table('invoices')->where('advisor_id',$data['adviser']['userDetails']->id)->where('month',date('m'))->first();
-            $previous_month = date('m') - 1;
-            $newTotal = 0;
-            $preTotal = 0;
-            $prePaidTotal = 0;
-            $hourdiff = 0;
-            $discountCreditTotal = 0;
-            $discountTotal = 0;
-            $discountBidTotal = 0;
-            $freeIntroductionTotal = 0;
-            $discountArr = array();
-            $bid_data = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->get();
-            foreach($bid_data as $pre){
-                if(date("m",strtotime($pre->created_at))<date("m",strtotime($previous_month))){
-                    $preTotal = $preTotal + $pre->cost_leads;
-                }
-                if(date("m",strtotime($pre->created_at))<date("m",strtotime($previous_month)) && $pre->is_paid_invoice){
-                    $prePaidTotal = $prePaidTotal + $pre->cost_leads;
-                }
-                if(date("m",strtotime($pre->created_at))==date("m")){
-                    $newTotal = $newTotal + $pre->cost_leads;
-                }
-                $date = date('Y-m-d', strtotime($pre->created_at . " +1 days"));
-                if(date("Y-m-d",strtotime($pre->accepted_date))>$date){
-                    if($pre->free_introduction==1){
-                        $freeIntroductionTotal = $freeIntroductionTotal + $pre->cost_discounted;
-                    }else{
-                        $discountBidTotal = $discountBidTotal + $pre->cost_leads;
-                    }
-                    $discountTotal = $discountTotal + $pre->cost_discounted;
-                    $discountCreditTotal = $discountCreditTotal + $pre->cost_leads;
-                    array_push($discountArr,$pre);
-                }
-            }
-            $data['previous_total'] = $preTotal;
-            $data['previous_invoice_paid_till'] = \Helpers::getMonth($previous_month);
-            $data['previous_paid_total'] = $prePaidTotal;
-            $data['new_invoice_total'] = $newTotal;
-            $data['discount_credit_total'] = $discountCreditTotal;
-            $data['discount_total'] = $discountTotal;
-            $data['free_introductions_total'] = $freeIntroductionTotal;
-            $data['discount_bid_total'] = $discountBidTotal;
-            $data['sub_total_discount'] = $data['discount_bid_total'] - $data['free_introductions_total'];
-            $data['new_fees'] = AdvisorBids::where('advisor_id',$data['adviser']['userDetails']->id)->with('area')->get();
-            $data['discount_credits'] = $discountArr;
-            $data['tax_amount'] = 0;
-            $data['taxable_amount'] = 0;
-            $data['tax'] = 0;
-            $data['total_due'] = $data['new_invoice_total'] - $data['discount_total'];
-            $tax = DB::table('app_settings')->select('value')->where('key','tax_amount')->first();
-            if($tax){
-                $tax_cal = $data['total_due']/(1+($tax->value/100));
-                $data['taxable_amount'] = $tax_cal;
-                $data['tax_amount'] = $data['total_due'] - $tax_cal;
-                $data['tax'] = $tax->value;
+            $data['invoice'] = DB::table('invoices')->where('advisor_id',$id)->where($post)->first();
+            // echo json_encode($data);exit;
+            if($data['invoice']){
+                $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
+                $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
             }
         }
+        // echo json_encode($data);exit;
         return view('advisor.invoice',$data);
     }
     /**
@@ -724,7 +687,10 @@ class AdvisorController extends Controller
 
         $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($arr);
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
-
+        // echo json_encode($advisor_data);exit;
+        if(isset($request->company_name) && $request->company_name!=''){
+            companies::where('id',$advisor_data->company_id)->update(['company_name'=>$request->company_name]);
+        }
         return response()->json([
             'status' => true,
             'message' => 'Profile updated successfully',

@@ -80,6 +80,7 @@
 												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
                                             @endif
                                         </small> 
+										<a href="{{url('/admin/verifyEmail/')}}/{{$userDetails->id}}" class="btn btn-secondary btn-sm btn-add-new waves-effect waves-float waves-light" onclick="resetPassword('{{$userDetails->id}}');">Send Email Verification Link</a>
                                     </div>
 								</div>
 							</div>

@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/delete-customer/{id}', '\App\Http\Controllers\UserController@destroy')->name("admin/delete-customer");
     Route::post('admin/updatePassword','\App\Http\Controllers\UserController@updatePassword');
     Route::post('admin/deleteCustomer','\App\Http\Controllers\UserController@deleteCustomer');
+    Route::get('admin/verifyEmail/{id}','\App\Http\Controllers\UserController@verifyEmail');
     Route::post('admin/update-user-status','\App\Http\Controllers\UserController@updateStatus');
 
     /******************* User Management **********************/
@@ -125,6 +126,8 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/invoice', '\App\Http\Controllers\InvoiceController@index');
     Route::get('admin/invoice-list/{month}', '\App\Http\Controllers\InvoiceController@list');
     Route::get('admin/invoice-detail/{invoice_id}', '\App\Http\Controllers\InvoiceController@show');
+    Route::get('admin/final-invoice', '\App\Http\Controllers\InvoiceController@invoice');
+
     /******************* Invoice Management **********************/
 
     Route::get('admin', '\App\Http\Controllers\AdminController@index')->name("admin");

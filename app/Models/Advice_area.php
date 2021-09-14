@@ -63,6 +63,23 @@ class Advice_area extends Model
                 $advice_area[$key]->offer_count = $offer_count;
                 $advice_area[$key]->active_bids = $active_bids;
                 $advice_area[$key]->selected_pro = AdvisorBids::where('area_id',$item->id)->where('advisor_bids.advisor_status',1)->where('advisor_bids.status','!=',0)->leftJoin('users', 'advisor_bids.advisor_id', '=', 'users.id')->select('advisor_bids.*','users.name as advisor_name')->first();
+                if($advice_area[$key]->close_type!=0){
+                    if($advice_area[$key]->close_type==1){
+                        $advice_area[$key]->close_type="Someone not on Mortgagebox";
+                    }else if($advice_area[$key]->close_type==12){
+                        $advice_area[$key]->close_type="In the end I didn’t need a mortgage adviser";
+                    }else{
+                        $user = User::where('id',$advice_area[$key]->close_type)->first();
+                        if($user){
+                            $advice_area[$key]->close_type=$user->name;
+                        }else{
+                            $advice_area[$key]->close_type="--";
+                        }
+                    }
+
+                }else{
+                    $advice_area[$key]->close_type="--";
+                }
                 
             }
             $data['userDetails'] = $advice_area;

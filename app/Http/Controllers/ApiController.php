@@ -432,9 +432,23 @@ class ApiController extends Controller
             'description' => $description
 
         ]);
-        if($dataUser){
-            
+        companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
+        
+        // Set Defaul prefrances
+        $notification = AdvisorPreferencesDefault::where('advisor_id', '=', $advisor_id)->first();
+        if (empty($notification)) {
+            AdvisorPreferencesDefault::create([
+                'advisor_id' => $user->id,
+            ]);
         }
+        
+        $notification2 = AdvisorPreferencesCustomer::where('advisor_id', '=', $advisor_id)->first();
+        if (empty($notification2)) {
+            AdvisorPreferencesCustomer::create([
+                'advisor_id' => $user->id,
+            ]);
+        }
+        
         $msg = "";
         $msg .= "Welcome\n\n";
         $msg .= "Hello ".ucfirst($request->name).",\n\n";
@@ -452,6 +466,14 @@ class ApiController extends Controller
 
         $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
         //User created, return success response
+        CompanyTeamMembers::create([
+            'company_id' => $company_data_new->id,
+            'name' => $request->name,
+            'email' => $request->email,
+            'advisor_id' => $user->id,
+            'isCompanyAdmin'=>1,
+            'status'=>1
+        ]);
         return response()->json([
             'status' => true,
             'message' => 'Advisor created successfully',

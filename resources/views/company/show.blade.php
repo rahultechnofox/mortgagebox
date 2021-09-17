@@ -190,6 +190,7 @@
                                             <th>Completed</th>
                                             <th>Success %</th>
                                             <th>Value</th>
+                                            <th>Cost</th>
                                             <th>Status</th>
                                         </tr>
                                     </thead>
@@ -201,7 +202,14 @@
                                                 <tr>
                                                     <td>{{$i}}</td>
                                                     <td>@if(isset($company_detail_data->name) && $company_detail_data->name!=''){{$company_detail_data->name}}@endif</td>
-                                                    <td>@if(isset($company_detail_data->team_data) && $company_detail_data->team_data!=''){{$company_detail_data->team_data->role}}@else -- @endif</td>
+                                                    <td>
+                                                        @if(isset($company_detail_data->team_data) && $company_detail_data->team_data!='')
+                                                            @if($company_detail_data->isCompanyAdmin==1)
+                                                                Admin
+                                                            @else
+                                                                Adviser
+                                                            @endif
+                                                        @else -- @endif</td>
                                                     <td>
                                                         @if(isset($company_detail_data->team_data) && $company_detail_data->team_data!='')
                                                             @if($company_detail_data->team_data->email_status==1)
@@ -216,9 +224,9 @@
                                                     <td>
                                                         @if(isset($company_detail_data->team_data_advisor_profile) && $company_detail_data->team_data_advisor_profile!='')
                                                             @if($company_detail_data->team_data_advisor_profile->FCA_verified != "")  
-                                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
-                                                            @else
                                                                 <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                                            @else
+                                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
                                                             @endif
                                                         @else 
                                                             -- 
@@ -229,7 +237,8 @@
                                                     <td>@if(isset($company_detail_data->hired) && $company_detail_data->hired!=''){{$company_detail_data->hired}}@else 0 @endif</td>
                                                     <td>@if(isset($company_detail_data->completed) && $company_detail_data->completed!=''){{$company_detail_data->completed}}@else 0 @endif</td>
                                                     <td>@if(isset($company_detail_data->success_percent) && $company_detail_data->success_percent!=''){{$company_detail_data->success_percent}}%@else 0% @endif</td>
-                                                    <td>@if(isset($company_detail_data->value) && $company_detail_data->value!=''){{\Helpers::currency($company_detail_data->value)}}@else {{\Helpers::currency(0)}} @endif</td>
+                                                    <td>@if(isset($company_detail_data->eastimated_lead) && $company_detail_data->eastimated_lead!=''){{\Helpers::currency($company_detail_data->eastimated_lead)}}@else {{\Helpers::currency(0)}} @endif</td>
+                                                    <td>@if(isset($company_detail_data->cost_of_lead) && $company_detail_data->cost_of_lead!=''){{$company_detail_data->cost_of_lead}}@else {{\Helpers::currency(0)}} @endif</td>
                                                     <td>
                                                         @if(isset($company_detail_data->status) && $company_detail_data->status!='')
                                                             @if($company_detail_data->status==1)

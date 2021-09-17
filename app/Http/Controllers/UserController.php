@@ -29,7 +29,6 @@ use Illuminate\Support\Facades\Mail;
 class UserController extends Controller
 {
     protected $user;
-
     /**
      * Display a listing of the resource.
      *
@@ -120,9 +119,44 @@ class UserController extends Controller
         $data['message'] = 'Customer deleted!';
         return redirect()->to('admin/users')->with('message', $data['message']);
     }
+    public function addReview(Request $request)
+    {
+        if(isset($request->reviewer_name) && $request->reviewer_name !="" ) {
+            $userDetails = new \stdClass();
+            $userDetails->id = 0;
+            $userDetails->name = $request->reviewer_name; 
 
-    public function addReview(Request $request){
-        $userDetails = JWTAuth::parseToken()->authenticate();
+        }else{
+            $request->reviewer_name = "";
+            $userDetails = JWTAuth::parseToken()->authenticate();
+        }
+         
+        foreach($advice_area as $items) {
+            $adviceBidCl= AdvisorBids::where('area_id',$items->id)->where('status','=','2')->get();
+            $adviceBidClosed = $adviceBidClosed+count($adviceBidCl);
+            $adviceBidAc= Advice_area::where('id',$items->id)->where('status','=','1')->get();
+            $adviceBidActive = $adviceBidActive+count($adviceBidAc);
+            $pendingCount= AdvisorBids::where('area_id',$items->id)->where('status','=','0')->get();
+            $pendingBidCount = $pendingBidCount+count($pendingCount);
+        }
+        $userDetails->closed = $adviceBidClosed;
+        $userDetails->active_bid = $adviceBidActive;
+        $userDetails->pending_bid = $pendingBidCount;
+        // echo json_encode($userDetails);exit;
+        return view('users.show',['userDetails'=>$userDetails]);
+    }
+    public function openAddReview(Request $request)
+    {
+        if(isset($request->reviewer_name) && $request->reviewer_name !="" ) {
+            $userDetails = new \stdClass();
+            $userDetails->id = 0;
+            $userDetails->name = $request->reviewer_name; 
+
+        }else{
+            $request->reviewer_name = "";
+            $userDetails = JWTAuth::parseToken()->authenticate();
+        }
+        
         $rating = ReviewRatings::create([
             'user_id' => $userDetails->id,
             'advisor_id' => $request->advisor_id,
@@ -132,7 +166,9 @@ class UserController extends Controller
             'status' => $request->status,
             'parent_review_id' => $request->parent_review_id,
             'reply_reason' =>$request->reply_reason,
-            'spam_reason' => $request->spam_reason
+            'spam_reason' => $request->spam_reason,
+            'reviewer_name'=>$request->reviewer_name
+            
         ])->id;
         $this->saveNotification(array(
             'type'=>'4', // 1:
@@ -148,7 +184,16 @@ class UserController extends Controller
             'message' => 'Rating added successfully',
         ], Response::HTTP_OK);
     }
-    
+    public function dashboard(User $model)
+    {
+        // return view('users.index');
+        return view('dashboard');
+    }
+    public function users(User $model)
+    {
+        // return view('users.index');
+        return view('users');
+    }
     public function saveNotification($data) {
         $notification = Notifications::create($data);
         if($notification) {

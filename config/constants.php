@@ -2,6 +2,8 @@
 return [
     'urls' => [
         'email_verification_url' => 'http://mbox.technofox.co.in/backend/public/api/verifyEmail/',
+        'team_email_verification_url' => 'http://mbox.technofox.co.in/backend/public/api/verifyTeamEmail/',
+        'team_signup_url' => 'http://mbox.technofox.co.in/register/',
         'host_url' => 'http://mbox.technofox.co.in',
         ],
     'stripe' => [

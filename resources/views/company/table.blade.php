@@ -39,8 +39,8 @@
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
                                 <td>@if($users_data->success_percent!=0){{number_format($users_data->success_percent,2)}}@else{{$users_data->success_percent}}@endif%</td>
-                                <td>{{\Helpers::currency($users_data->value)}}</td>
-                                <td>{{\Helpers::currency($users_data->cost)}}</td>
+                                <td>{{\Helpers::currency($users_data->eastimated_lead)}}</td>
+                                <td>{{$users_data->cost_of_lead}}</td>
                                 <td>
                                     @if($users_data->status == 1)
                                         <a class="badge rounded-pill badge-light-success me-1">Active</a>

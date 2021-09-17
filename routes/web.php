@@ -62,7 +62,7 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/update-fca-verification-status','\App\Http\Controllers\AdvisorController@updateFCAStatus');
     Route::post('admin/update-advisor-status','\App\Http\Controllers\AdvisorController@updateAdvisorStatus');
     Route::post('admin/reset-password','\App\Http\Controllers\AdvisorController@resetPassword');
-    Route::get('admin/advisors/invoice/{id}', '\App\Http\Controllers\AdvisorController@invoice')->name("admin/advisors/invoice");
+    Route::get('admin/advisors/invoice/{id}', '\App\Http\Controllers\AdvisorController@invoiceData')->name("admin/advisors/invoice");
     /******************* Advisor Management **********************/
 
     /******************* Need Management **********************/
@@ -104,6 +104,7 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/add-update-faq-category','\App\Http\Controllers\FaqCategoryController@store');
     Route::post('admin/get-faq-category','\App\Http\Controllers\FaqCategoryController@show');
     Route::post('admin/update-faq-category-status','\App\Http\Controllers\FaqCategoryController@updateFaqCategoryStatus');
+    Route::post('admin/uploadFaqCategoryImage','\App\Http\Controllers\FaqCategoryController@uploadFaqCategoryImage');
     /******************* Faq Category Management **********************/
 
     /******************* Faq Management **********************/

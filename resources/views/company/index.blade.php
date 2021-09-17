@@ -29,6 +29,14 @@
                         <div class="col-md-3 col-12">
                             <input type="text" class="form-control" value="<?php if(isset($_GET['search']) && $_GET['search']!=''){ echo $_GET['search']; } ?>" name="search" placeholder="Search">
                         </div>
+                        <div class="col-md-2 col-12">
+                            <select class="form-select" id="" name="company_admin">    
+                                <option value="">Contact Admin</option>
+                                @foreach($adviser as $row)
+                                    <option value="{{$row->id}}" <?php if(isset($_GET['company_admin']) && $_GET['company_admin']!=''){ if($_GET['company_admin']==$row->id){ echo "selected"; } } ?>>{{$row->display_name}}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-md-3 col-12">
                             <input type="text" id="fp-default" value="<?php if(isset($_GET['created_at']) && $_GET['created_at']!=''){ echo date("Y-m-d",strtotime($_GET['created_at'])); } ?>" name="created_at" class="form-control flatpickr-basic" placeholder="Date" />
                         </div>

@@ -52,8 +52,8 @@
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
                                 <td>{{$users_data->success_percent}}%</td>
-                                <td>{{\Helpers::currency($users_data->value)}}</td>
-                                <td>{{\Helpers::currency($users_data->cost)}}</td>
+                                <td>{{$users_data->eastimated_lead}}</td>
+                                <td>{{$users_data->cost_of_lead}}</td>
                                 <td>
                                     @if($users_data->user_status==1)
                                         @if($users_data->email_verified_at!='' && $users_data->FCA_verified!='')
@@ -80,7 +80,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="pagination" style="float: right;">
-                        {{$adviors->links('pagination::bootstrap-4')}}
+                        {{$adviors->withQueryString()->links('pagination::bootstrap-4')}}
                     </div>
                 </div>
             </div>

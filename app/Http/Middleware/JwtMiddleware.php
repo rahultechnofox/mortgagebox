@@ -7,6 +7,7 @@ use JWTAuth;
 use Exception;
 use Tymon\JWTAuth\Http\Middleware\BaseMiddleware;
 use Symfony\Component\HttpFoundation\Response;
+use App\Models\User;
 
 class JwtMiddleware extends BaseMiddleware
 {
@@ -22,6 +23,13 @@ class JwtMiddleware extends BaseMiddleware
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
+            // gmdate("Y-m-d H:i:s")
+            User::where('id', '=', $user->id)->update(
+                [
+                    'last_active' => date("Y-m-d H:i:s")
+                    //'last_active' => gmdate("Y-m-d H:i:s")
+                ]
+            );
         } catch (Exception $e) {
             if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
                 return response()->json(['status' => 'Token is Invalid']);

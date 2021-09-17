@@ -29,8 +29,15 @@ class CompanyController extends Controller
     public function index(Request $request){
         $post = $request->all();
         $companyDetails = companies::getCompanies($post);
+        $adviser = User::where('user_role',1)->get();
+        foreach($adviser as $row){
+            $adviser_data = AdvisorProfile::where('advisorId',$row->id)->first();
+            if($adviser_data){
+                $row->display_name = $adviser_data->display_name;
+            }
+        }
         // echo json_encode($companyDetails);exit;
-        return view('company.index',['companyDetails'=>$companyDetails]);
+        return view('company.index',['companyDetails'=>$companyDetails,'adviser'=>$adviser]);
     }
     /**
      * Update status the specified resource in storage.

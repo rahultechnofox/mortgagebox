@@ -21,6 +21,7 @@
                                 <th>Status</th>
                                 <th>Selected Pro</th>
                                 <th>Feedback</th>
+                                <th>Final Pro</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -33,7 +34,7 @@
                                 <td>{{$users_data->name}}</td>
                                 <td>{{ $users_data->created_at != "" ? \Helpers::formatDateTime($users_data->created_at) : '--' }}</td>
                                 <td>{{ $users_data->service_type != "" ? ucfirst($users_data->service_type) : '--' }}</td>
-                                <td>{{ $users_data->size_want != "" ? \Helpers::currency($users_data->size_want) : '--' }}</td>
+                                <td>{{ $users_data->size_want != "" ? \Helpers::currencyWithoutDecimal($users_data->size_want) : '--' }}</td>
                                 <td>{{$users_data->offer_count}}</td>
                                 <td>{{$users_data->active_count}}</td>
                                 <td>
@@ -44,6 +45,7 @@
                                     @endif
                                 </td>
                                 <td>@if(isset($users_data->selected_pro) && $users_data->selected_pro!=''){{\Helpers::checkNull($users_data->selected_pro->advisor_name)}}@else -- @endif</td>
+                                <td>N/A</td>
                                 <td>@if(isset($users_data->close_type) && $users_data->close_type!=''){{\Helpers::checkNull($users_data->close_type)}}@else -- @endif</td>
                                 <td>
                                     <div class="dropdown">

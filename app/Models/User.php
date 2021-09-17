@@ -125,6 +125,8 @@ class User extends Authenticatable implements JWTSubject
 
                 $live_leads_data = User::getAdvisorLeadsData($row->advisorId);
                 $row->live_leads = $live_leads_data['total_leads'];
+                $row->eastimated_lead = $live_leads_data['eastimated_lead'];
+                $row->cost_of_lead = $live_leads_data['cost_of_lead'];
 
                 $hired_leads = AdvisorBids::where('advisor_id','=',$row->advisorId)
                 ->where('status', '=', 1)
@@ -221,6 +223,8 @@ class User extends Authenticatable implements JWTSubject
 
                 $live_leads_data = User::getAdvisorLeadsData($data['userDetails']->id);
                 $data['userDetails']->live_leads = $live_leads_data['total_leads'];
+                $data['userDetails']->eastimated_lead = $live_leads_data['eastimated_lead'];
+                $data['userDetails']->cost_of_lead = $live_leads_data['cost_of_lead'];
 
                 $hired_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
                 ->where('status', '=', 1)
@@ -239,6 +243,22 @@ class User extends Authenticatable implements JWTSubject
                 ->where('advisor_status', '=', 1)
                 ->count();
                 $data['userDetails']->lost_leads = $lost_leads;
+
+                $closed = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
+                ->where('status', '=', 3)
+                ->where('advisor_status', '=', 1)
+                ->count();
+                $data['userDetails']->closed = $closed;
+                $not_proceed = 0;
+                $get_not_proceed = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)->get();
+                foreach($not_proceed as $not_proceed_data){
+                    $check_proceed = AdvisorBids::where('area_id',$not_proceed_data->id)->where('status', '=', 0)->where('advisor_status', '=', 1)->count();
+                    if($check_proceed){
+                        $not_proceed = $not_proceed + 1;
+                    }
+                }
+                // where('status', '=', 0)->where('advisor_status', '=', 1)->count()
+                $data['userDetails']->not_proceed = $not_proceed;
                 
                 $value = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)->sum('cost_leads');
                 $cost = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)->sum('cost_discounted');
@@ -268,7 +288,9 @@ class User extends Authenticatable implements JWTSubject
             $ltv_max = "";
             $lti_max = "";
         }
-        
+        $cost_of_lead = 0;
+        $estimated_lead = 0;
+
         if(!empty($userPreferenceCustomer)) {
             if($userPreferenceCustomer->asap == 1) {
                 $requestTime[] = "as soon as possible";
@@ -428,7 +450,7 @@ class User extends Authenticatable implements JWTSubject
             $costOfLead = ($item->size_want/100)*0.006;
             $time1 = Date('Y-m-d H:i:s');
             $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
-            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+            $hourdiff = round((strtotime($time2) - strtotime($time1))/3600, 1);
             $costOfLeadsStr = "";
             $costOfLeadsDropStr = "";
             $amount = number_format((float)$costOfLead, 2, '.', '');
@@ -456,7 +478,7 @@ class User extends Authenticatable implements JWTSubject
                 $costOfLeadsStr = ""."Free";
                 $costOfLeadsDropStr = "";
             }
-            
+            $cost_of_lead = $costOfLeadsStr;
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
             $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
             $area_owner_details = User::where('id',$item->user_id)->first();
@@ -503,10 +525,17 @@ class User extends Authenticatable implements JWTSubject
             }   
             $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
             $advice_area[$key]->lead_address = $address;
-            // $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
-            // $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            // echo json_encode($AdvisorPreferencesDefault->$advisorDetaultValue);
+            $lead_value = ($main_value)*($AdvisorPreferencesDefault[$advisorDetaultValue]);
+            $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            $estimated_lead = $lead_value;
         }
+        // exit;
         $data['total_leads'] = $advice_area->count();
+        $data['eastimated_lead'] = $estimated_lead;
+        $data['cost_of_lead'] = $cost_of_lead;
+
+        // echo json_encode($data);exit;
         return $data;
     }
 }

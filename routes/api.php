@@ -14,6 +14,7 @@ Route::post('login', [ApiController::class, 'authenticate']);
 Route::post('register', [ApiController::class, 'register']);
 Route::post('advisorRegister', [ApiController::class, 'advisorRegister']);
 Route::get('verifyEmail/{id}', [ApiController::class, 'verifyEmail']);
+Route::get('verifyTeamEmail/{id}', [AdvisorController::class, 'verifyTeamEmail']);
 Route::post('forgotPassword/', [ApiController::class, 'forgotPassword']);
 
 Route::group(['middleware' => ['jwt.verify']], function() {
@@ -67,6 +68,7 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('getAdvisorDefaultPreference/', [AdvisorController::class, 'getAdvisorDefaultPreference']);
     Route::post('updateAdvisorDefaultPreference/', [AdvisorController::class, 'updateAdvisorDefaultPreference']);
     Route::post('setRecentMessagesOfChatToRead/', [ApiController::class, 'setRecentMessagesOfChatToRead']);
+    Route::post('setRecentMessagesOfAllChatToRead/', [ApiController::class, 'setRecentMessagesOfAllChatToRead']);
     Route::post('searchAdvisor/', [AdvisorController::class, 'searchAdvisor']);
     Route::post('updateAdvisorAboutUs/', [AdvisorController::class, 'updateAdvisorAboutUs']);
     Route::post('updateAdvisorGeneralInfo/', [AdvisorController::class, 'updateAdvisorGeneralInfo']);
@@ -95,13 +97,17 @@ Route::group(['middleware' => ['jwt.verify']], function() {
      Route::get('getNotification', [ApiController::class, 'getNotification']);
     Route::get('updateReadNotification', [ApiController::class, 'updateReadNotification']);
     Route::post('invoice', [AdvisorController::class, 'invoice']);
+    Route::post('addReview',  [UserController::class, 'addReview']);
+    Route::post('getNeedDetails',  [ApiController::class, 'getNeedDetails']);
    
     
 });
  Route::post('searchPostalCode', [ApiController::class, 'searchPostalCode']);
  Route::get('getAllServiceType', [ApiController::class, 'getAllServiceType']);  
- Route::get('getResponseTime/{id}', [ApiController::class, 'getAdvisorResponseTime']);  
+ Route::get('getResponseTime/{id}', [ApiController::class, 'getAdvisorResponseTime']);
+ Route::get('getAdvisorDetails/{advisor_id}', [ApiController::class, 'getAdvisorDetails']);
+ Route::post('openAddReview',  [UserController::class, 'openAddReview']);
 //for interest
 Route::post('addAdviceArea/', [AdviceController::class, 'addAdviceArea']);
 Route::post('addInterest', [InterestController::class, 'store']);
-
+Route::get('getCompanyDetailsByAdvisor/{id}', [ApiController::class, 'getCompanyDetailsByAdvisor']);

@@ -10,6 +10,7 @@ class Invoice extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['invoice_number', 'month', 'year','invoice_data','is_paid','advisor_id'];
     public function adviser(){
         return $this->hasOne('App\Models\AdvisorProfile',"advisorId","advisor_id");
     }
@@ -60,8 +61,8 @@ class Invoice extends Model
             }
             $data = $query->with('adviser')->first();
             if($data){
-                $data->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
-                $data->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
+                    $data->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
+                    $data->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
             }
             return $data;
         }catch (\Exception $e) {

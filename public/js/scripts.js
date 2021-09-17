@@ -448,6 +448,9 @@ function resetFaqCategoryForm(){
 function addUpdateFaqCategory(formId){
     var $form = $("#"+formId);
     var data = getFormData($form);
+    if(category_image!=''){
+        data.image = category_image;
+    }
     if(data.name == ''){
         myToastr('Enter name','error');
     }else if(data.audience == ''){
@@ -463,7 +466,7 @@ function addUpdateFaqCategory(formId){
                     hideLoader();
                     myToastr(response.message,'error');
                 }else{
-                    location.reload();                   
+                    // location.reload();                   
                     myToastr(response.message,'success');
                 }
             }
@@ -569,6 +572,66 @@ function resetPassword(id){
             hideLoader();
         }
     });
+}
+
+function triggerFileInput(className){
+    $('.'+className).click();
+}
+
+var category_image;
+function uploadFaqCategoryImage(input,previewid,type,id) {
+    $('#createBtn').prop('disabled', true);
+    if(input.files && input.files[0]){
+        var imgPath = input.files[0].name;
+        var extn = imgPath.substring(imgPath.lastIndexOf('.') + 1).toLowerCase();
+        if(extn == "gif" || extn == "png" || extn == "jpg" || extn == "jpeg") {
+            if(typeof (FileReader) != "undefined"){
+                $("#preloader").show();
+                var reader = new FileReader();
+                reader.readAsDataURL(input.files[0]);
+                reader.onload = function (e) {
+                    $.ajaxSetup({
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    });
+                    if(type=="add"){
+                        $("#show_cat_image_add").show();
+                        $('#'+previewid).attr('src',e.target.result);
+                    }else if(type=="update"){
+                        $("#image_update_"+id+"").attr('src',e.target.result);
+                    }
+                    var fd = new FormData();
+                    fd.append('image', input.files[0]);
+                    $.ajax({
+                        url:base_url+'/admin/uploadFaqCategoryImage',
+                        data:fd,
+                        processData:false,
+                        contentType:false,
+                        type:'POST',
+                        dataType:'json',
+                        success:function(data){
+                            setTimeout(function(){
+                                category_image = data.data;
+                                if(category_image!=undefined){
+                                    $('#createBtn').prop('disabled', false);
+                                    if($('#categoryId').val()){
+                                        $('#createBtn').html('Update');
+                                    }else{
+                                        $('#createBtn').html('Create');
+                                    }
+                                }
+                            }, 10);
+                        }
+                    })
+                };
+            }else{
+                console.log("This browser does not support FileReader.");
+            }
+        }else{
+            console.log("Please select only images");
+        }
+    }
 }
 
 function selectValue(value){

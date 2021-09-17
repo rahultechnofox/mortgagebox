@@ -45,7 +45,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Mortgage Size:') }}</h6>
-                                        <small>{{isset($needDetails->size_want) ? old('name', \Helpers::currency($needDetails->size_want)) : '--'}}</small>
+                                        <small>{{isset($needDetails->size_want) ? old('name', \Helpers::currencyWithoutDecimal($needDetails->size_want)) : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -84,7 +84,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Combined Name:') }}</h6>
-                                        <small>{{isset($needDetails->combined_income) ? \Helpers::currency($needDetails->combined_income) : '--' }}</small>
+                                        <small>{{isset($needDetails->combined_income) ? \Helpers::currencyWithoutDecimal($needDetails->combined_income) : '--' }}</small>
                                     </div>
                                 </div>
                             </div>

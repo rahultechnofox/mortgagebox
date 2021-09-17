@@ -12,9 +12,9 @@ class CompanyTeamMembers extends Model
         'company_id','name','email','advisor_id','status'
     ];
     public function team_data_advisor_profile(){
-        return $this->hasOne('App\Models\AdvisorProfile',"email","email");
+        return $this->hasOne('App\Models\AdvisorProfile',"advisorId","advisor_id");
     }
     public function team_data(){
-        return $this->hasOne('App\Models\User',"email","email");
+        return $this->hasOne('App\Models\User',"id","advisor_id");
     }
 }

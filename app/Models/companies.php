@@ -39,6 +39,9 @@ class companies extends Model
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('status',$search['status']);
             }
+            if(isset($search['company_admin']) && $search['company_admin']!=''){
+                $query = $query->where('company_admin',$search['company_admin']);
+            }
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
@@ -58,18 +61,23 @@ class companies extends Model
                     $row->company_admin_name = "";
                 }
                 $final_live_lead = 0;
+                $final_eastimated_lead = 0;
+                $final_cost_of_lead = 0;
                 foreach($row->team_members as $team_members_data){
                     $live_leads_data = User::getAdvisorLeadsData($team_members_data->advisor_id);
                     $final_live_lead = $final_live_lead + $live_leads_data['total_leads'];
+                    $final_eastimated_lead = $final_eastimated_lead + $live_leads_data['eastimated_lead'];
+                    // $final_cost_of_lead = $final_cost_of_lead + $live_leads_data['cost_of_lead'];
                     array_push($team_arr,$team_members_data->advisor_id);
                 }
                 $row->live_leads = $final_live_lead;
+                $row->eastimated_lead = $final_eastimated_lead;
+                $row->cost_of_lead = $final_cost_of_lead;
+
                 $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->whereIn('advisor_id',$team_arr)
                 ->where('status', '!=', 2)->where('status', '!=', 3)->count();
 
                 $row->accepted_leads = $advice_areaCount;
-
-                
 
                 $hired_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
                 ->where('status', '=', 1)
@@ -173,6 +181,8 @@ class companies extends Model
                     $team_members_data->accepted_leads = $advice_areaCount;
                     $live_leads_data = User::getAdvisorLeadsData($team_members_data->advisor_id);
                     $team_members_data->live_leads = $live_leads_data['total_leads'];
+                    $team_members_data->eastimated_lead = $live_leads_data['eastimated_lead'];
+                    $team_members_data->cost_of_lead = $live_leads_data['cost_of_lead'];
 
                     $hired_leads = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)
                     ->where('status', '=', 1)

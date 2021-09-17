@@ -9,7 +9,7 @@ class Advice_area extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'user_id', 'service_type','request_time', 'property','property_want', 'size_want','combined_income', 'description','occupation', 'contact_preference', 'advisor_preference', 'fees_preference','self_employed','non_uk_citizen','adverse_credit','contact_preference_face_to_face','contact_preference_online','contact_preference_telephone','contact_preference_evening_weekend','advisor_preference_local','advisor_preference_gender','advisor_preference_language','status','combined_income_currency','property_currency','size_want_currency','close_type','advisor_id','need_reminder','initial_term','start_date','ltv_max','lti_max'
+        'user_id', 'service_type','request_time', 'property','property_want', 'size_want','combined_income', 'description','occupation', 'contact_preference', 'advisor_preference', 'fees_preference','self_employed','non_uk_citizen','adverse_credit','contact_preference_face_to_face','contact_preference_online','contact_preference_telephone','contact_preference_evening_weekend','advisor_preference_local','advisor_preference_gender','advisor_preference_language','status','combined_income_currency','property_currency','size_want_currency','close_type','advisor_id','need_reminder','initial_term','start_date','ltv_max','lti_max','inquiry_adviser_id','inquiry_match_me','inquiry_description'
     ];
 
     public function user(){
@@ -63,23 +63,22 @@ class Advice_area extends Model
                 $advice_area[$key]->offer_count = $offer_count;
                 $advice_area[$key]->active_bids = $active_bids;
                 $advice_area[$key]->selected_pro = AdvisorBids::where('area_id',$item->id)->where('advisor_bids.advisor_status',1)->where('advisor_bids.status','!=',0)->leftJoin('users', 'advisor_bids.advisor_id', '=', 'users.id')->select('advisor_bids.*','users.name as advisor_name')->first();
-                if($advice_area[$key]->close_type!=0){
-                    if($advice_area[$key]->close_type==1){
-                        $advice_area[$key]->close_type="Someone not on Mortgagebox";
-                    }else if($advice_area[$key]->close_type==12){
-                        $advice_area[$key]->close_type="In the end I didn’t need a mortgage adviser";
-                    }else{
-                        $user = User::where('id',$advice_area[$key]->close_type)->first();
-                        if($user){
-                            $advice_area[$key]->close_type=$user->name;
-                        }else{
-                            $advice_area[$key]->close_type="--";
-                        }
-                    }
-
-                }else{
-                    $advice_area[$key]->close_type="--";
-                }
+                // if($advice_area[$key]->close_type!=0){
+                //     if($advice_area[$key]->close_type==1){
+                //         $advice_area[$key]->close_type="Someone not on Mortgagebox";
+                //     }else if($advice_area[$key]->close_type==12){
+                //         $advice_area[$key]->close_type="In the end I didn’t need a mortgage adviser";
+                //     }else{
+                //         $user = Advisor_profile::where('advisorId',$advice_area[$key]->close_type)->first();
+                //         if($user){
+                //             $advice_area[$key]->close_type=$user->display_name;
+                //         }else{
+                //             $advice_area[$key]->close_type="--";
+                //         }
+                //     }
+                // }else{
+                //     $advice_area[$key]->close_type="--";
+                // }
                 
             }
             $data['userDetails'] = $advice_area;

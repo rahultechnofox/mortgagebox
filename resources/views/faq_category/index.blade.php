@@ -74,6 +74,20 @@
                     <label class="form-label" for="name">Name</label>
                     <input type="text" class="form-control" placeholder="Name" name="name" id="name" />
                 </div>
+
+                <div class="mb-1">
+                    <div class="col-md-12 hide" id="show_cat_image_add">
+                        <div class="m-b-10">
+                            <img id="image_add" src="" alt="Product Image" style="width: 20%;" >
+                        </div>
+                    </div>
+                    <input class="uploadBtn hide" type="file" name="image" onchange="uploadFaqCategoryImage(this,'image_add','add',0);" accept="image/jpg, image/jpeg"/>
+                    <div class="col-md-12">
+                        <div class="file uplodBTNText btn btn-success data-submit me-1" onclick="triggerFileInput('uploadBtn')">
+                            Upload Image
+                        </div>
+                    </div>
+                </div>
                 <button type="button" class="btn btn-primary data-submit me-1" onclick="addUpdateFaqCategory('faqCategoryForm');">Submit</button>
                 <button type="reset" onclick="resetFaqCategoryForm();" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>

@@ -92,7 +92,17 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Active Team Members:') }}</h6>
-                                        <small>--</small>
+                                        <small>
+                                            @if(isset($profile) && $profile!='')
+                                                @if($profile->company_id!='' && $profile->company_id!=0)
+                                                     <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                                @else
+                                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                                @endif
+                                            @else
+                                                --
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -251,25 +261,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3 mb-1">
-                                <div class="d-flex">
-                                    <div class="transaction-percentage">
-                                        <h6 class="transaction-title">{{ __('Location:') }}</h6>
-                                        <small>
-                                            @if(isset($profile->district) && $profile->district!='' && isset($profile->country) && $profile->country!='')
-                                                @if(isset($profile->district) && $profile->district!='') 
-                                                    {{$profile->district}},                                           
-                                                @endif
-                                                @if(isset($profile->country) && $profile->country!='') 
-                                                    {{$profile->country}}                                           
-                                                @endif
-                                            @else
-                                                --
-                                            @endif
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -284,9 +275,11 @@
                                     <thead>
                                         <tr>
                                             <th>Active</th>
-                                            <th>Live</th>
+                                            <th>Closed</th>
+                                            <th>Live Lead</th>
                                             <th>Hired</th>
                                             <th>Completed</th>
+                                            <th>Not Proceeding</th>
                                             <th>Lost</th>
                                         </tr>
                                     </thead>
@@ -294,9 +287,11 @@
                                         @if($userDetails)
                                             <tr>
                                                 <td>{{isset($userDetails->accepted_leads) ? $userDetails->accepted_leads : '--'}}</td>
+                                                <td>{{isset($userDetails->closed) ? $userDetails->closed : '--'}}</td>
                                                 <td>{{isset($userDetails->live_leads) ? $userDetails->live_leads : '--'}}</td>
                                                 <td>{{isset($userDetails->hired_leads) ? $userDetails->hired_leads : '--'}}</td>
                                                 <td>{{isset($userDetails->completed_leads) ? $userDetails->completed_leads : '--'}}</td>
+                                                <td>{{isset($userDetails->not_proceed) ? $userDetails->not_proceed : '--'}}</td>
                                                 <td>{{isset($userDetails->lost_leads) ? $userDetails->lost_leads : '--'}}</td>
                                             </tr>
                                         @else

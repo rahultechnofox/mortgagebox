@@ -591,6 +591,24 @@ class Helpers
     }
 
     /**
+     * function for display amount
+     * @param $amount
+     * @return int|string
+     */
+    public static function currencyWithoutDecimal($amount) {
+        if($amount == ''){
+            $amount = 0;
+            $amount = config('app.currency').number_format($amount,0);
+        } elseif ($amount < 0){
+            $amount = -($amount);
+            $amount = '-'.config('app.currency').number_format($amount,0);
+        }else{
+            $amount = config('app.currency').number_format($amount,0);
+        }
+        return $amount;
+    }
+
+    /**
      * function for remove .00 from amount
      * @param $price
      * @return bool|string

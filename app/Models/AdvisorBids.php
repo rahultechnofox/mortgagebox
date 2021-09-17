@@ -11,7 +11,7 @@ class AdvisorBids extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'advisor_id','area_id','status','advisor_status','cost_leads','cost_discounted','free_introduction','accepted_date'
+        'advisor_id','area_id','status','advisor_status','cost_leads','cost_discounted','free_introduction','accepted_date','is_paid_invoice'
     ];
 
     public function area(){

@@ -13,6 +13,7 @@ use App\Models\StaticPage;
 use App\Models\ServiceType;
 use App\Models\FaqCategory;
 use App\Models\Audience;
+use UploadImage;
 
 use Illuminate\Support\Facades\Validator;
 
@@ -53,6 +54,9 @@ class FaqCategoryController extends Controller
                 $postData['name'] = $post['name'];
                 if(isset($post['audience']) && $post['audience']!=''){
                     $postData['audience'] = $post['audience'];
+                }
+                if(isset($post['image']) && $post['image']!=''){
+                    $postData['image'] = $post['image'];
                 }
                 unset($post['_token']);
                 if(isset($post['id'])){
@@ -144,5 +148,33 @@ class FaqCategoryController extends Controller
     function destroy($id) {
         FaqCategory::where('id', '=', $id)->delete();
         return redirect()->to('admin/faq-category')->with('success','Faq category deleted successfully');
+    }
+
+    /**
+     * Function to Upload Faq Category image.
+     * @return Response
+    **/
+    public function uploadFaqCategoryImage(Request $request){
+        try {
+            if($request->ajax()){
+                $post = $request->all();
+                if($post['image']!=''){
+                    $images = $post['image'];
+                    $post['image'] = time() . rand() .'.'.$images->getClientOriginalExtension();
+                    $destinationPath = public_path('/upload/faq_category/580x400');
+                    $img = \UploadImage::make($images->getRealPath());
+                    $img->resize(580, 400, function ($constraint) {
+                        $constraint->aspectRatio();
+                    })->save($destinationPath.'/'.$post['image']);
+                    $destinationPath = public_path('/upload/faq_category/original');
+                    $images->move($destinationPath, $post['image']);
+                }
+                return response(\Helpers::sendSuccessAjaxResponse('Record updated.',$post['image']));
+            }else{
+              return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.invalid_request')));
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
     }
 }

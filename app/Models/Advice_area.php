@@ -19,6 +19,7 @@ class Advice_area extends Model
         try {
             $query = new Self;
             $userId = array();
+            $perpage = config('constants.paginate.num_per_page');
             if(isset($search['search']) && $search['search']!=''){
                 $user = User::where('name', 'like', '%' .strtolower($search['search']). '%')->get();
                 if(count($user)){
@@ -36,11 +37,14 @@ class Advice_area extends Model
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('advice_areas.status',$search['status']);
             }
+            if(isset($search['per_page']) && $search['per_page']!=''){
+                $perpage = $search['per_page'];
+            }
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('advice_areas.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
             $advice_area = $query->select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-            ->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
+            ->orderBy('id','DESC')->paginate($perpage);
             $count = 0;
             foreach ($advice_area as $key => $item) {
                 $advisers = AdvisorBids::where('area_id','=',$item->id)->get();

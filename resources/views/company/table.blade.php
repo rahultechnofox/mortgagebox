@@ -61,7 +61,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="pagination" style="float: right;">
-                        {{$companyDetails->links('pagination::bootstrap-4')}}
+                        {{$companyDetails->withQueryString()->links('pagination::bootstrap-4')}}
                     </div>
                 </div>
             </div>

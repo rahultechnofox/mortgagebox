@@ -4,14 +4,25 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">Need List</h4>
-                    <h6 style="float: right;"> <?php if ($userDetails->firstItem() != null) {?> Showing {{ $userDetails->firstItem() }}-{{ $userDetails->lastItem() }} of {{ $userDetails->total() }} <?php }?></h6>
+                    <h4 class="card-title">Need List{{$entry_count}}</h4>
+                    <h6 style="float: right;"> 
+                        <?php if ($userDetails->firstItem() != null) {?> Showing {{ $userDetails->firstItem() }}-{{ $userDetails->lastItem() }} of {{ $userDetails->total() }} <?php }?>
+                        <form>
+                            <select id="pagination" class="form-select">
+                                <option value="5" <?php if(isset($_GET['per_page']) && $_GET['per_page'] == 5){ echo "selected"; }else{ if($entry_count==5){ echo "selected"; } } ?> >5</option>
+                                <option value="10" <?php if(isset($_GET['per_page']) && $_GET['per_page'] == 10){ echo "selected"; }else{ if($entry_count==10){ echo "selected"; } } ?>>10</option>
+                                <option value="25" <?php if(isset($_GET['per_page']) && $_GET['per_page'] == 25){ echo "selected"; }else{ if($entry_count==25){ echo "selected"; } } ?>>25</option>
+                                <option value="50" <?php if(isset($_GET['per_page']) && $_GET['per_page'] == 50){ echo "selected"; }else{ if($entry_count==50){ echo "selected"; } } ?>>50</option>
+                                <option value="100" <?php if(isset($_GET['per_page']) && $_GET['per_page'] == 100){ echo "selected"; }else{ if($entry_count==100){ echo "selected"; } } ?>>100</option>
+                            </select> 
+                        </form>
+                    </h6>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Need ID</th>
+                                <th>Need ID </th>
                                 <th>Customer Name</th>
                                 <th>Request Date</th>
                                 <th>Service</th>
@@ -77,7 +88,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="pagination" style="float: right;">
-                        {{$userDetails->links('pagination::bootstrap-4')}}
+                        {{$userDetails->withQueryString()->links('pagination::bootstrap-4')}}
                     </div>
                 </div>
             </div>
@@ -85,3 +96,7 @@
     </div>
     <!-- Striped rows end -->
 </div>
+<script>
+     document.getElementById('pagination').onchange = function() { 
+         window.location = "{!! $userDetails->url(1) !!}&per_page=" + this.value; 
+    };  </script>

@@ -47,7 +47,9 @@
                             <select class="form-select" id="" name="status">    
                                 <option value="">Status</option>
                                 <option value="1" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>>Active</option>
-                                <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==0){ echo "selected"; } } ?>>Deactive</option>
+                                <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==0){ echo "selected"; } } ?>>Suspended</option>
+                                <option value="2" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==2){ echo "selected"; } } ?>>Inactive</option>
+                                <option value="3" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==3){ echo "selected"; } } ?>>Pending</option>
                             </select>
                         </div>
                         <div class="col-md-2 col-12">

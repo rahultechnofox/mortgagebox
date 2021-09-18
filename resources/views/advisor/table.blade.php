@@ -52,7 +52,7 @@
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
                                 <td>{{$users_data->success_percent}}%</td>
-                                <td>{{$users_data->eastimated_lead}}</td>
+                                <td>{{\Helpers::currency($users_data->eastimated_lead)}}</td>
                                 <td>{{$users_data->cost_of_lead}}</td>
                                 <td>
                                     @if($users_data->user_status==1)
@@ -63,7 +63,7 @@
                                         @endif
                                     @elseif($users_data->user_status==0)
                                         <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
-                                    @else
+                                    @elseif($users_data->user_status==2)
                                         <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Inactive</span>
                                     @endif
                                 </td>

@@ -37,6 +37,7 @@ class UserController extends Controller
     public function index(Request $request){
         $post = $request->all();
         $data['users'] = User::getLists($post);
+        // echo json_encode($data);exit;
         return view('users.index',$data);
     }
     /**
@@ -75,7 +76,6 @@ class UserController extends Controller
         $userDetails->closed = $adviceBidClosed;
         $userDetails->active_bid = $adviceBidActive;
         $userDetails->pending_bid = $pendingBidCount;
-        // echo json_encode($userDetails);exit;
         return view('users.show',['userDetails'=>$userDetails]);
     }
 
@@ -93,6 +93,22 @@ class UserController extends Controller
         
     }
 
+    function sendResetPasswordEmail($id){
+        $user = User::where('id',$id)->first();
+        if($user){
+            $password = $this->generateRandomString(10);
+            $user->update([
+                'password' => bcrypt($password)
+            ]);
+
+            $msg = "Your temporary password is \n" . $password;
+            $msg = wordwrap($msg, 70);
+            mail($user->email, "Forgot Password", $msg);
+        }
+        return redirect()->back()->with('message',"Reset link is sent to registered email id");
+        
+    }
+
     function getEncryptedId($id)
     {
         // Store the cipher method 
@@ -106,6 +122,16 @@ class UserController extends Controller
         $encryption_key = "&*(#Pp@IND";
         // Use openssl_encrypt() function to encrypt the data 
         return base64_encode(openssl_encrypt($id, $ciphering, $encryption_key, $options, $encryption_iv));
+    }
+
+    function generateRandomString($length = 10){
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return $randomString;
     }
     /**
      * Remove the specified resource from storage.

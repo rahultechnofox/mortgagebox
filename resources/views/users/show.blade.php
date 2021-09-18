@@ -135,7 +135,8 @@
 								<div class="d-flex">
 									<div class="transaction-percentage">
 										<h6 class="transaction-title" style="display: inline-block;">Reset Password:</h6>
-										<button type="button" class="btn btn-secondary btn-sm btn-add-new waves-effect waves-float waves-light" onclick="resetPassword('{{$userDetails->id}}');">Send Reset Password Link</button>
+										<a href="{{url('/admin/sendResetPasswordEmail/')}}/{{$userDetails->id}}" class="btn btn-secondary btn-sm btn-add-new waves-effect waves-float waves-light">Send Reset Password Link</a>
+										<!-- <button type="button" class="btn btn-secondary btn-sm btn-add-new waves-effect waves-float waves-light" onclick="resetPassword('{{$userDetails->id}}');">Send Reset Password Link</button> -->
 									</div>
 								</div>
 							</div>

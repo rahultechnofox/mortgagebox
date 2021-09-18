@@ -74,7 +74,13 @@ class User extends Authenticatable implements JWTSubject
                 $query = $query->where('email_status',$search['email_status']);
             }
             if(isset($search['status']) && $search['status']!=''){
-                $query = $query->where('status',$search['status']);
+                if($search['status']==0){
+                    $query = $query->where('status',$search['status']);
+                }else if($search['status']==1){
+                    $query = $query->where('status',$search['status'])->whereNotNull('email_verified_at');
+                }else if($search['status']==2){
+                    $query = $query->where('status',1)->whereNull('email_verified_at');
+                }
             }
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
@@ -95,8 +101,19 @@ class User extends Authenticatable implements JWTSubject
             if(isset($search['email_status']) && $search['email_status']!=''){
                 $query = $query->where('users.email_status',$search['email_status']);
             }
+            // if(isset($search['status']) && $search['status']!=''){
+            //     $query = $query->where('users.status',$search['status']);
+            // }
             if(isset($search['status']) && $search['status']!=''){
-                $query = $query->where('users.status',$search['status']);
+                if($search['status']==0){
+                    $query = $query->where('users.status',$search['status']);
+                }else if($search['status']==1){
+                    $query = $query->where('users.status',$search['status'])->whereNotNull('users.email_verified_at')->whereNotNull('advisor_profiles.FCA_verified');
+                }else if($search['status']==3){
+                    $query = $query->where('users.status',1)->whereNull('users.email_verified_at')->whereNull('advisor_profiles.FCA_verified');
+                }else if($search['status']==2){
+                    $query = $query->where('users.status',$search['status']);
+                }
             }
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('users.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));

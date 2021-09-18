@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function(){
     Route::post('admin/updatePassword','\App\Http\Controllers\UserController@updatePassword');
     Route::post('admin/deleteCustomer','\App\Http\Controllers\UserController@deleteCustomer');
     Route::get('admin/verifyEmail/{id}','\App\Http\Controllers\UserController@verifyEmail');
+    Route::get('admin/sendResetPasswordEmail/{id}','\App\Http\Controllers\UserController@sendResetPasswordEmail');
     Route::post('admin/update-user-status','\App\Http\Controllers\UserController@updateStatus');
 
     /******************* User Management **********************/

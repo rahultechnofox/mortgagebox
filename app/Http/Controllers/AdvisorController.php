@@ -1667,12 +1667,51 @@ class AdvisorController extends Controller
         $invoice_detais = Invoice::where('advisor_id','=',$user->id)->where('month','=',$month)->where('year','=',$year)->first();
         $total_data = json_decode($invoice_detais->invoice_data,true);
         $total_data['invoice_data'] = $invoice_detais;
+        $total_data['invoice_data']->discount_subtotal = 0.00;
+        $total_data['invoice_data']->new_fees_arr = array();
+        $total_data['invoice_data']->discount_credit_arr = array();
         if($total_data['invoice_data']){
             $total_data['invoice_data']->discount_subtotal = $total_data['invoice_data']->discount + $total_data['invoice_data']->free_introduction;
             $total_data['invoice_data']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$total_data['invoice_data']->month)->where('advisor_id',$total_data['invoice_data']->advisor_id)->sum('total_due');
             $total_data['invoice_data']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$total_data['invoice_data']->month)->where('advisor_id',$total_data['invoice_data']->advisor_id)->sum('total_due');
-        }else{
-            $total_data['invoice_data']->discount_subtotal = 0.00;
+            $total_data['new_fees_arr'] = AdvisorBids::where('advisor_id',$total_data['invoice_data']->advisor_id)->where('is_discounted',0)->with('area')->with('adviser')->get();
+            if(count($total_data['new_fees_arr'])){
+                foreach($total_data['new_fees_arr'] as $new_bid){
+                    $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
+                    if($new_bid->status==0){
+                        $new_bid->status_type = "Live Lead";
+                    }else if($new_bid->status==1){
+                        $new_bid->status_type = "Hired";
+                    }else if($new_bid->status==2){
+                        $new_bid->status_type = "Completed";
+                    }else if($new_bid->status==3){
+                        $new_bid->status_type = "Lost";
+                    }else if($new_bid->advisor_status==2){
+                        $new_bid->status_type = "Not Proceeding";
+                    }
+                }
+            }
+            $total_data['discount_credit_arr'] = AdvisorBids::where('advisor_id',$total_data['invoice_data']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+            if(count($total_data['new_fees_arr'])){
+                foreach($total_data['discount_credit_arr'] as $discount_bid){
+                    $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
+                    if($discount_bid->status==0){
+                        $discount_bid->status_type = "Live Lead";
+                    }else if($discount_bid->status==1){
+                        $discount_bid->status_type = "Hired";
+                    }else if($discount_bid->status==2){
+                        $discount_bid->status_type = "Completed";
+                    }else if($discount_bid->status==3){
+                        $discount_bid->status_type = "Lost";
+                    }else if($discount_bid->advisor_status==2){
+                        $discount_bid->status_type = "Not Proceeding";
+                    }
+                }
+            }
+        }
+        $total_data['month_data'] = Invoice::where('advisor_id','=',$user->id)->get(); 
+        foreach($total_data['month_data'] as $month_data){
+            $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
         }
         $total_data['invoice_id']=$invoice_detais->id;
         $total_data['invoice_number']=$invoice_detais->invoice_number;

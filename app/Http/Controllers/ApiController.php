@@ -21,6 +21,8 @@ use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
 use App\Models\CompanyTeamMembers;
+use App\Models\StaticPage;
+
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -409,15 +411,16 @@ class ApiController extends Controller
             'password' => bcrypt($request->password)
         ]);
         $advisor_id = $user->id;
-        CompanyTeamMembers::create([
-            'company_id' => $company_data_new->id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'advisor_id' => $user->id,
-            'isCompanyAdmin'=>1,
-            'status'=>1
-        ]);
-
+        if(isset($company_id) && $company_id!=0){
+            CompanyTeamMembers::create([
+                'company_id' => $company_data_new->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'advisor_id' => $user->id,
+                'isCompanyAdmin'=>1,
+                'status'=>1
+            ]);
+        }
         //Request is valid, create new user
         $profile = AdvisorProfile::create([
             'advisorId' => $advisor_id,
@@ -2309,5 +2312,21 @@ class ApiController extends Controller
         }
          return $responseTime;
     }
-    
+
+    public function getCMSData(Request $request){
+        $post = $request->all();
+        // $data = $request->only('page');
+        $validator = Validator::make($post, [
+            'page' => 'required|string'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'error' => $validator->messages()], 200);
+        }
+        $page_data = StaticPage::where('slug',$post['page'])->first();
+        return response()->json([
+            'status' => true,
+            'message' => 'Page data fetched successfully',
+            'data' => $page_data
+        ], Response::HTTP_OK);
+    }
 }

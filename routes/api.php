@@ -16,6 +16,7 @@ Route::post('advisorRegister', [ApiController::class, 'advisorRegister']);
 Route::get('verifyEmail/{id}', [ApiController::class, 'verifyEmail']);
 Route::get('verifyTeamEmail/{id}', [AdvisorController::class, 'verifyTeamEmail']);
 Route::post('forgotPassword/', [ApiController::class, 'forgotPassword']);
+Route::post('getCMSData/',  [ApiController::class, 'getCMSData']);
 
 Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('logout', [ApiController::class, 'logout']);
@@ -43,6 +44,7 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     
     Route::post('acceptRejectBid/',  [ApiController::class, 'acceptRejectBid']);
     Route::post('inviteUsers/',  [ApiController::class, 'inviteUsers']);
+    
     Route::get('getAdviseAreaBid/{id}/{status}',  [ApiController::class, 'getAdviseAreaBid']);
     Route::post('startChat/',  [ApiController::class, 'startChat']);
     Route::post('sendMessage/',  [ApiController::class, 'sendMessage']);

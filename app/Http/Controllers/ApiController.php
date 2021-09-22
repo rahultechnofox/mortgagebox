@@ -21,8 +21,6 @@ use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
 use App\Models\CompanyTeamMembers;
-use App\Models\StaticPage;
-
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -66,8 +64,6 @@ class ApiController extends Controller
         //     $message->subject('Welcome Mail');
         // });
         $dataUser = User::find($user);
-        
-        
         $msg = "";
         $msg .= "Welcome\n\n";
         $msg .= "Hello ".ucfirst($request->name)."\n\n";
@@ -135,6 +131,7 @@ class ApiController extends Controller
             $user->userDetails = [];
         }
         $user->slug = $this->getEncryptedId($user->id);
+        User::where('id',$user->id)->update(['last_active'=>date('Y-m-d H:i:s')]);
         //Token created, return with success response and jwt token
         return response()->json([
             'status' => true,
@@ -411,16 +408,7 @@ class ApiController extends Controller
             'password' => bcrypt($request->password)
         ]);
         $advisor_id = $user->id;
-        if(isset($company_id) && $company_id!=0){
-            CompanyTeamMembers::create([
-                'company_id' => $company_data_new->id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'advisor_id' => $user->id,
-                'isCompanyAdmin'=>1,
-                'status'=>1
-            ]);
-        }
+        
         //Request is valid, create new user
         $profile = AdvisorProfile::create([
             'advisorId' => $advisor_id,
@@ -436,7 +424,18 @@ class ApiController extends Controller
 
         ]);
         companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
-        
+        if(isset($company_id) && $company_id!=0){
+            $teamArr = array(
+                'company_id' => $company_id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'advisor_id' => $user->id,
+                'isCompanyAdmin'=>1,
+                'status'=>1,
+                'created_at'=>date('Y-m-d H:i:s')
+            );
+            CompanyTeamMembers::insertGetId($teamArr);
+        }
         // Set Defaul prefrances
         $notification = AdvisorPreferencesDefault::where('advisor_id', '=', $advisor_id)->first();
         if (empty($notification)) {
@@ -469,14 +468,7 @@ class ApiController extends Controller
 
         $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
         //User created, return success response
-        CompanyTeamMembers::create([
-            'company_id' => $company_data_new->id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'advisor_id' => $user->id,
-            'isCompanyAdmin'=>1,
-            'status'=>1
-        ]);
+        
         return response()->json([
             'status' => true,
             'message' => 'Advisor created successfully',
@@ -1714,6 +1706,24 @@ class ApiController extends Controller
                 $advice_area[$key]->lead_address = $address;
                 $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
                 $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+                // $show_status = "Live Leads"; 
+                $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
+                if(!empty($bidDetailsStatus)) {
+                    if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Not Proceeding"; 
+                    }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Hired"; 
+                    }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Lost"; 
+                    }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Closed"; 
+                    }else{
+                        $show_status = "Live Leads";     
+                    }
+                }else{
+                        $show_status = "Live Leads";     
+                    }
+                $advice_area[$key]->show_status = $show_status;
                 // echo "<br>";
                 // echo "Preference Value==".$AdvisorPreferencesDefault->$advisorDetaultValue;
                 // echo "<br>";
@@ -2312,21 +2322,5 @@ class ApiController extends Controller
         }
          return $responseTime;
     }
-
-    public function getCMSData(Request $request){
-        $post = $request->all();
-        // $data = $request->only('page');
-        $validator = Validator::make($post, [
-            'page' => 'required|string'
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['status' => false, 'error' => $validator->messages()], 200);
-        }
-        $page_data = StaticPage::where('slug',$post['page'])->first();
-        return response()->json([
-            'status' => true,
-            'message' => 'Page data fetched successfully',
-            'data' => $page_data
-        ], Response::HTTP_OK);
-    }
+    
 }

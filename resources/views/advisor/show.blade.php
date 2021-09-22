@@ -45,7 +45,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Role:') }}</h6>
-                                        <small>{{isset($profile->role) && $profile->role!='' ? $profile->role : '--'}}</small>
+                                        <small>{{isset($userDetails->role) && $userDetails->role!='' ? $userDetails->role : '--'}}</small>
                                     </div>
                                 </div>
                             </div>
@@ -54,16 +54,18 @@
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Status:') }}</h6>
                                         <small>
-                                            @if($userDetails->status==1)
-                                                @if($userDetails->email_verified_at!='' && $profile->FCA_verified!='')
-												    <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                            @if(isset($userDetails->status) && $userDetails->status!='')
+                                                @if($userDetails->status==1)
+                                                    @if($userDetails->email_verified_at!='' && $profile->FCA_verified!='')
+                                                        <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Active</span>
+                                                    @else
+                                                        <span class="badge rounded-pill badge-light-warning me-1" style="margin-bottom: 10px;">Pending</span>
+                                                    @endif
+                                                @elseif($userDetails->status==0)
+                                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
                                                 @else
-												    <span class="badge rounded-pill badge-light-warning me-1" style="margin-bottom: 10px;">Pending</span>
+                                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Inactive</span>
                                                 @endif
-                                            @elseif($userDetails->status==0)
-												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Suspended</span>
-                                            @else
-                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Inactive</span>
                                             @endif
                                         </small>
                                     </div>
@@ -106,7 +108,7 @@
                                     </div>
                                 </div>
                             </div>
-                            @if($userDetails->status==0)
+                            @if(isset($userDetails->status) && $userDetails->status==0)
                             <div class="col-md-3 mb-1">
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
@@ -284,7 +286,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @if($userDetails)
+                                        @if(isset($userDetails) && $userDetails!='')
                                             <tr>
                                                 <td>{{isset($userDetails->accepted_leads) ? $userDetails->accepted_leads : '--'}}</td>
                                                 <td>{{isset($userDetails->closed) ? $userDetails->closed : '--'}}</td>
@@ -311,7 +313,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            @if(count($profile->notes)>0)
+                            @if(isset($profile->notes) && count($profile->notes)>0)
                                 @foreach($profile->notes as $notes_data)
                                     <div class="col-md-12">
                                         <div class="mb-1">
@@ -343,14 +345,14 @@
                                 <button type="button" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1"
                                  onclick="validFCANumber(1,'{{isset($profile) ? $profile->id : ''}}');">Valid FCA number</button>
                                 <button type="button" class="btn btn-secondary mb-1 mb-sm-0 me-0 me-sm-1" onclick="validFCANumber(2,'{{isset($profile) ? $profile->id : ''}}');">Invalid FCA number</button>
-                                @if($userDetails->status==0)
+                                @if(isset($userDetails->status) && $userDetails->status==0)
                                     <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-advisor-status');">Activate</button>
                                 @endif
-                                @if($userDetails->status==1)
+                                @if(isset($userDetails->status) && $userDetails->status==1)
                                     <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1"  data-bs-toggle="modal" data-bs-target="#inlineForm" onclick="resetSuspended('advisor_suspended');">Suspend</button>
                                     <button type="button" class="btn btn-dark mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','2','/admin/update-advisor-status');">Inactive</button>
                                 @endif
-                                @if($userDetails->status==2)
+                                @if(isset($userDetails->status) && $userDetails->status==2)
                                     <button type="button" class="btn btn-danger mb-1 mb-sm-0 me-0 me-sm-1"  data-bs-toggle="modal" data-bs-target="#inlineForm" onclick="resetSuspended('advisor_suspended');">Suspend</button>
                                     <button type="button" class="btn btn-success mb-1 mb-sm-0 me-0 me-sm-1" onclick="updateStatus('{{$userDetails->id}}','1','/admin/update-advisor-status');">Activate</button>
                                 @endif
@@ -365,6 +367,7 @@
         </div>
     </div>
 </div>
+@if(isset($userDetails))
 <div class="modal fade text-start" id="inlineForm" tabindex="-1" aria-labelledby="myModalLabel33" aria-hidden="true" style="display: none;">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -395,4 +398,5 @@
         </div>
     </div>
 </div>
+@endif
 @endsection

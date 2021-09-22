@@ -165,7 +165,7 @@
 												<tr>
 													<td>{{$userDetails->pending_bid}}</td>
 													<td>{{$userDetails->active_bid}}</td>
-													<td>{{$userDetails->closed}}</td>
+													<td>{{$userDetails->final_closed}}</td>
 												</tr>
 											@endif
 										</table>

@@ -21,6 +21,9 @@ use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
 use App\Models\CompanyTeamMembers;
+use App\Models\Faq;
+use App\Models\FaqCategory;
+use App\Models\Contactus;
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -366,6 +369,7 @@ class ApiController extends Controller
             'data' => $user
         ], Response::HTTP_OK);
     }
+    
     public function advisorRegister(Request $request)
     {
         //Validate data
@@ -432,6 +436,7 @@ class ApiController extends Controller
                 'advisor_id' => $user->id,
                 'isCompanyAdmin'=>1,
                 'status'=>1,
+                'is_joined'=>1,
                 'created_at'=>date('Y-m-d H:i:s')
             );
             CompanyTeamMembers::insertGetId($teamArr);
@@ -821,6 +826,7 @@ class ApiController extends Controller
         return openssl_decrypt($id, $ciphering, $encryption_key, $options, $encryption_iv);
     }
 
+
     function generateRandomString($length = 10)
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -831,6 +837,7 @@ class ApiController extends Controller
         }
         return $randomString;
     }
+
     function matchLeads()
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1090,9 +1097,10 @@ class ApiController extends Controller
             'has_more_page' => $advice_area->hasMorePages(),
         ], Response::HTTP_OK);
     }
+
     function searchMortgageNeeds(Request $request)
     {
-// TODO: promotion: ["early-bird", "75-off", "none", "none", "free", "50-off"]:
+        // TODO: promotion: ["early-bird", "75-off", "none", "none", "free", "50-off"]:
         $user = JWTAuth::parseToken()->authenticate();
         $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
         $ltv_max = $userPreferenceCustomer->ltv_max;
@@ -1357,6 +1365,7 @@ class ApiController extends Controller
         ], Response::HTTP_OK);
          
     }
+
     function acceptRejectBid(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1535,6 +1544,7 @@ class ApiController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
+
     public function startChat(Request $request)
     {
 
@@ -1582,6 +1592,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function sendMessage(Request $request)
     {
         JWTAuth::parseToken()->authenticate();
@@ -1602,6 +1613,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     function advisorAcceptedLeads()
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1750,6 +1762,7 @@ class ApiController extends Controller
             'has_more_page' => $advice_area->hasMorePages(),
         ], Response::HTTP_OK);
     }
+
     function getRecentMessages()
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1763,6 +1776,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     function seenMessages(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1776,6 +1790,7 @@ class ApiController extends Controller
             'status' => true,
         ], Response::HTTP_OK);
     }
+
     function sendAttachment(Request $request)
     {
         $id = JWTAuth::parseToken()->authenticate();
@@ -1842,6 +1857,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function addOffer(Request $request)
     {
         $userDetails = JWTAuth::parseToken()->authenticate();
@@ -1862,6 +1878,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function editOffer(Request $request, $id)
     {
 
@@ -1883,6 +1900,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function deleteOffer(Request $request, $id)
     {
 
@@ -1914,6 +1932,7 @@ class ApiController extends Controller
             'data' => $notification
         ], Response::HTTP_OK);
     }
+
     function updateNotificationPreferences(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1953,6 +1972,7 @@ class ApiController extends Controller
             'data' => []
         ], Response::HTTP_OK);
     }
+
     public function selectOrDeclineOffer($id,$status) {
         //1:accepted, 3: rejected
         $user = JWTAuth::parseToken()->authenticate();
@@ -1988,8 +2008,8 @@ class ApiController extends Controller
             'status' => true,
             'message' => $message,
         ], Response::HTTP_OK);
-         
     }
+
     public function saveNotification($data) {
         $notification = Notifications::create($data);
         if($notification) {
@@ -1998,6 +2018,7 @@ class ApiController extends Controller
             return false;
         }
     }
+
     public function saveCard(Request $request) {
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2073,6 +2094,7 @@ class ApiController extends Controller
         //cus_Jn74KtxONwHBv5
         // print_r($payment_method);
     }
+
     function createCustomer($request) {
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2105,6 +2127,7 @@ class ApiController extends Controller
             return false;
         }
     }
+
     public function getAllCardByCustomer() {
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2131,6 +2154,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }
     }
+
     public function deleteCard(Request $request) {
          require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2157,6 +2181,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }
     }
+
     public function checkoutFromSavedCard(Request $request) {
           require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2201,6 +2226,7 @@ class ApiController extends Controller
                         ], Response::HTTP_OK);
                 }
     }
+
     public function getNotification() {
         $user = JWTAuth::parseToken()->authenticate();
         $notificationCount = 0;
@@ -2239,6 +2265,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }
     }
+
     public function updateReadNotification() {
         $user = JWTAuth::parseToken()->authenticate();
         if($user->user_role == 1) {
@@ -2256,6 +2283,7 @@ class ApiController extends Controller
             'message' => 'success',
         ], Response::HTTP_OK);
     }
+
     public function searchPostalCode(Request $request) {
         $search = $request->postal_code;
         $result = PostalCodes::select('id','Postcode')->where('Postcode', 'like', '%' . $search . '%')->limit(20)->get();
@@ -2273,6 +2301,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);  
         }           
     }
+
     public function getAllServiceType() {
         $result = ServiceType::get();
         if(!empty($result)) {
@@ -2289,6 +2318,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);  
         }           
     }
+
     public function getAdvisorResponseTime($advisor_id=0) {
         $fromUserChatData = ChatModel::where('from_user_id', '=', $advisor_id)->orderBy('id','DESC')->groupBy('channel_id')->get();
         $arrayTime = array();
@@ -2323,4 +2353,38 @@ class ApiController extends Controller
          return $responseTime;
     }
     
+
+    public function getFaqLists(Request $request) {
+        $audience = (isset($request->audience))?$request->audience:'customer';
+        $response = array(
+            'list' => Faq::where('audience',$audience)->where('is_featured',1)->where('status',1)->get(),
+            'category' => FaqCategory::where('audience',$audience)->where('status',1)->get()
+        );
+
+        foreach ($response['category'] as $row) {
+            $row->lists = Faq::where('faq_category_id',$row->id)->where('status',1)->get();
+        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Record found.',
+            'data'=>$response
+        ], Response::HTTP_OK);
+    }
+
+    public function doSubmitContactUs(Request $request) {
+        $postData = array(
+            'name' => (isset($request->name))?$request->name:'',
+            'email' => (isset($request->email))?$request->email:'',
+            'mobile' => (isset($request->mobile))?$request->mobile:'',
+            'message' => (isset($request->message))?$request->message:'',
+            'is_replied' => 0,
+            'created_at' => date("Y-m-d H:i:s")
+        );
+        Contactus::insertGetId($postData);
+        return response()->json([
+            'status' => true,
+            'message' => 'Your request has been sent to the admin successfully.',
+            'data'=> []
+        ], Response::HTTP_OK);
+    }
 }

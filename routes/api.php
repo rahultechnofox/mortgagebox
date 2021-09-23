@@ -18,6 +18,9 @@ Route::get('verifyTeamEmail/{id}', [AdvisorController::class, 'verifyTeamEmail']
 Route::post('forgotPassword/', [ApiController::class, 'forgotPassword']);
 Route::post('getCMSData/',  [ApiController::class, 'getCMSData']);
 
+Route::get('faq-list',  [ApiController::class, 'getFaqLists']);
+Route::post('contact-us',  [ApiController::class, 'doSubmitContactUs']);
+
 Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('logout', [ApiController::class, 'logout']);
     Route::get('get_user', [ApiController::class, 'get_user']);

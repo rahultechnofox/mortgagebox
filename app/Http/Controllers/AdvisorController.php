@@ -913,37 +913,48 @@ class AdvisorController extends Controller
             'data' => $firstMessage
         ], Response::HTTP_OK);
     }
+    
     function advisorTeam(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
         $company_data = CompanyTeamMembers::where('email', '=', $request->email)->first();
-        if (!empty($company_data)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Email already exists',
-                'data' => []
-            ], Response::HTTP_OK);
-        }
-        $profile = CompanyTeamMembers::create([
-            'company_id' => $request->company_id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'advisor_id' => $user->id
-        ]);
         $checkUser = User::where('email','=',$request->email)->first();
-        if(!empty($checkUser)) {
-            // on this plateform
-        $url = "";
-        $msg = "";
-        $msg .= "Hello ".ucfirst($request->name)."\n\n";
-        $msg .= "<p>".ucfirst($user->name)." invites you to join the company.</p>\n\n";
-        $msg .= "<p>Please click the link below to join the team.</p>\n\n";
-        $msg .= "<a href='".config('constants.urls.team_email_verification_url').$this->getEncryptedId($profile->id)."'>Create Account</a>\n\n";
-        $msg .= "Best wishes\n\n";
-        $msg .= "The Mortgagebox team\n\n";
+        if (!empty($company_data)) {
+            CompanyTeamMembers::where('id',$company_data->id)->update([
+                'company_id' => $request->company_id,
+                'advisor_id' => $user->id
+            ]);
 
-        mail($request->email, "Invitation | Mortgagebox.co.uk", $msg);
-        }else {
+            if(!empty($checkUser)){
+                AdvisorProfile::where('advisorId',$checkUser->id)->update([
+                    'company_id' => $request->company_id
+                ]);
+            }
+            
+        }else{
+            $profile = CompanyTeamMembers::create([
+                'company_id' => $request->company_id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'advisor_id' => $user->id
+            ]);
+        }
+        
+        
+        if(!empty($checkUser))
+        {
+            // on this plateform
+            $url = "";
+            $msg = "";
+            $msg .= "Hello ".ucfirst($request->name)."\n\n";
+            $msg .= "<p>".ucfirst($user->name)." invites you to join the company.</p>\n\n";
+            $msg .= "<p>Please click the link below to join the team.</p>\n\n";
+            $msg .= "<a href='".config('constants.urls.team_email_verification_url').$this->getEncryptedId($profile->id)."'>Confirm</a>\n\n";
+            $msg .= "Best wishes\n\n";
+            $msg .= "The Mortgagebox team\n\n";
+            mail($request->email, "Invitation | Mortgagebox.co.uk", $msg);
+        }
+        else{
             // not on plateform
             $url = "?invitedBy=".$this->getEncryptedId($user->id);
             $msg = "";
@@ -953,18 +964,16 @@ class AdvisorController extends Controller
             $msg .= "<a href='".config('constants.urls.team_signup_url').$url."'>Create Account</a>\n\n";
             $msg .= "Best wishes\n\n";
             $msg .= "The Mortgagebox team\n\n";
-
             mail($request->email, "Invitation | Mortgagebox.co.uk", $msg);
         }
         //Send Email
-        
-        
         return response()->json([
             'status' => true,
             'message' => 'Team member added successfully',
             'data' => []
         ], Response::HTTP_OK);
     }
+
     public function verifyTeamEmail($id)
     {
         $team_id = $this->getDecryptedId($id);

@@ -16,6 +16,7 @@ use App\Models\ReviewRatings;
 use App\Models\AdvisorPreferencesCustomer;
 use App\Models\AdvisorPreferencesProducts;
 use App\Models\ServiceType;
+use App\Models\StaticPage;
 use App\Models\AdvisorPreferencesDefault;
 use JWTAuth;
 use App\Models\User;
@@ -2322,5 +2323,29 @@ class ApiController extends Controller
         }
          return $responseTime;
     }
-    
+
+    public function getCMSData(Request $request) {
+        $post = $request->all();
+        if(isset($post) && !empty($post)){
+            $validator = Validator::make($post, [
+                'page' => 'required|string'
+            ]);
+            //Send failed response if request is not valid
+            if ($validator->fails()) {
+                return response()->json(['status' => false, 'error' => $validator->messages()], 200);
+            }
+            $page_data = StaticPage::where('slug',$post['page'])->first();
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data'=>$page_data
+            ], Response::HTTP_OK); 
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'There is an error please try again',
+                'data'=>[]
+            ], Response::HTTP_OK);
+        }         
+    }    
 }

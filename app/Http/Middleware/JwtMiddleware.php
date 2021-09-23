@@ -37,6 +37,7 @@ class JwtMiddleware extends BaseMiddleware
                 return response()->json(['status' => 'Token is Expired'], Response::HTTP_UNAUTHORIZED);
                // return response()->json(['status' => 'Token is Expired']);
             }else{
+                echo $e;exit;
                 return response()->json(['status' => 'Authorization Token not found']);
             }
         }

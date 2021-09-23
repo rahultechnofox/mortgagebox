@@ -22,6 +22,9 @@ use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
 use App\Models\CompanyTeamMembers;
+use App\Models\Faq;
+use App\Models\FaqCategory;
+use App\Models\Contactus;
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -367,6 +370,7 @@ class ApiController extends Controller
             'data' => $user
         ], Response::HTTP_OK);
     }
+    
     public function advisorRegister(Request $request)
     {
         //Validate data
@@ -433,6 +437,7 @@ class ApiController extends Controller
                 'advisor_id' => $user->id,
                 'isCompanyAdmin'=>1,
                 'status'=>1,
+                'is_joined'=>1,
                 'created_at'=>date('Y-m-d H:i:s')
             );
             CompanyTeamMembers::insertGetId($teamArr);
@@ -677,6 +682,7 @@ class ApiController extends Controller
 
         ], Response::HTTP_OK);
     }
+
     public function getAdviceNotesByAdviceId($advice_id)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -695,6 +701,7 @@ class ApiController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
+
     public function updateNotes(Request $request)
     {
 
@@ -707,6 +714,7 @@ class ApiController extends Controller
             'message' => 'Notes updated successfully',
         ], Response::HTTP_OK);
     }
+
     public function closeAdviceAreaNeed(Request $request)
     {
 
@@ -822,6 +830,7 @@ class ApiController extends Controller
         return openssl_decrypt($id, $ciphering, $encryption_key, $options, $encryption_iv);
     }
 
+
     function generateRandomString($length = 10)
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -832,6 +841,7 @@ class ApiController extends Controller
         }
         return $randomString;
     }
+
     function matchLeads()
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1091,9 +1101,10 @@ class ApiController extends Controller
             'has_more_page' => $advice_area->hasMorePages(),
         ], Response::HTTP_OK);
     }
+
     function searchMortgageNeeds(Request $request)
     {
-// TODO: promotion: ["early-bird", "75-off", "none", "none", "free", "50-off"]:
+        // TODO: promotion: ["early-bird", "75-off", "none", "none", "free", "50-off"]:
         $user = JWTAuth::parseToken()->authenticate();
         $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
         $ltv_max = $userPreferenceCustomer->ltv_max;
@@ -1358,6 +1369,7 @@ class ApiController extends Controller
         ], Response::HTTP_OK);
          
     }
+
     function acceptRejectBid(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1536,6 +1548,7 @@ class ApiController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
+
     public function startChat(Request $request)
     {
 
@@ -1583,6 +1596,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function sendMessage(Request $request)
     {
         JWTAuth::parseToken()->authenticate();
@@ -1603,140 +1617,150 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     function advisorAcceptedLeads()
     {
         $user = JWTAuth::parseToken()->authenticate();
         $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
-            ->join('users', 'advice_areas.user_id', '=', 'users.id')
-            ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('advisor_bids.advisor_status', '=', 1)
-            ->where('advisor_bids.advisor_id', '=', $user->id)
-            ->paginate();
+        ->join('users', 'advice_areas.user_id', '=', 'users.id')
+        ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+        ->where('advisor_bids.advisor_status', '=', 1)
+        ->where('advisor_bids.advisor_id', '=', $user->id)
+        ->paginate();
 
-            $bidCountArr = array();
-            foreach($advice_area as $key=> $item) {
-                $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
-                foreach($adviceBid as $bid) {
-                    $bidCountArr[] = ($bid->status == 3)? 0:1;
-                }
-                $adviceBidMainStatus = AdvisorBids::where('area_id',$item->id)->where('status','>','0')->orderBy('status','ASC')->first();
-                if(!empty($adviceBidMainStatus)) {
-                     $advice_area[$key]->bid_status = $adviceBidMainStatus->status;
-                }else{
-                     $advice_area[$key]->bid_status = 0;
-                }
-                $advice_area[$key]->totalBids = $bidCountArr;
-                $costOfLead = ($item->size_want/100)*0.006;
-                $time1 = Date('Y-m-d H:i:s');
-                $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
-                $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
-                $costOfLeadsStr = "";
-                $costOfLeadsDropStr = "";
-                $amount = number_format((float)$costOfLead, 2, '.', '');
-                if($hourdiff < 24) {
-                    $costOfLeadsStr = "".$item->size_want_currency.$amount;
-                    $in = 24-$hourdiff;
-                    $hrArr = explode(".",$in);
-                    $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-                }
-                if($hourdiff > 24 && $hourdiff < 48) {
-                    $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-                    $in = 48-$hourdiff;
-                    $newAmount = (75 / 100) * $amount;
-                    $hrArr = explode(".",$in);
-                    $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-                }
-                if($hourdiff > 48 && $hourdiff < 72) {
-                    $newAmount = (75 / 100) * $amount;
-                    $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-                    $in = 72-$hourdiff;
-                    $hrArr = explode(".",$in);
-                    $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-                }
-                if($hourdiff > 72) {
-                    $costOfLeadsStr = ""."Free";
-                    $costOfLeadsDropStr = "";
-                }
-                
-                $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
-                $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
-                $area_owner_details = User::where('id',$item->user_id)->first();
-                $address = "";
-                if(!empty($area_owner_details)) {
-                    $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
-                    if(!empty($addressDetails)) {
-                        if($addressDetails->Country != ""){
-                            $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
-                            // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
-                            $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
-                            $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
-                        }
-                        
-                    }
-                }
-                $lead_value = "";
-                $main_value = ($item->size_want/100);
-                $advisorDetaultValue = "";
-                if($item->service_type=="remortgage") {
-                    $advisorDetaultValue = "remortgage";
-                }else if($item->service_type=="first time buyer") {
-                    $advisorDetaultValue = "first_buyer";
-                }else if($item->service_type=="next time buyer") {
-                    $advisorDetaultValue = "next_buyer";
-                }else if($item->service_type=="buy to let") {
-                    $advisorDetaultValue = "but_let";
-                }else if($item->service_type=="equity release") {
-                    $advisorDetaultValue = "equity_release";
-                }else if($item->service_type=="overseas") {
-                    $advisorDetaultValue = "overseas";
-                }else if($item->service_type=="self build") {
-                    $advisorDetaultValue = "self_build";
-                }else if($item->service_type=="mortgage protection") {
-                    $advisorDetaultValue = "mortgage_protection";
-                }else if($item->service_type=="secured loan") {
-                    $advisorDetaultValue = "secured_loan";
-                }else if($item->service_type=="bridging loan") {
-                    $advisorDetaultValue = "bridging_loan";
-                }else if($item->service_type=="commercial") {
-                    $advisorDetaultValue = "commercial";
-                }else if($item->service_type=="something else") {
-                    $advisorDetaultValue = "something_else";
-                }   
-                $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-                
-                $advice_area[$key]->lead_address = $address;
-                $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
-                $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
-                // $show_status = "Live Leads"; 
-                $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
-                if(!empty($bidDetailsStatus)) {
-                    if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
-                        $show_status = "Not Proceeding"; 
-                    }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
-                        $show_status = "Hired"; 
-                    }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
-                        $show_status = "Lost"; 
-                    }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-                        $show_status = "Closed"; 
-                    }else{
-                        $show_status = "Live Leads";     
-                    }
-                }else{
-                        $show_status = "Live Leads";     
-                    }
-                $advice_area[$key]->show_status = $show_status;
-                // echo "<br>";
-                // echo "Preference Value==".$AdvisorPreferencesDefault->$advisorDetaultValue;
-                // echo "<br>";
-                // echo "Size want==".$item->size_want;
-                // echo "<br>";
-                // echo "After Calclulate Value==".$main_value;
-                // echo "<br>";
-                // echo "Divided Value==".($item->size_want/100);
-                // echo "<br>";
-                // echo "Final Value==".$lead_value;
-                // echo "<br>";
+        $bidCountArr = array();
+        foreach($advice_area as $key=> $item) {
+            $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
+            foreach($adviceBid as $bid) {
+                $bidCountArr[] = ($bid->status == 3)? 0:1;
             }
+            $adviceBidMainStatus = AdvisorBids::where('area_id',$item->id)->where('status','>','0')->orderBy('status','ASC')->first();
+            if(!empty($adviceBidMainStatus)) {
+                 $advice_area[$key]->bid_status = $adviceBidMainStatus->status;
+            }else{
+                 $advice_area[$key]->bid_status = 0;
+            }
+            $advice_area[$key]->totalBids = $bidCountArr;
+            $costOfLead = ($item->size_want/100)*0.006;
+            $time1 = Date('Y-m-d H:i:s');
+            $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
+            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+            $costOfLeadsStr = "";
+            $costOfLeadsDropStr = "";
+            $amount = number_format((float)$costOfLead, 2, '.', '');
+            if($hourdiff < 24) {
+                $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                $in = 24-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 24 && $hourdiff < 48) {
+                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $in = 48-$hourdiff;
+                $newAmount = (75 / 100) * $amount;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 48 && $hourdiff < 72) {
+                $newAmount = (75 / 100) * $amount;
+                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $in = 72-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 72) {
+                $costOfLeadsStr = ""."Free";
+                $costOfLeadsDropStr = "";
+            }
+            
+            $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
+            $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+            $area_owner_details = User::where('id',$item->user_id)->first();
+            $address = "";
+            if(!empty($area_owner_details)) {
+                $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
+                if(!empty($addressDetails)) {
+                    if($addressDetails->Country != ""){
+                        $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                        // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
+                        $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                        $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                    }
+                    
+                }
+            }
+            $lead_value = "";
+            $main_value = ($item->size_want/100);
+            $advisorDetaultValue = "";
+            if($item->service_type=="remortgage") {
+                $advisorDetaultValue = "remortgage";
+            }else if($item->service_type=="first time buyer") {
+                $advisorDetaultValue = "first_buyer";
+            }else if($item->service_type=="next time buyer") {
+                $advisorDetaultValue = "next_buyer";
+            }else if($item->service_type=="buy to let") {
+                $advisorDetaultValue = "but_let";
+            }else if($item->service_type=="equity release") {
+                $advisorDetaultValue = "equity_release";
+            }else if($item->service_type=="overseas") {
+                $advisorDetaultValue = "overseas";
+            }else if($item->service_type=="self build") {
+                $advisorDetaultValue = "self_build";
+            }else if($item->service_type=="mortgage protection") {
+                $advisorDetaultValue = "mortgage_protection";
+            }else if($item->service_type=="secured loan") {
+                $advisorDetaultValue = "secured_loan";
+            }else if($item->service_type=="bridging loan") {
+                $advisorDetaultValue = "bridging_loan";
+            }else if($item->service_type=="commercial") {
+                $advisorDetaultValue = "commercial";
+            }else if($item->service_type=="something else") {
+                $advisorDetaultValue = "something_else";
+            }   
+            $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
+            
+            $advice_area[$key]->lead_address = $address;
+            $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            // $show_status = "Live Leads"; 
+            $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
+            if(!empty($bidDetailsStatus)) {
+                if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Not Proceeding"; 
+                }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Hired"; 
+                }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Lost"; 
+                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Closed"; 
+                }else{
+                    $show_status = "Live Leads";     
+                }
+            }else{
+                $show_status = "Live Leads";     
+            }
+            $advice_area[$key]->show_status = $show_status;
+
+            $channelIds = array(-1);
+            $channelID = ChatChannel::where('area_id',$item->id)->orderBy('id','DESC')->get();
+            foreach ($channelID as $chanalesR) {
+                array_push($channelIds, $chanalesR->id);
+            }
+            $advice_area[$key]->last_chat = ChatChannel::whereIn('channel_id',$channelIds)->take(5)->orderBy('id','DESC')->get();
+            $advice_area[$key]->last_notes = UserNotes::where('advice_id', '=', $item->id)->where('user_id',$user->id)->get();
+            // echo "<br>";
+            // echo "Preference Value==".$AdvisorPreferencesDefault->$advisorDetaultValue;
+            // echo "<br>";
+            // echo "Size want==".$item->size_want;
+            // echo "<br>";
+            // echo "After Calclulate Value==".$main_value;
+            // echo "<br>";
+            // echo "Divided Value==".($item->size_want/100);
+            // echo "<br>";
+            // echo "Final Value==".$lead_value;
+            // echo "<br>";
+        }
+
         return response()->json([
             'status' => true,
             'data' => $advice_area->items(),
@@ -1751,6 +1775,7 @@ class ApiController extends Controller
             'has_more_page' => $advice_area->hasMorePages(),
         ], Response::HTTP_OK);
     }
+
     function getRecentMessages()
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1764,6 +1789,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     function seenMessages(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1777,6 +1803,7 @@ class ApiController extends Controller
             'status' => true,
         ], Response::HTTP_OK);
     }
+
     function sendAttachment(Request $request)
     {
         $id = JWTAuth::parseToken()->authenticate();
@@ -1843,6 +1870,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function addOffer(Request $request)
     {
         $userDetails = JWTAuth::parseToken()->authenticate();
@@ -1863,6 +1891,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function editOffer(Request $request, $id)
     {
 
@@ -1884,6 +1913,7 @@ class ApiController extends Controller
             'data' => $chatData
         ], Response::HTTP_OK);
     }
+
     public function deleteOffer(Request $request, $id)
     {
 
@@ -1915,6 +1945,7 @@ class ApiController extends Controller
             'data' => $notification
         ], Response::HTTP_OK);
     }
+
     function updateNotificationPreferences(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -1954,6 +1985,7 @@ class ApiController extends Controller
             'data' => []
         ], Response::HTTP_OK);
     }
+
     public function selectOrDeclineOffer($id,$status) {
         //1:accepted, 3: rejected
         $user = JWTAuth::parseToken()->authenticate();
@@ -1989,8 +2021,8 @@ class ApiController extends Controller
             'status' => true,
             'message' => $message,
         ], Response::HTTP_OK);
-         
     }
+
     public function saveNotification($data) {
         $notification = Notifications::create($data);
         if($notification) {
@@ -1999,6 +2031,7 @@ class ApiController extends Controller
             return false;
         }
     }
+
     public function saveCard(Request $request) {
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2074,6 +2107,7 @@ class ApiController extends Controller
         //cus_Jn74KtxONwHBv5
         // print_r($payment_method);
     }
+
     function createCustomer($request) {
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2106,6 +2140,7 @@ class ApiController extends Controller
             return false;
         }
     }
+
     public function getAllCardByCustomer() {
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2132,6 +2167,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }
     }
+
     public function deleteCard(Request $request) {
          require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2158,6 +2194,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }
     }
+
     public function checkoutFromSavedCard(Request $request) {
           require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
@@ -2202,6 +2239,7 @@ class ApiController extends Controller
                         ], Response::HTTP_OK);
                 }
     }
+
     public function getNotification() {
         $user = JWTAuth::parseToken()->authenticate();
         $notificationCount = 0;
@@ -2240,6 +2278,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }
     }
+
     public function updateReadNotification() {
         $user = JWTAuth::parseToken()->authenticate();
         if($user->user_role == 1) {
@@ -2257,6 +2296,7 @@ class ApiController extends Controller
             'message' => 'success',
         ], Response::HTTP_OK);
     }
+
     public function searchPostalCode(Request $request) {
         $search = $request->postal_code;
         $result = PostalCodes::select('id','Postcode')->where('Postcode', 'like', '%' . $search . '%')->limit(20)->get();
@@ -2274,6 +2314,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);  
         }           
     }
+
     public function getAllServiceType() {
         $result = ServiceType::get();
         if(!empty($result)) {
@@ -2290,6 +2331,7 @@ class ApiController extends Controller
             ], Response::HTTP_OK);  
         }           
     }
+
     public function getAdvisorResponseTime($advisor_id=0) {
         $fromUserChatData = ChatModel::where('from_user_id', '=', $advisor_id)->orderBy('id','DESC')->groupBy('channel_id')->get();
         $arrayTime = array();
@@ -2348,4 +2390,39 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }         
     }    
+    
+
+    public function getFaqLists(Request $request) {
+        $audience = (isset($request->audience))?$request->audience:'customer';
+        $response = array(
+            'list' => Faq::where('audience',$audience)->where('is_featured',1)->where('status',1)->get(),
+            'category' => FaqCategory::where('audience',$audience)->where('status',1)->get()
+        );
+
+        foreach ($response['category'] as $row) {
+            $row->lists = Faq::where('faq_category_id',$row->id)->where('status',1)->get();
+        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Record found.',
+            'data'=>$response
+        ], Response::HTTP_OK);
+    }
+
+    public function doSubmitContactUs(Request $request) {
+        $postData = array(
+            'name' => (isset($request->name))?$request->name:'',
+            'email' => (isset($request->email))?$request->email:'',
+            'mobile' => (isset($request->mobile))?$request->mobile:'',
+            'message' => (isset($request->message))?$request->message:'',
+            'is_replied' => 0,
+            'created_at' => date("Y-m-d H:i:s")
+        );
+        Contactus::insertGetId($postData);
+        return response()->json([
+            'status' => true,
+            'message' => 'Your request has been sent to the admin successfully.',
+            'data'=> []
+        ], Response::HTTP_OK);
+    }
 }

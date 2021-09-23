@@ -13,7 +13,7 @@ class Faq extends Model
     protected $table = "faq";
 
     protected $fillable = [
-        'name', 'status'
+        'name', 'status','is_featured','audience','faq_category_id'
     ];
     /**
      * The attributes that should be mutated to dates.

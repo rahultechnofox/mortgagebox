@@ -681,6 +681,7 @@ class ApiController extends Controller
 
         ], Response::HTTP_OK);
     }
+
     public function getAdviceNotesByAdviceId($advice_id)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -699,6 +700,7 @@ class ApiController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
+
     public function updateNotes(Request $request)
     {
 
@@ -711,6 +713,7 @@ class ApiController extends Controller
             'message' => 'Notes updated successfully',
         ], Response::HTTP_OK);
     }
+
     public function closeAdviceAreaNeed(Request $request)
     {
 
@@ -1743,7 +1746,7 @@ class ApiController extends Controller
                 array_push($channelIds, $chanalesR->id);
             }
             $advice_area[$key]->last_chat = ChatChannel::whereIn('channel_id',$channelIds)->take(5)->orderBy('id','DESC')->get();
-            $advice_area[$key]->last_notes = [];
+            $advice_area[$key]->last_notes = UserNotes::where('advice_id', '=', $item->id)->where('user_id',$user->id)->get();
             // echo "<br>";
             // echo "Preference Value==".$AdvisorPreferencesDefault->$advisorDetaultValue;
             // echo "<br>";

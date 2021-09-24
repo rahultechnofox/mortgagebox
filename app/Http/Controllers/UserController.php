@@ -145,6 +145,7 @@ class UserController extends Controller
         $data['message'] = 'Customer deleted!';
         return redirect()->to('admin/users')->with('message', $data['message']);
     }
+    
     public function addReview(Request $request)
     {
         if(isset($request->reviewer_name) && $request->reviewer_name !="" ) {

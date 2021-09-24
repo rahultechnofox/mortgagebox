@@ -17,6 +17,8 @@ use App\Models\AdvisorPreferencesCustomer;
 use App\Models\AdvisorPreferencesProducts;
 use App\Models\ServiceType;
 use App\Models\AdvisorPreferencesDefault;
+use App\Models\AdviceAreaSpam;
+use App\Models\ReviewSpam;
 use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
@@ -686,6 +688,25 @@ class ApiController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
         $adviceNotes = UserNotes::where('advice_id', '=', $advice_id)->get();
+        if (count($adviceNotes) > 0) {
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data' => $adviceNotes
+            ], Response::HTTP_OK);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Not found',
+                'data' => []
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+    }
+    
+    public function getAdviceNotesOfUserByAdviceId($advice_id,$user_id)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $adviceNotes = UserNotes::where('advice_id', '=', $advice_id)->where('user_id', '=', $user_id)->get();
         if (count($adviceNotes) > 0) {
             return response()->json([
                 'status' => true,
@@ -1741,12 +1762,25 @@ class ApiController extends Controller
             $advice_area[$key]->show_status = $show_status;
 
             $channelIds = array(-1);
-            $channelID = ChatChannel::where('area_id',$item->id)->orderBy('id','DESC')->get();
+            $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
             foreach ($channelID as $chanalesR) {
                 array_push($channelIds, $chanalesR->id);
             }
-            $advice_area[$key]->last_chat = ChatChannel::whereIn('channel_id',$channelIds)->take(5)->orderBy('id','DESC')->get();
             $advice_area[$key]->last_notes = UserNotes::where('advice_id', '=', $item->id)->where('user_id',$user->id)->get();
+            $last_chat_data = ChatModel::whereIn('channel_id',$channelIds)->take(5)->orderBy('id','DESC')->with('from_user')->with('to_user')->get();
+            if(isset($last_chat_data) && count($last_chat_data)){
+                 foreach($last_chat_data as $chat){
+                     if(date('Y-m-d')==date("Y-m-d",strtotime($chat->created_at))){
+                        $chat->date_time = date("H:i",strtotime($chat->created_at));
+                    }else{
+                        $chat->date_time = date("d M Y H:i",strtotime($chat->created_at));
+                    }
+                 }
+            }
+
+            $advice_area[$key]->spam_info = AdviceAreaSpam::where('area_id',$item->id)->where('user_id','=',$user->id)->first();
+            
+            $advice_area[$key]->last_chat = $last_chat_data;
             // echo "<br>";
             // echo "Preference Value==".$AdvisorPreferencesDefault->$advisorDetaultValue;
             // echo "<br>";
@@ -2398,5 +2432,83 @@ class ApiController extends Controller
             'message' => 'Your request has been sent to the admin successfully.',
             'data'=> []
         ], Response::HTTP_OK);
+    }
+    
+    public function makrLeadAsSpam(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $postData = array(
+                'user_id' => $user->id,
+                'area_id' => (isset($request->area_id))?$request->area_id:0
+            );
+
+            $spam_info = AdviceAreaSpam::where('area_id',$postData['area_id'])->where('user_id',$postData['user_id'])->first();
+            if(!$spam_info){
+                $postData = array(
+                    'user_id' => $user->id,
+                    'area_id' => (isset($request->area_id))?$request->area_id:0,
+                    'reason' => (isset($request->reason))?$request->reason:'',
+                    'spam_status' => -1,
+                    'created_at' => date("Y-m-d H:i:s")
+                );
+                AdviceAreaSpam::insertGetId($postData);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Your spam request has been submited successfully.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }else{
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You have already marked it as spam.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+    }
+
+    public function markReviewAsSpam(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $postData = array(
+                'user_id' => $user->id,
+                'review_id' => (isset($request->review_id))?$request->review_id:0
+            );
+
+            $spam_info = ReviewSpam::where('review_id',$postData['review_id'])->where('user_id',$postData['user_id'])->first();
+            if(!$spam_info){
+                $postData = array(
+                    'user_id' => $user->id,
+                    'review_id' => (isset($request->review_id))?$request->review_id:0,
+                    'reason' => (isset($request->reason))?$request->reason:'',
+                    'spam_status' => -1,
+                    'created_at' => date("Y-m-d H:i:s")
+                );
+                ReviewSpam::insertGetId($postData);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Your spam request has been submited successfully.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }else{
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You have already marked it as spam.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
     }
 }

@@ -39,6 +39,7 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('getAdviceAreaById/{id}',  [ApiController::class, 'getAdviceAreaById']);
     Route::post('addNotes/',  [ApiController::class, 'addUserNotes']);
     Route::get('getAdviceNotesByAdviceId/{advice_id}',  [ApiController::class, 'getAdviceNotesByAdviceId']);
+    Route::get('getAdviceNotesOfUserByAdviceId/{advice_id}/{user_id}',  [ApiController::class, 'getAdviceNotesOfUserByAdviceId']);
     Route::post('updateNotes',  [ApiController::class, 'updateNotes']);
     Route::post('closeAdviceAreaNeed/',  [ApiController::class, 'closeAdviceAreaNeed']);
     Route::post('resendActivationMail/',  [ApiController::class, 'resendActivationMail']);
@@ -52,6 +53,9 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('startChat/',  [ApiController::class, 'startChat']);
     Route::post('sendMessage/',  [ApiController::class, 'sendMessage']);
     Route::get('advisorAcceptedLeads/',  [ApiController::class, 'advisorAcceptedLeads']);
+
+    Route::post('accepted-lead-spam',  [ApiController::class, 'makrLeadAsSpam']);
+
     Route::get('getRecentMessages/',  [ApiController::class, 'getRecentMessages']);
     Route::post('seenMessages/',  [ApiController::class, 'seenMessages']);
     Route::post('sendAttachment/',  [ApiController::class, 'sendAttachment']);
@@ -60,6 +64,7 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('deleteOffer/{id}',  [ApiController::class, 'deleteOffer']);
     //for user
     Route::post('addReview',  [UserController::class, 'addReview']);
+    Route::post('review-spam',  [ApiController::class, 'markReviewAsSpam']);
     Route::get('getReviewRating',  [AdvisorController::class, 'getReviewRating']);
     Route::get('selectOrDeclineOffer/{bid_id}/{status}', [ApiController::class, 'selectOrDeclineOffer']);
 

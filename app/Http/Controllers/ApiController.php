@@ -671,7 +671,7 @@ class ApiController extends Controller
     public function addUserNotes(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
-        UserNotes::create([
+        $obj = UserNotes::create([
             'user_id' => $user->id,
             'notes' => $request->notes,
             'advice_id' => $request->advice_id,
@@ -679,6 +679,7 @@ class ApiController extends Controller
         //User created, return success response
         return response()->json([
             'status' => true,
+            'data' =>$obj,
             'message' => 'Notes added successfully',
 
         ], Response::HTTP_OK);

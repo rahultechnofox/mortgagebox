@@ -62,18 +62,24 @@ class UserController extends Controller
             ->get();
         $userDetails->total_needs = count($advice_area);
         $adviceBidClosed = 0;
+        $adviceBidCompleted = 0;
         $adviceBidActive = 0;
         $pendingBidCount = 0;
+        $finalCompletedClosed = 0;
         
         foreach($advice_area as $items) {
             $adviceBidCl= AdvisorBids::where('area_id',$items->id)->where('status','=','2')->get();
-            $adviceBidClosed = $adviceBidClosed+count($adviceBidCl);
+            $adviceBidCompleted = $adviceBidCompleted+count($adviceBidCl);
+            $adviceBidCom= Advice_area::where('id',$items->id)->where('status','=','2')->get();
+            $adviceBidClosed = $adviceBidClosed+count($adviceBidCom);
             $adviceBidAc= Advice_area::where('id',$items->id)->where('status','=','1')->get();
             $adviceBidActive = $adviceBidActive+count($adviceBidAc);
             $pendingCount= AdvisorBids::where('area_id',$items->id)->where('status','=','0')->get();
             $pendingBidCount = $pendingBidCount+count($pendingCount);
+            $finalCompletedClosed = $adviceBidCompleted + $adviceBidClosed;
         }
         $userDetails->closed = $adviceBidClosed;
+        $userDetails->final_closed = $finalCompletedClosed;
         $userDetails->active_bid = $adviceBidActive;
         $userDetails->pending_bid = $pendingBidCount;
         return view('users.show',['userDetails'=>$userDetails]);
@@ -145,7 +151,6 @@ class UserController extends Controller
         $data['message'] = 'Customer deleted!';
         return redirect()->to('admin/users')->with('message', $data['message']);
     }
-    
     public function addReview(Request $request)
     {
         if(isset($request->reviewer_name) && $request->reviewer_name !="" ) {
@@ -157,21 +162,60 @@ class UserController extends Controller
             $request->reviewer_name = "";
             $userDetails = JWTAuth::parseToken()->authenticate();
         }
-         
-        foreach($advice_area as $items) {
-            $adviceBidCl= AdvisorBids::where('area_id',$items->id)->where('status','=','2')->get();
-            $adviceBidClosed = $adviceBidClosed+count($adviceBidCl);
-            $adviceBidAc= Advice_area::where('id',$items->id)->where('status','=','1')->get();
-            $adviceBidActive = $adviceBidActive+count($adviceBidAc);
-            $pendingCount= AdvisorBids::where('area_id',$items->id)->where('status','=','0')->get();
-            $pendingBidCount = $pendingBidCount+count($pendingCount);
-        }
-        $userDetails->closed = $adviceBidClosed;
-        $userDetails->active_bid = $adviceBidActive;
-        $userDetails->pending_bid = $pendingBidCount;
-        // echo json_encode($userDetails);exit;
-        return view('users.show',['userDetails'=>$userDetails]);
+        
+        $rating = ReviewRatings::create([
+            'user_id' => $userDetails->id,
+            'advisor_id' => $request->advisor_id,
+            'rating' => $request->rating,
+            'review_title' => $request->review_title,
+            'reviews' =>$request->reviews,
+            'status' => $request->status,
+            'parent_review_id' => $request->parent_review_id,
+            'reply_reason' =>$request->reply_reason,
+            'spam_reason' => $request->spam_reason,
+            'reviewer_name'=>$request->reviewer_name
+            
+        ])->id;
+        $this->saveNotification(array(
+            'type'=>'4', // 1:
+            'message'=>'New review recieved from customer '.$userDetails->name, // 1:
+            'read_unread'=>'0', // 1:
+            'user_id'=>$userDetails->id,// 1:
+            'advisor_id'=>$request->advisor_id, // 1:
+            'area_id'=>0,// 1:
+            'notification_to'=>1
+        ));
+        return response()->json([
+            'status' => true,
+            'message' => 'Rating added successfully',
+        ], Response::HTTP_OK);
     }
+    // public function addReview(Request $request)
+    // {
+    //     if(isset($request->reviewer_name) && $request->reviewer_name !="" ) {
+    //         $userDetails = new \stdClass();
+    //         $userDetails->id = 0;
+    //         $userDetails->name = $request->reviewer_name; 
+
+    //     }else{
+    //         $request->reviewer_name = "";
+    //         $userDetails = JWTAuth::parseToken()->authenticate();
+    //     }
+         
+    //     // foreach($advice_area as $items) {
+    //     //     $adviceBidCl= AdvisorBids::where('area_id',$items->id)->where('status','=','2')->get();
+    //     //     $adviceBidClosed = $adviceBidClosed+count($adviceBidCl);
+    //     //     $adviceBidAc= Advice_area::where('id',$items->id)->where('status','=','1')->get();
+    //     //     $adviceBidActive = $adviceBidActive+count($adviceBidAc);
+    //     //     $pendingCount= AdvisorBids::where('area_id',$items->id)->where('status','=','0')->get();
+    //     //     $pendingBidCount = $pendingBidCount+count($pendingCount);
+    //     // }
+    //     // $userDetails->closed = $adviceBidClosed;
+    //     // $userDetails->active_bid = $adviceBidActive;
+    //     // $userDetails->pending_bid = $pendingBidCount;
+    //     // echo json_encode($userDetails);exit;
+    //     return view('users.show',['userDetails'=>$userDetails]);
+    // }
     public function openAddReview(Request $request)
     {
         if(isset($request->reviewer_name) && $request->reviewer_name !="" ) {

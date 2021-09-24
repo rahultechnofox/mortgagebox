@@ -236,6 +236,8 @@ class User extends Authenticatable implements JWTSubject
             $data['total_due'] = $newTotal - $discountTotal;
             $data['profile'] = $advisorProfile;
             $success_per = 0;
+            $closedArr = array();
+            $closed_count = 0;
             if($data['userDetails']){
                 $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address','users.status as user_status', 'advisor_bids.advisor_id as advisor_id', 'companies.advisor_id as advisor_id')
                 ->join('users', 'advice_areas.user_id', '=', 'users.id')
@@ -276,15 +278,23 @@ class User extends Authenticatable implements JWTSubject
                 $data['userDetails']->lost_leads = $lost_leads;
 
                 $closed = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
-                ->where('status', '=', 3)
                 ->where('advisor_status', '=', 1)
-                ->count();
-                $data['userDetails']->closed = $closed;
+                ->get();
+                if(isset($closed) && count($closed)){
+                    foreach($closed as $closed_data){
+                        array_push($closedArr,$closed_data->area_id);
+                    }
+                }
+                if(isset($closedArr) && count($closedArr)){
+                    $closed_count = Advice_area::whereIn('id',$closedArr)->where('status',2)->count();
+                }
+                $data['userDetails']->closed = $closed_count;
                 $not_proceed = 0;
                 $get_not_proceed = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)->get();
+                // echo json_encode($get_not_proceed);
                 $data['userDetails']->not_proceed = 0;
                 if(isset($get_not_proceed) && count($get_not_proceed)){
-                    foreach($not_proceed as $not_proceed_data){
+                    foreach($get_not_proceed as $not_proceed_data){
                         $check_proceed = AdvisorBids::where('area_id',$not_proceed_data->id)->where('status', '=', 0)->where('advisor_status', '=', 1)->count();
                         if($check_proceed){
                             $not_proceed = $not_proceed + 1;
@@ -303,7 +313,8 @@ class User extends Authenticatable implements JWTSubject
                 }
                 $data['userDetails']->success_percent = $success_per;
             }
-            
+            // exit;
+            // echo json_encode($data);exit;
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

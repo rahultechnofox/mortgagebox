@@ -32,6 +32,7 @@ class NeedController extends Controller
         $advice_area = Advice_area::getNeedList($post);
         $data = $advice_area;   
         $data['entry_count'] = config('constants.paginate.num_per_page');
+        // echo json_encode($data);exit;
         return view('need_list.index',$data);
     }
     /**

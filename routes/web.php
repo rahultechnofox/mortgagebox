@@ -132,6 +132,19 @@ Route::middleware('auth')->group(function(){
 
     /******************* Invoice Management **********************/
 
+     /******************* Contact Management **********************/
+     Route::get('admin/contact-us', '\App\Http\Controllers\ContactUsController@index');
+     Route::post('admin/contact-us', '\App\Http\Controllers\ContactUsController@index'); 
+     Route::post('admin/get-contact-us','\App\Http\Controllers\ContactUsController@show');
+     Route::post('admin/reply-contact-us','\App\Http\Controllers\ContactUsController@store');
+     /******************* Contact Management **********************/
+
+    /******************* Contact Management **********************/
+      Route::get('admin/review-spam', '\App\Http\Controllers\ReviewSpamController@index');
+      Route::post('admin/review-spam', '\App\Http\Controllers\ReviewSpamController@index'); 
+     Route::post('admin/takeDecision','\App\Http\Controllers\ReviewSpamController@takeDecision');
+    /******************* Contact Management **********************/
+
     Route::get('admin', '\App\Http\Controllers\AdminController@index')->name("admin");
     Route::get('/', '\App\Http\Controllers\AdminController@index');
     Route::get('home', '\App\Http\Controllers\UserController@index')->name("home");

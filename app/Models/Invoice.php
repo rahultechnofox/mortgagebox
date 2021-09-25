@@ -4,13 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use DB;
 
 class Invoice extends Model
 {
     use HasFactory;
-
+    use SoftDeletes;
     protected $fillable = ['invoice_number', 'month', 'year','invoice_data','is_paid','advisor_id'];
+    /**
+     * The attributes that should be mutated to dates.
+     *
+     * @var array
+    */
+    protected $dates = ['deleted_at'];
     public function adviser(){
         return $this->hasOne('App\Models\AdvisorProfile',"advisorId","advisor_id");
     }

@@ -652,6 +652,78 @@ function resetSuspended(formId){
     $("#suspend_reason").html('');
 }
 
+function getContactUsData(id){
+    showLoader();
+    var data = {};
+    data.id = id;
+    $.ajax({
+        type: 'post',
+        url: base_url +"/admin/get-contact-us",
+        data: data,
+        success: function (response) {
+            $('#id').val(response.data.id);
+            $('#email').val(response.data.email);
+            if(response.data.parent_id!=0){
+                $('#parent_id').val(response.data.parent_id);
+                $('.parent_id').show();
+            }else{
+                $('.parent_id').hide();
+            }  
+            hideLoader();
+        }
+    });
+}
+
+function replyContactus(formId){
+    var $form = $("#"+formId);
+    var data = getFormData($form);
+    if(data.message == ''){
+        myToastr('Enter message','error');
+    }else{
+        showLoader();
+        $.ajax({
+            type: 'post',
+            url: base_url+"/admin/reply-contact-us",
+            data: data,
+            success: function (response) {
+                if(!response.status){
+                    hideLoader();
+                    myToastr(response.message,'error');
+                }else{
+                    location.reload();                   
+                    myToastr(response.message,'success');
+                }
+            }
+        });
+    }
+}
+
+function takeDecision(id){  
+    var data = {};
+    data.id = id;
+    showLoader();
+    $.ajax({
+        type: 'post',
+        url: base_url+"/admin/takeDecision",
+        data: data,
+        success: function (response) {
+            if(!response.status){
+                hideLoader();
+                myToastr(response.message,'error');
+            }else{
+                location.reload();                   
+                myToastr(response.message,'success');
+            }
+        }
+    });
+}
+
+function resetContactUsForm(){
+    $("#servicesForm").closest('form').find("input[type=text], input[type=number], input[type=file], textarea").val("");
+    $("#servicesForm").closest('form').find("input[type=checkbox]").removeAttr("checked");
+    $('#id').val('');
+}
+
 $("#for_all_users").on('change', function () {
     var el = $(this);
     $(".user_group").addClass('hide');

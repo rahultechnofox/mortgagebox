@@ -319,14 +319,58 @@ class AdvisorController extends Controller
     {
         JWTAuth::parseToken()->authenticate();
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id)->first();
+        if($advisor_data){
+            $company = companies::where('id',$advisor_data->company_id)->first();
+            if($company){
+                $advisor_data->company_name = $company->company_name;
+                $advisor_data->company_about = $company->company_about;
+                $advisor_data->updated_by_name = "";
+                if($company->updated_by!=0){
+                    $updated_by_user = AdvisorProfile::where('advisorId',$company->updated_by)->first();
+                    if($updated_by_user){
+                        $advisor_data->updated_by_name = $updated_by_user->display_name;
+                    }
+                }
+            }
+            $company = CompanyTeamMembers::where('email',$advisor_data->email)->first();
+            if($company){
+                if($company->isCompanyAdmin==1){
+                    $advisor_data->is_admin = 1;
+                }else{
+                    $advisor_data->is_admin = 0;
+                }
+            }else{
+                $advisor_data->is_admin = 2;
+            }
+        }
+        
         $last_activity = User::select('users.last_active')->where('id', '=', $id)->first();
         $offer_data = AdvisorOffers::where('advisor_id', '=', $id)->get();
 
         $rating =  ReviewRatings::select('review_ratings.*', 'users.name', 'users.email', 'users.address')
             ->leftJoin('users', 'review_ratings.user_id', '=', 'users.id')
+            ->leftJoin('review_spam', 'review_ratings.id', '=', 'review_spam.review_id')
             ->where('review_ratings.advisor_id', '=', $id)
             ->where('review_ratings.status', '=', 0)
+            ->where('review_spam.spam_status', '!=', 0)
             ->get();
+        if(count($rating)){
+            foreach($rating as $rating_data){
+                $spam = ReviewSpam::where('review_id',$rating_data->id)->first();
+                $rating_data->reason = "";
+                $rating_data->spam_status = 2;
+                $rating_data->is_spam = 0;
+                if($spam){
+                    $rating_data->reason = $spam->reason;
+                    $rating_data->spam_status = $spam->spam_status;
+                    $rating_data->is_spam = 1;
+                }else{
+                    $rating_data->reason = "";
+                    $rating_data->spam_status = 2;
+                    $rating_data->is_spam = 0;
+                }
+            }
+        }
 
         $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
         ->Where('advisor_status','=',1)
@@ -563,25 +607,46 @@ class AdvisorController extends Controller
     public function updateAdvisorAboutUs(Request $request)
     {
         $id = JWTAuth::parseToken()->authenticate();
-        $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update(
-            [
-                'short_description' => $request->short_description,
-                'description' => $request->description,
-                'description_updated' => Date('Y-m-d H:i:s'),
-            ]
-        );
+        // $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update(
+        //     [
+        //         'short_description' => $request->short_description,
+        //         'description' => $request->description,
+        //         'description_updated' => Date('Y-m-d H:i:s'),
+        //     ]
+        // );
         
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         // Update Compnay info for all advisers
-        if($advisor_data->company_id > 0) {
-            $advisorDetails = AdvisorProfile::where('company_id', '=', $advisor_data->company_id)->update(
-            [
-                'description' => $request->description,
-                'description_updated' => Date('Y-m-d H:i:s'),
-            ]
-        );
-        
+        if($advisor_data){
+            if($advisor_data->company_id > 0) {
+                //     $advisorDetails = AdvisorProfile::where('company_id', '=', $advisor_data->company_id)->update(
+                //     [
+                //         'description' => $request->description,
+                //         'description_updated' => Date('Y-m-d H:i:s'),
+                //     ]
+                // );
+                $advisorDetails = companies::where('id', '=', $advisor_data->company_id)->update(
+                    [
+                        'company_about' => $request->company_about,
+                        'updated_by' => $request->updated_by,
+                        'updated_at' => Date('Y-m-d H:i:s'),
+                    ]
+                );
+                $company = companies::where('id', '=', $advisor_data->company_id)->first();
+                $advisor_data->company_about = "";
+                $advisor_data->updated_by_user = "";
+                if($company){
+                    $advisor_data->company_about = $company->company_about;
+                    if($company->updated_by!=0){
+                        $updated_by_user = AdvisorProfile::where('advisorId', '=',$company->updated_by)->first();
+                        if($updated_by_user){
+                            $advisor_data->updated_by_user = $updated_by_user->display_name;
+                        }
+                    }
+                }
+            }
         }
+        
         return response()->json([
             'status' => true,
             'message' => 'Profile updated successfully',
@@ -979,8 +1044,11 @@ class AdvisorController extends Controller
         $team_id = $this->getDecryptedId($id);
         $teamDetails = CompanyTeamMembers::where('id','=',$team_id)->first();
         if (!empty($teamDetails)) {
-            $teamDetails = CompanyTeamMembers::where('id','=',$team_id)->update([
+            CompanyTeamMembers::where('id','=',$team_id)->update([
             'is_joined' => "1"
+            ]);
+            AdvisorProfile::where('email','=',$teamDetails->email)->update([
+                'company_id' => $teamDetails->company_id
             ]);
         }
         return redirect()->away(config('constants.urls.host_url'));
@@ -1016,7 +1084,7 @@ class AdvisorController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $teams = CompanyTeamMembers::select('company_team_members.*')
             ->where('company_team_members.company_id', '=', $company_id)
-            ->where('company_team_members.advisor_id', '=', $user->id)
+            // ->where('company_team_members.advisor_id', '=', $user->id)
             ->join('companies', 'company_team_members.company_id', '=', 'companies.id')
            ->get();
 

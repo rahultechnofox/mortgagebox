@@ -131,6 +131,19 @@ class ApiController extends Controller
         $user =  USER::where('email', '=', $request->email)->first();
         if($user->user_role == 1) {
             $userDetails =  AdvisorProfile::where('advisorId', '=', $user->id)->first(); 
+            if($userDetails){
+                $team_member = CompanyTeamMembers::where('email',$userDetails->email)->first();
+                // $userDetails->is_admin = $team_member;
+                if($team_member){
+                    if($team_member->isCompanyAdmin==1){
+                        $user->is_admin = 1;
+                    }else{
+                        $user->is_admin = 0;
+                    }
+                }else{
+                    $user->is_admin = 2;
+                }
+            }
             $user->userDetails = $userDetails;
         }else{
             $user->userDetails = [];
@@ -788,10 +801,16 @@ class ApiController extends Controller
                 'password' => bcrypt($password)
             ]);
 
-            $msg = "Your temporary password is \n" . $password;
-            $msg = wordwrap($msg, 70);
-            mail($userDetails->email, "Forgot Password", $msg);
-
+            // $msg = "Your temporary password is \n" . $password;
+            // $msg = wordwrap($msg, 70);
+            // mail($userDetails->email, "Forgot Password", $msg);
+            $data['email'] = $email;
+            $newArr = array(
+                'name'=>$userDetails->name,
+                'email'=>$email,
+                'password' => $password
+            );
+            $c = \Helpers::sendEmail('emails.reset_password',$newArr ,$email,$userDetails->name,'Password reset','','');
             return response()->json([
                 'status' => true,
                 'message' => 'Password is sent to your registered email.',

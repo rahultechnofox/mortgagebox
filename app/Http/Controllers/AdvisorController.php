@@ -1006,30 +1006,22 @@ class AdvisorController extends Controller
         }
         
         
-        if(!empty($checkUser))
-        {
-            // on this plateform
-            $url = "";
-            $msg = "";
-            $msg .= "Hello ".ucfirst($request->name)."\n\n";
-            $msg .= "<p>".ucfirst($user->name)." invites you to join the company.</p>\n\n";
-            $msg .= "<p>Please click the link below to join the team.</p>\n\n";
-            $msg .= "<a href='".config('constants.urls.team_email_verification_url').$this->getEncryptedId($profile->id)."'>Confirm</a>\n\n";
-            $msg .= "Best wishes\n\n";
-            $msg .= "The Mortgagebox team\n\n";
-            mail($request->email, "Invitation | Mortgagebox.co.uk", $msg);
-        }
-        else{
-            // not on plateform
-            $url = "?invitedBy=".$this->getEncryptedId($user->id);
-            $msg = "";
-            $msg .= "Hello ".ucfirst($request->name)."\n\n";
-            $msg .= "<p>".ucfirst($user->name)." invites you to join the company.</p>\n\n";
-            $msg .= "<p>Please click the link below to create your account and join the team.</p>\n\n";
-            $msg .= "<a href='".config('constants.urls.team_signup_url').$url."'>Create Account</a>\n\n";
-            $msg .= "Best wishes\n\n";
-            $msg .= "The Mortgagebox team\n\n";
-            mail($request->email, "Invitation | Mortgagebox.co.uk", $msg);
+        if(!empty($checkUser)){
+            $newArr = array(
+                'name'=>ucfirst($request->name),
+                'invited_by'=>ucfirst($user->name),
+                'email'=>$request->email,
+                'url' => config('constants.urls.team_email_verification_url')."".$this->getEncryptedId($request->user_id)
+            );
+            $c = \Helpers::sendEmail('emails.team_email_verification',$newArr ,$request->email,$request->name,'Invitation | Mortgagebox.co.uk','','');
+        }else{
+            $newArr = array(
+                'name'=>ucfirst($request->name),
+                'invited_by'=>ucfirst($user->name),
+                'email'=>$request->email,
+                'url' => config('constants.urls.team_signup_url')."?invitedBy=".$this->getEncryptedId($user->id)
+            );
+            $c = \Helpers::sendEmail('emails.team_email_signup',$newArr ,$request->email,$request->name,'Invitation | Mortgagebox.co.uk','','');
         }
         //Send Email
         return response()->json([
@@ -1183,20 +1175,6 @@ class AdvisorController extends Controller
                 'area_id'=>$advice_area->id,// 1:
                 'notification_to'=>1
             ));
-            // AdvisorEnquiries::create([
-            //     'name' => $request->name,
-            //     'email' => $request->email,
-            //     'mortgage_required' => $request->mortgage_required,
-            //     'prop_value' => $request->prop_value,
-            //     'combined_income' => $request->combined_income,
-            //     'how_soon' => $request->how_soon,
-            //     'post_code' => $request->post_code,
-            //     'anything_else' => $request->anything_else,
-            //     'advisor_id' => $request->advisor_id,
-            //     'user_id' => $user->id,
-            //     'need_advice' => $request->need_advice,
-            //     'match_me' => $request->match_me,
-            // ]);
             
         
         $msg = "";
@@ -1284,6 +1262,13 @@ class AdvisorController extends Controller
         $headers .= "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
         mail($userDetails->email, "New Enquiry", $msg,$headers);
+        //for discussion
+        // $newArr = array(
+        //     'name'=>$request->name,
+        //     'email'=>$request->email,
+        //     'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+        // );
+        // $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
 
         return response()->json([
             'status' => true,

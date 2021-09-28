@@ -36,13 +36,13 @@ class AdviceAreaController extends Controller
             ])->id;
              
             $request->user_id = $user;
-            
-            $msg = "You have successfully created account.\n Please verfiy your account by click below link ";
-            $msg .= config('constants.urls.email_verification_url'); 
-            
-            $msg .= $this->getEncryptedId($request->user_id); 
-            $msg = wordwrap($msg,70);
-            mail($request->email,"Email Verification",$msg);
+
+            $newArr = array(
+                'name'=>$request->name,
+                'email'=>$request->email,
+                'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+            );
+            $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Email Verification','','');
            
             // $credentials = $request->only('email', 'password');
             // try {

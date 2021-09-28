@@ -44,30 +44,29 @@ class AdviceController extends Controller
                 'invited_by' => $invited_by,
             ])->id;
             $request->user_id = $user;
-            $msg = "";
-            $msg .= "Welcome\n\n";
-            $msg .= "Hello ".ucfirst($request->name).",\n\n";
-            $msg .= "<p>Finding the right mortgage should be easy, but too often it's a hassle. Some mortgage web-sites / advisors aren't as helpful or that easy to use. And how can you be sure you've been given the best deal when you only use one?</p>\n\n";
-            $msg .= "<p>That's why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your mortgage needs, who then contoct you initially through mortgagebox</p>\n\n";
-            $msg .= "<p>Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees or how well you gel with the adviser</p>\n\n";
-            $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
-            $msg .= "<a href='".config('constants.urls.email_verification_url').$this->getEncryptedId($request->user_id)."'>Activate Account</a>\n\n";
-            $msg .= "Best wishes\n\n";
-            $msg .= "The Mortgagebox team\n\n";
+            // $msg = "";
+            // $msg .= "Welcome\n\n";
+            // $msg .= "Hello ".ucfirst($request->name).",\n\n";
+            // $msg .= "<p>Finding the right mortgage should be easy, but too often it's a hassle. Some mortgage web-sites / advisors aren't as helpful or that easy to use. And how can you be sure you've been given the best deal when you only use one?</p>\n\n";
+            // $msg .= "<p>That's why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your mortgage needs, who then contoct you initially through mortgagebox</p>\n\n";
+            // $msg .= "<p>Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees or how well you gel with the adviser</p>\n\n";
+            // $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
+            // $msg .= "<a href='".config('constants.urls.email_verification_url').$this->getEncryptedId($request->user_id)."'>Activate Account</a>\n\n";
+            // $msg .= "Best wishes\n\n";
+            // $msg .= "The Mortgagebox team\n\n";
             // $msg = "You have successfully created account.\n Please verfiy your account by click below link ";
             // $msg .= config('constants.urls.email_verification_url');
 
             // $msg .= $this->getEncryptedId($request->user_id);
           //  $msg = wordwrap($msg, 70);
            
-            $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
-           
-            // $msg = "You have successfully created account.\n Please verfiy your account by click below link ";
-            // $msg .= config('constants.urls.email_verification_url'); 
-            
-            // $msg .= $this->getEncryptedId($request->user_id); 
-            // $msg = wordwrap($msg,70);
-            // mail($request->email,"Email Verification",$msg);
+            // $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+            $newArr = array(
+                'name'=>$request->name,
+                'email'=>$request->email,
+                'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+            );
+            $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         } 
         
         $user = Advice_area::create([

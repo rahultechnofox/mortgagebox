@@ -12,6 +12,7 @@ use App\Models\companies;
 use App\Models\NotificationsPreferences;
 use App\Models\Notifications;
 use App\Models\PostalCodes;
+use App\Models\AdviceAreaRead;
 use App\Models\ReviewRatings;
 use App\Models\AdvisorPreferencesCustomer;
 use App\Models\AdvisorPreferencesProducts;
@@ -69,25 +70,27 @@ class ApiController extends Controller
         //     $message->subject('Welcome Mail');
         // });
         $dataUser = User::find($user);
-        $msg = "";
-        $msg .= "Welcome\n\n";
-        $msg .= "Hello ".ucfirst($request->name)."\n\n";
-        $msg .= "<p>Finding the right mortgage should be easy, but too often it's a hassle. Some mortgage web-sites / advisors aren't as helpful or that easy to use. And how can you be sure you've been given the best deal when you only use one?</p>\n\n";
-        $msg .= "<p>That's why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your mortgage needs, who then contoct you initially through mortgagebox</p>\n\n";
-        $msg .= "<p>Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees or how well you gel with the adviser</p>\n\n";
-        $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
-        $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
-        $msg .= "<a href='".config('constants.urls.email_verification_url')."'>Activate Account</a>\n\n";
-        $msg .= "Best wishes\n\n";
-        $msg .= "The Mortgagebox team\n\n";
-        
-        
-        // $msg .= "You have successfully created account.\n Please verfiy your account by click below link ";
+        // $msg = "";
+        // $msg .= "Welcome\n\n";
+        // $msg .= "Hello ".ucfirst($request->name)."\n\n";
+        // $msg .= "<p>Finding the right mortgage should be easy, but too often it's a hassle. Some mortgage web-sites / advisors aren't as helpful or that easy to use. And how can you be sure you've been given the best deal when you only use one?</p>\n\n";
+        // $msg .= "<p>That's why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your mortgage needs, who then contoct you initially through mortgagebox</p>\n\n";
+        // $msg .= "<p>Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees or how well you gel with the adviser</p>\n\n";
+        // $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
+        // $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
+        // $msg .= "<a href='".config('constants.urls.email_verification_url')."'>Activate Account</a>\n\n";
+        // $msg .= "Best wishes\n\n";
+        // $msg .= "The Mortgagebox team\n\n";
 
-        $msg .= $this->getEncryptedId($user->id);
-        $msg = wordwrap($msg, 70);
-        mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
-
+        // $msg .= $this->getEncryptedId($user->id);
+        // $msg = wordwrap($msg, 70);
+        // mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+        $newArr = array(
+            'name'=>$request->name,
+            'email'=>$request->email,
+            'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+        );
+        $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
         return response()->json([
             'status' => true,
@@ -226,12 +229,18 @@ class ApiController extends Controller
                 'email' => $request->email,
                 'email_status' => 0,
             ]);
-            $msg = "You have successfully changed your email.\n Please verfiy your account by click below link ";
-            $msg .= config('constants.urls.email_verification_url');
+            // $msg = "You have successfully changed your email.\n Please verfiy your account by click below link ";
+            // $msg .= config('constants.urls.email_verification_url');
 
-            $msg .= $this->getEncryptedId($userDetails->id);
-            $msg = wordwrap($msg, 70);
-            mail($request->email, "Email Verification", $msg);
+            // $msg .= $this->getEncryptedId($userDetails->id);
+            // $msg = wordwrap($msg, 70);
+            // mail($request->email, "Email Verification", $msg);
+            $newArr = array(
+                'name'=>$request->name,
+                'email'=>$request->email,
+                'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($userDetails->id)
+            );
+            $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Email Verification','','');
         } else {
             $user = $userDetails->update([
                 'name' => $request->name,
@@ -297,24 +306,30 @@ class ApiController extends Controller
             ])->id;
 
             $request->user_id = $user;
-            $msg = "";
-            $msg .= "Welcome\n\n";
-            $msg .= "Hello ".ucfirst($request->name)."\n\n";
-            $msg .= "<p>Finding the right mortgage should be easy, but too often it's a hassle. Some mortgage web-sites / advisors aren't as helpful or that easy to use. And how can you be sure you've been given the best deal when you only use one?</p>\n\n";
-            $msg .= "<p>That's why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your mortgage needs, who then contoct you initially through mortgagebox</p>\n\n";
-            $msg .= "<p>Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees or how well you gel with the adviser</p>\n\n";
-            $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
-            $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
-            $msg .= "<a href='".config('constants.urls.email_verification_url')."'>Activate Account</a>\n\n";
-            $msg .= "Best wishes\n\n";
-            $msg .= "The Mortgagebox team\n\n";
+            // $msg = "";
+            // $msg .= "Welcome\n\n";
+            // $msg .= "Hello ".ucfirst($request->name)."\n\n";
+            // $msg .= "<p>Finding the right mortgage should be easy, but too often it's a hassle. Some mortgage web-sites / advisors aren't as helpful or that easy to use. And how can you be sure you've been given the best deal when you only use one?</p>\n\n";
+            // $msg .= "<p>That's why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your mortgage needs, who then contoct you initially through mortgagebox</p>\n\n";
+            // $msg .= "<p>Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees or how well you gel with the adviser</p>\n\n";
+            // $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
+            // $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
+            // $msg .= "<a href='".config('constants.urls.email_verification_url')."'>Activate Account</a>\n\n";
+            // $msg .= "Best wishes\n\n";
+            // $msg .= "The Mortgagebox team\n\n";
             // $msg = "You have successfully created account.\n Please verfiy your account by click below link ";
             // $msg .= config('constants.urls.email_verification_url');
 
             //$msg .= $this->getEncryptedId($request->user_id);
           //  $msg = wordwrap($msg, 70);
 
-            mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+            // mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+            $newArr = array(
+                'name'=>$request->name,
+                'email'=>$request->email,
+                'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+            );
+            $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
 
             $credentials = $request->only('email', 'password');
             try {
@@ -455,6 +470,7 @@ class ApiController extends Controller
                 'created_at'=>date('Y-m-d H:i:s')
             );
             CompanyTeamMembers::insertGetId($teamArr);
+
         }
         // Set Defaul prefrances
         $notification = AdvisorPreferencesDefault::where('advisor_id', '=', $advisor_id)->first();
@@ -471,22 +487,28 @@ class ApiController extends Controller
             ]);
         }
         
-        $msg = "";
-        $msg .= "Welcome\n\n";
-        $msg .= "Hello ".ucfirst($request->name).",\n\n";
-        $msg .= "<p>Mortgogebox is the smart and cost-effective way for finding new customers actively looking for mortgages based on your specialties and preferences. We let you focus on what you do best ... arranging great mortgages for your customers rather than scrambling around for leads</p>\n\n";
-        $msg .= "<p>Mortgogebox will help grow and sustain your business and allow you to efficiently manage your customer relationships. We also give you the tools to manage them all in one place.</p>\n\n";
-        $msg .= "<p>To activate your account and start finding mortgage advisors please click on the following link</p>\n\n";
-        $msg .= "<a href='".config('constants.urls.email_verification_url').$this->getEncryptedId($advisor_id)."'>Activate Account</a>\n\n";
-        $msg .= "Best wishes\n\n";
-        $msg .= "The Mortgagebox team\n\n";
+        // $msg = "";
+        // $msg .= "Welcome\n\n";
+        // $msg .= "Hello ".ucfirst($request->name).",\n\n";
+        // $msg .= "<p>Mortgogebox is the smart and cost-effective way for finding new customers actively looking for mortgages based on your specialties and preferences. We let you focus on what you do best ... arranging great mortgages for your customers rather than scrambling around for leads</p>\n\n";
+        // $msg .= "<p>Mortgogebox will help grow and sustain your business and allow you to efficiently manage your customer relationships. We also give you the tools to manage them all in one place.</p>\n\n";
+        // $msg .= "<p>To activate your account and start finding mortgage advisors please click on the following link</p>\n\n";
+        // $msg .= "<a href='".config('constants.urls.email_verification_url').$this->getEncryptedId($advisor_id)."'>Activate Account</a>\n\n";
+        // $msg .= "Best wishes\n\n";
+        // $msg .= "The Mortgagebox team\n\n";
         // $msg = "You have successfully created account.\n Please verfiy your account by click below link ";
         // $msg .= config('constants.urls.email_verification_url');
 
         // $msg .= $this->getEncryptedId($request->user_id);
         //  $msg = wordwrap($msg, 70);
 
-        $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+        // $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+        $newArr = array(
+            'name'=>$request->name,
+            'email'=>$request->email,
+            'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+        );
+        $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
         
         return response()->json([
@@ -524,8 +546,6 @@ class ApiController extends Controller
                 "mime" => $image->getClientMimeType()
             );
         }
-
-
         $advisorDetails = AdvisorProfile::where('advisorId', '=', $request->advisorId)->update(
             [
                 'display_name' => $request->display_name,
@@ -546,7 +566,6 @@ class ApiController extends Controller
                 'advisorId' => $request->advisorId,
                 'image' => $request->image,
             ]
-
         );
         $advisor_data = AdvisorProfile::where('advisorId', '=', $request->advisorId)->first();
 
@@ -560,8 +579,6 @@ class ApiController extends Controller
     {
         $id = JWTAuth::parseToken()->authenticate();
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
-
-
         if ($advisor_data) {
 
             return response()->json([
@@ -800,10 +817,6 @@ class ApiController extends Controller
             $userDetails->update([
                 'password' => bcrypt($password)
             ]);
-
-            // $msg = "Your temporary password is \n" . $password;
-            // $msg = wordwrap($msg, 70);
-            // mail($userDetails->email, "Forgot Password", $msg);
             $data['email'] = $email;
             $newArr = array(
                 'name'=>$userDetails->name,
@@ -827,13 +840,18 @@ class ApiController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
 
-        $msg = "To verify your email \n Please click below link ";
-        $msg .= config('constants.urls.email_verification_url');
+        // $msg = "To verify your email \n Please click below link ";
+        // $msg .= config('constants.urls.email_verification_url');
 
-        $msg .= $this->getEncryptedId($user->id);
-        $msg = wordwrap($msg, 70);
-        mail($user->email, "Email Verification", $msg);
-
+        // $msg .= $this->getEncryptedId($user->id);
+        // $msg = wordwrap($msg, 70);
+        // mail($user->email, "Email Verification", $msg);
+        $newArr = array(
+            'name'=>$user->name,
+            'email'=>$user->email,
+            'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($user->id)
+        );
+        $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$user->email,$user->name,'Email Verification','','');
         return response()->json([
             'status' => true,
             'message' => 'Activation link sent successfully',
@@ -1125,7 +1143,11 @@ class ApiController extends Controller
             $advice_area[$key]->lead_address = $address;
             $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
             $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
-
+            $advice_area[$key]->is_read = 0;
+            $read = AdviceAreaRead::where('area_id',$item->id)->where('adviser_id','=',$user->id)->first();
+            if($read){
+                $advice_area[$key]->is_read = 1;
+            }
         }
         return response()->json([
             'status' => true,
@@ -1145,6 +1167,7 @@ class ApiController extends Controller
     function searchMortgageNeeds(Request $request)
     {
         // TODO: promotion: ["early-bird", "75-off", "none", "none", "free", "50-off"]:
+        // $area_arr = array();
         $user = JWTAuth::parseToken()->authenticate();
         $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
         $ltv_max = $userPreferenceCustomer->ltv_max;
@@ -1153,11 +1176,32 @@ class ApiController extends Controller
         $service_type = $request->advice_area;
         // echo print_r($service_type);die;
         $fees_preference = $request->fees_preference;
+        $promotion = $request->promotion;
         $mortgage_value = $request->mortgage_value;
         $lead_submitted = $request->lead_submitted;
         $status = $request->status;
         $search = $request->search;
+        $area_arr = array(-1);
+        if(isset($status) && count($status)){
+            foreach($status as $items){
+                if($items=='read' || $items=='unread'){
+                    $area = AdviceAreaRead::where('adviser_id',$user->id)->get();
+                    foreach($area as $area_data){
+                        array_push($area_arr,$area_data->area_id);
+                    }
+                }
+            }
+        }
+        // $promotion_data_arr = array(-1);
+        // if(isset($promotion) && count($promotion)){
+        //     foreach($promotion as $promotion_data){
+        //         if($promotion_data=="none") {
+        //             $q->where('advice_areas.fees_preference',0);
+        //         }
+        //     }
+        // }
         //, 'users.name', 'users.email', 'users.address'
+        
         $advice_area =  Advice_area::select('advice_areas.*','users.name', 'users.email', 'users.address')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
@@ -1178,8 +1222,7 @@ class ApiController extends Controller
                 $query->orWhere('advice_areas.advisor_preference_language', 'like', '%' . $search . '%');
             }
             
-        })
-        ->where(function($query) use ($fees_preference){
+        })->where(function($query) use ($fees_preference){
             if(!empty($fees_preference) && count($fees_preference) > 0) {
                 $query->where(function($q) use ($fees_preference) {
                     foreach($fees_preference as $item ){
@@ -1238,17 +1281,17 @@ class ApiController extends Controller
                 });
             }
         })->where(function($query) use ($status,$user){
+            $area_arr_data = array(-1);
             if(!empty($status)) {
-                
                 $query->where(function($q) use ($status,$user) {
-                   
-                    foreach($status as $item ){
+                    foreach($status as $item){
                         // status: ["unread", "read", "not-interested"]: calculate from bid table: advisor_status column: 
-
                         if($item == "read") {
-                            $q->orWhere('advisor_bids.advisor_status','>=',1)->where('advisor_bids.advisor_id',$user->id);
+                            $q->whereIn('advice_areas.id',$area_arr);
+                        }else if($item == "unread") {
+                            $q->whereNotIn('advice_areas.id',$area_arr);
                         }else if($item == "not-interested") {
-                            $q->orWhere('advisor_bids.advisor_status','=',2)->where('advisor_bids.advisor_id',$user->id);;
+                            $q->orWhere('advisor_bids.advisor_status','=',2)->where('advisor_bids.advisor_id',$user->id);
                         }
                     }
                 });
@@ -1471,14 +1514,15 @@ class ApiController extends Controller
                         'area_id' => $request->area_id,
                         'advisor_status' => $request->advisor_status,
                     ]);
-                    // $this->saveNotification(array(
-                    //     'type'=>'1', // 1:
-                    //     'message'=>'Not interest ', // 1:
-                    //     'read_unread'=>'0', // 1:
-                    //     'user_id'=>$user->id,// 1:
-                    //     'advisor_id'=>$request->advisor_id, // 1:
-                    //     'area_id'=>$request->area_id// 1:
-                    // ));
+                    $this->saveNotification(array(
+                        'type'=>'1', // 1:
+                        'message'=>'Not interest ', // 1:
+                        'read_unread'=>'0', // 1:
+                        'user_id'=>$user->id,// 1:
+                        'advisor_id'=>$request->advisor_id, // 1:
+                        'area_id'=>$request->area_id// 1:
+                    ));
+                    
                     return response()->json([
                         'status' => true,
                         'message' => 'Mark as not intrested',
@@ -1491,35 +1535,34 @@ class ApiController extends Controller
                 ], Response::HTTP_OK);
             }
         }
-        
-        
     }
 
     public function inviteUsers(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
         if (isset($request->emails) && !empty($request->emails)) {
-            $invitedUrl = config('constants.urls.host_url');
-            $invitedUrl .= "/invite/" . $this->getEncryptedId($user->id);
-            $emailSubject = "MortgageBox Invitation";
-            $emailList = implode(", ", $request->emails);
+            //To be discussed
+            // $invitedUrl = config('constants.urls.host_url');
+            // $invitedUrl .= "/invite/" . $this->getEncryptedId($user->id);
+            // $emailSubject = "MortgageBox Invitation";
+            // $emailList = implode(", ", $request->emails);
 
-            $to = $request->emails[0];
-            $subject = $emailSubject;
-            $headers = "Bcc: " . $emailList . "\r\n";
-            $headers .= "From: no-reply@mortgagebox.com\r\n" .
-                "X-Mailer: php";
-            $headers .= "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-            $message = '<html><body>';
-            $message .= "Hi,\r\n";
-            $message .= $user->name . " invites you to join MortgageBox. Please click on below link to join\r\n<br>";
-            $message .= $invitedUrl;
-            $message .= '</body></html>';
-            $message = wordwrap($message, 70);
-            //echo $invitedUrl;
+            // $to = $request->emails[0];
+            // $subject = $emailSubject;
+            // $headers = "Bcc: " . $emailList . "\r\n";
+            // $headers .= "From: no-reply@mortgagebox.com\r\n" .
+            //     "X-Mailer: php";
+            // $headers .= "MIME-Version: 1.0\r\n";
+            // $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+            // $message = '<html><body>';
+            // $message .= "Hi,\r\n";
+            // $message .= $user->name . " invites you to join MortgageBox. Please click on below link to join\r\n<br>";
+            // $message .= $invitedUrl;
+            // $message .= '</body></html>';
+            // $message = wordwrap($message, 70);
+            // //echo $invitedUrl;
 
-            mail($to, $subject, $message, $headers);
+            // mail($to, $subject, $message, $headers);
 
             return response()->json([
                 'status' => true,
@@ -1570,11 +1613,7 @@ class ApiController extends Controller
                 $advice_area[$key]->rating = [
                     'total' => count($rating),
                 ];
-
-
-
             }
-
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -1589,9 +1628,7 @@ class ApiController extends Controller
         }
     }
 
-    public function startChat(Request $request)
-    {
-
+    public function startChat(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
         $chatData = array();
         $channel_id  = 0;
@@ -1934,8 +1971,6 @@ class ApiController extends Controller
             'description' => $request->description,
             'status' => 1
         ])->id;
-
-
         //User created, return success response
         $chatData = AdvisorOffers::get();
         return response()->json([
@@ -2030,7 +2065,6 @@ class ApiController extends Controller
             [
                 'to_user_id_seen' => 1
             ]
-
         );
 
         return response()->json([
@@ -2520,6 +2554,37 @@ class ApiController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'You have already marked it as spam.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+    }
+
+    public function markAreaAsRead(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $post = $request->all();
+            $postData = array(
+                'adviser_id' => $user->id,
+                'area_id' => (isset($post['area_id']))?$post['area_id']:0
+            );
+            $advice_read = AdviceAreaRead::where('area_id',$postData['area_id'])->where('adviser_id',$postData['adviser_id'])->first();
+            if(!$advice_read){
+                $postData = array(
+                    'adviser_id' => $user->id,
+                    'area_id' => (isset($request->area_id))?$request->area_id:0,
+                    'created_at' => date("Y-m-d H:i:s")
+                );
+                AdviceAreaRead::insertGetId($postData);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Area is marked as read.',
                     'data'=> []
                 ], Response::HTTP_OK);
             }

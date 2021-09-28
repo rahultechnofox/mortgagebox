@@ -88,12 +88,12 @@ class UserController extends Controller
     function verifyEmail($id){
         $user = User::where('id',$id)->first();
         if($user){
-            $msg = "To verify your email \n Please click below link ";
-            $msg .= config('constants.urls.email_verification_url');
-
-            $msg .= $this->getEncryptedId($user->id);
-            $msg = wordwrap($msg, 70);
-            mail($user->email, "Email Verification", $msg);
+            $newArr = array(
+                'name'=>$user->name,
+                'email'=>$user->email,
+                'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($user->id)
+            );
+            $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$user->email,$user->name,'Email Verification','','');
         }
         return redirect()->back()->with('message',"Verification link is set to registered email id");
         
@@ -106,10 +106,12 @@ class UserController extends Controller
             $user->update([
                 'password' => bcrypt($password)
             ]);
-
-            $msg = "Your temporary password is \n" . $password;
-            $msg = wordwrap($msg, 70);
-            mail($user->email, "Forgot Password", $msg);
+            $newArr = array(
+                'name'=>$user->name,
+                'email'=>$user->email,
+                'password' => $password
+            );
+            $c = \Helpers::sendEmail('emails.reset_password',$newArr ,$user->email,$user->name,'Forgot Password','','');
         }
         return redirect()->back()->with('message',"Reset link is sent to registered email id");
         

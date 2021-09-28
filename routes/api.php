@@ -55,6 +55,7 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('advisorAcceptedLeads/',  [ApiController::class, 'advisorAcceptedLeads']);
 
     Route::post('accepted-lead-spam',  [ApiController::class, 'makrLeadAsSpam']);
+    Route::get('markAreaAsRead/',  [ApiController::class, 'markAreaAsRead']);
 
     Route::get('getRecentMessages/',  [ApiController::class, 'getRecentMessages']);
     Route::post('seenMessages/',  [ApiController::class, 'seenMessages']);

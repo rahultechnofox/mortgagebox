@@ -39,9 +39,12 @@ class ContactUsController extends Controller
                 return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
             }else{
                 unset($post['_token']);
-                $msg = $post['message'];
-                $msg = wordwrap($msg, 70);
-                mail($post['email'], "Contact Us Query Reply",$msg);
+                $newArr = array(
+                    'name'=>$post['name'],
+                    'email'=>$post['email'],
+                    'message'=>$post['message'],
+                );
+                $c = \Helpers::sendEmail('emails.contact_us_query_reply',$newArr ,$post['email'],$post['name'],'Contact Us Query Reply','','');
                 return response(\Helpers::sendSuccessAjaxResponse('Successfully replied to contact us query.',[]));                
             }
         } catch (\Exception $ex) {

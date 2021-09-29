@@ -1095,6 +1095,7 @@ class ApiController extends Controller
                 $costOfLeadsStr = ""."Free";
                 $costOfLeadsDropStr = "";
             }
+            $advice_area[$key]->is_accepted = 0;
             
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
             $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
@@ -1719,6 +1720,7 @@ class ApiController extends Controller
                  $advice_area[$key]->bid_status = 0;
             }
             $advice_area[$key]->totalBids = $bidCountArr;
+            $advice_area[$key]->is_accepted = 1;
             $costOfLead = ($item->size_want/100)*0.006;
             $time1 = Date('Y-m-d H:i:s');
             $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));

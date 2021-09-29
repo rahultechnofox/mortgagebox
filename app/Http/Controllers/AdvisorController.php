@@ -332,15 +332,27 @@ class AdvisorController extends Controller
                     }
                 }
             }
-            $company = CompanyTeamMembers::where('email',$advisor_data->email)->first();
-            if($company){
-                if($company->isCompanyAdmin==1){
+            $company_team = CompanyTeamMembers::where('email',$advisor_data->email)->first();
+            if($company_team){
+                if($company_team->isCompanyAdmin==1){
                     $advisor_data->is_admin = 1;
                 }else{
                     $advisor_data->is_admin = 0;
                 }
             }else{
                 $advisor_data->is_admin = 2;
+            }
+            if($advisor_data->is_admin!=1){
+                $adviser_company_admin->company_logo = "";
+                $company_ad = companies::where('id',$advisor_data->company_id)->first();
+                if($company_ad){
+                    $adviser_company_admin = AdvisorProfile::where('advisorId',$company_ad->company_admin)->first();
+                    if($adviser_company_admin){
+                        if($adviser_company_admin->company_logo!=''){
+                            $adviser_company_admin->company_logo = $adviser_company_admin->company_logo;
+                        }
+                    }
+                }
             }
         }
         
@@ -1432,13 +1444,7 @@ class AdvisorController extends Controller
     // Function for invoice generate
     public function invoice(Request $request) {
         $user = JWTAuth::parseToken()->authenticate();
-        // $advisor_id = $request->advisor_id;
         $advisor_data = AdvisorProfile::where('advisorId', '=', $user->id)->first();
-        // $bill_to_address = $advisor_data->company_name;
-        // $bill_to_address .= "\n".$advisor_data->address_line1;
-        // $bill_to_address .= "\n".$advisor_data->city;
-        // $bill_to_address .= "\n".$advisor_data->postcode;
-
         $locations = BillingAddress::where('advisor_id', '=', $user->id)->first();
         if($locations){
             $bill_to_address = $locations->contact_name. '('.$locations->invoice_name.')';
@@ -1448,8 +1454,6 @@ class AdvisorController extends Controller
             $bill_to_address .= "\n".$locations->city;
             $bill_to_address .= "\n".$locations->post_code;
         }
-
-
         $month = date('m');
         $year = date('Y');
         if(isset($request->selected_date) && $request->selected_date !="") {
@@ -1457,21 +1461,12 @@ class AdvisorController extends Controller
             $year = date('Y',strtotime($request->selected_date));
         }
         $invoice_detais = Invoice::where('advisor_id','=',$user->id)->where('month','=',$month)->where('year','=',$year)->where('is_paid','=','0')->first();
-        // if(!empty($invoice_detais)) {
-        //     return response()->json([
-        //         'status' => true,
-        //         'message' => 'success',
-        //         'data' => json_decode($invoice_detais->invoice_data,true)
-        //     ], Response::HTTP_OK);
-        // }else{
         $total_this_month_cost_of_leads_subtotal = AdvisorBids::where('advisor_id','=',$user->id)
         ->where('status','>=',1)
         ->whereMonth('created_at', $month)
         ->where('is_paid_invoice','=',0)
         ->whereYear('created_at', $year)
         ->sum('cost_leads');
-        // ->get();
-
         $cost_leads_this_month = AdvisorBids::select('advisor_bids.cost_leads','advisor_bids.accepted_date','advisor_bids.cost_discounted','advisor_bids.free_introduction','advice_areas.service_type','advice_areas.size_want_currency','advice_areas.size_want')->where('advisor_bids.advisor_id','=',$user->id)
         ->leftJoin('advice_areas','advisor_bids.area_id','advice_areas.id')
         ->where('advisor_bids.status','>=',1)
@@ -1481,39 +1476,32 @@ class AdvisorController extends Controller
         ->get();
         $cost_of_leads_of_the_monthArr = array();
         $discount_of_the_monthArr = array();
+        $cost_of_lead = 0;
         foreach($cost_leads_this_month as $key=> $item) {
-            // Amount for bid on Remortgage of $1000 at DATE
-            // $cost_of_leads_of_the_monthArr[$key]['message']='Invoice payment received on '.Date('d-M-Y',strtotime($item->accepted_date)).' - Thank you';
             $cost_of_leads_of_the_monthArr[$key]['message']='Amount for bid on '.$item->service_type.' of '.$item->size_want_currency.$item->size_want.' at '.Date('d-M-Y',strtotime($item->accepted_date)).'';
-
             $cost_of_leads_of_the_monthArr[$key]['cost']=($item->cost_leads!="")?$item->cost_leads:"0";
+            $cost_of_lead = ($item->cost_leads!="")?$item->cost_leads:"0";
         }
-
-
-        // for discount
-
         $total_this_month_discount_subtotal = AdvisorBids::where('advisor_id','=',$user->id)
         ->where('status','>=',1)
         ->whereMonth('created_at', $month)
         ->whereYear('created_at', $year)
         ->where('is_paid_invoice','=',0)
         ->sum('cost_discounted');
-        
-        // TODO: free introduction
-
-        $subtotal_of_discount_and_credit = $total_this_month_discount_subtotal+0;
+        $total_this_month_free_intro = AdvisorBids::where('advisor_id','=',$user->id)
+        ->where('status','>=',1)
+        ->whereMonth('created_at', $month)
+        ->whereYear('created_at', $year)
+        ->where('is_paid_invoice','=',0)
+        ->where('free_introduction','=',1)
+        ->sum('cost_discounted');
+        $subtotal_of_discount_and_credit = $total_this_month_discount_subtotal+$total_this_month_free_intro;
         $total_dues = $total_this_month_cost_of_leads_subtotal-$subtotal_of_discount_and_credit;
         $total_amount = 0;
-        // Tax Summary... added tax 5% of total dues and 20% extra vat 
-                $tax_on_this_invoice = (5/100)*$total_dues;
-                $vat_on_this_invoice = (20/100)*$total_dues;
-                $total_amount_final = $total_dues+$tax_on_this_invoice+$vat_on_this_invoice;
-                $total_amount_final = number_format((float)($total_amount_final),2,'.','');
-        // end of tax summary...
-
-
-        // for get New Fees
-
+        $tax_on_this_invoice = (5/100)*$total_dues;
+        $vat_on_this_invoice = (20/100)*$total_dues;
+        $total_amount_final = $total_dues+$tax_on_this_invoice+$vat_on_this_invoice;
+        $total_amount_final = number_format((float)($total_amount_final),2,'.','');
         $newFees = AdvisorBids::select('advisor_bids.*','users.name','advice_areas.property','advice_areas.service_type')->where('advisor_bids.advisor_id','=',$user->id)
         ->leftJoin('advice_areas','advisor_bids.area_id','advice_areas.id')
         ->leftJoin('users','advice_areas.user_id','users.id')
@@ -1534,23 +1522,22 @@ class AdvisorController extends Controller
             $bidArr[] = $item->id;
         }
         $newFeesArr = array();
-        if(!empty($newFees))
-        {
+        if(!empty($newFees)){
             foreach($newFees as $key=>$value) {
                 $show_status = "Live Leads"; 
                 $bidDetailsStatus = AdvisorBids::where('area_id',$value->area_id)->where('advisor_id','=',$user->id)->first();
                 if(!empty($bidDetailsStatus)) {
-                if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Not Proceeding"; 
-                }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Hired"; 
-                }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Lost"; 
-                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Closed"; 
-                }else{
-                    $show_status = "Live Leads";     
-                }
+                    if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Not Proceeding"; 
+                    }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Hired"; 
+                    }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Lost"; 
+                    }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Closed"; 
+                    }else{
+                        $show_status = "Live Leads";     
+                    }
                 }else{
                     $show_status = "Live Leads";
                 }
@@ -1561,11 +1548,7 @@ class AdvisorController extends Controller
                 $newFeesArr[$key]['free_type']=$value->service_type;
                 $newFeesArr[$key]['amount']=$value->cost_leads;
             }
-            
         }
-        // for discount and credit
-
-       
         $discountAndCreditArr = array();
         if(!empty($newFees))
         {
@@ -1597,7 +1580,6 @@ class AdvisorController extends Controller
             
         }
         $invoice_number = $this->quickRandom(10);
-        // $lastPayment = Invoice::where('advisor_id','=',$user->id)->where("is_paid","=","1")->orderBy('id','DESC')->limit(1,1)->first();
         $lastPayment = Invoice::where('advisor_id','=',$user->id)->orderBy('id','DESC')->limit(1,1)->first();
         $last_payment_invoice="";
         $last_invoice_amount="";
@@ -1616,49 +1598,55 @@ class AdvisorController extends Controller
         } 
         if(empty($invoice_detais)) {
             if(!empty($bidArr)) {
-       $invoice_IID= Invoice::create([
-            'invoice_data'=>json_encode(array(
-            'new_fess'=>array('cost_of_leads_of_the_month'=>$cost_of_leads_of_the_monthArr,
-            'cost_of_leads_sub_total'=>$total_this_month_cost_of_leads_subtotal),
-            // add array for discount section
-            'discounts_and_credits'=>array('discount_subtotal'=>$total_this_month_discount_subtotal,
-            'free_introduction_subtotal'=>0,'subtotal'=>$subtotal_of_discount_and_credit),
-            // total dues : subtotal of cost of lead minus discount_and_credit_subtotal
-            'total_dues'=>$total_dues,
-            'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
-            'vat_on_invoice'=>number_format((float)($vat_on_this_invoice),2,'.',''),
-            'total_current_invoice_amount'=>$total_amount_final,
-            'new_fees_data'=>$newFeesArr,
-            'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
-            'discount_credit_data'=>$discountAndCreditArr,
-            'discount_credit_total'=>$total_this_month_discount_subtotal,
-            'invoice_number'=>$invoice_number,
-            'seller_address'=>'MortgageBox\n\n123 High Street, Imaginary town\nSurrey TW12 2AA, United Kingdom\n\nThis is not a payment address\nVAT Number: GB1234567890\nCompany number 12345678',
-            'bill_to_address'=>$bill_to_address,
-            'bid_ids'=>implode(",",$bidArr)
-            )),
-            'invoice_number'=>$invoice_number,
-            'month'=>$month,
-            'year'=>$year,
-            'is_paid'=>0,
-            'advisor_id'=>$user->id
-        ]);
-        // $invoice_detais = Invoice::where('id','=',$invoice_IID->id)->where('month','=',$month)->where('year','=',$year)->first();
-        $invoice_detais = Invoice::where('id','=',$invoice_IID->id)->first();
-        $total_data = json_decode($invoice_detais->invoice_data,true);
-        $total_data['invoice_data'] = $invoice_detais;
-        $total_data['invoice_id']=$invoice_detais->id;
-        $total_data['last_payment_invoice']=$last_payment_invoice;
-        $total_data['last_invoice_amount']=$last_invoice_amount;
-        $total_data['last_payment_date']=$last_payment_date;
-        $total_data['last_transaction_id']=$last_transaction_id;
-        $total_data['invoice_number']=$invoice_number;
-        // echo json_encode($total_data);exit;
-        return response()->json([
-            'status' => true,
-            'message' => 'success',
-            'data' => $total_data
-        ], Response::HTTP_OK);
+                $invoice_IID= Invoice::create([
+                    'invoice_data'=>json_encode(array(
+                    'new_fess'=>array('cost_of_leads_of_the_month'=>$cost_of_leads_of_the_monthArr,
+                    'cost_of_leads_sub_total'=>$total_this_month_cost_of_leads_subtotal),
+                    'discounts_and_credits'=>array('discount_subtotal'=>$total_this_month_discount_subtotal,
+                    'free_introduction_subtotal'=>$total_this_month_free_intro,
+                    'subtotal'=>$subtotal_of_discount_and_credit),
+                    'total_dues'=>$total_dues,
+                    'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
+                    'vat_on_invoice'=>number_format((float)($vat_on_this_invoice),2,'.',''),
+                    'total_current_invoice_amount'=>$total_amount_final,
+                    'new_fees_data'=>$newFeesArr,
+                    'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
+                    'discount_credit_data'=>$discountAndCreditArr,
+                    'discount_credit_total'=>$total_this_month_discount_subtotal,
+                    'invoice_number'=>$invoice_number,
+                    'seller_address'=>'MortgageBox\n\n123 High Street, Imaginary town\nSurrey TW12 2AA, United Kingdom\n\nThis is not a payment address\nVAT Number: GB1234567890\nCompany number 12345678',
+                    'bill_to_address'=>$bill_to_address,
+                    'bid_ids'=>implode(",",$bidArr)
+                )),
+                'cost_of_lead'=>$total_this_month_cost_of_leads_subtotal,
+                'subtotal'=>$total_this_month_cost_of_leads_subtotal,
+                'discount'=>$total_this_month_discount_subtotal,
+                'free_introduction'=>0,
+                'discount_subtotal'=>$subtotal_of_discount_and_credit,
+                'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
+                'vat'=>number_format((float)($vat_on_this_invoice),2,'.',''),
+                'total_current_invoice'=>$total_amount_final,
+                'total_due'=>$total_dues,
+                'invoice_number'=>$invoice_number,
+                'month'=>$month,
+                'year'=>$year,
+                'is_paid'=>0,
+                'advisor_id'=>$user->id
+            ]);
+            $invoice_detais = Invoice::where('id','=',$invoice_IID->id)->first();
+            $total_data = json_decode($invoice_detais->invoice_data,true);
+            $total_data['invoice_data'] = $invoice_detais;
+            $total_data['invoice_id']=$invoice_detais->id;
+            $total_data['last_payment_invoice']=$last_payment_invoice;
+            $total_data['last_invoice_amount']=$last_invoice_amount;
+            $total_data['last_payment_date']=$last_payment_date;
+            $total_data['last_transaction_id']=$last_transaction_id;
+            $total_data['invoice_number']=$invoice_number;
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data' => $total_data
+            ], Response::HTTP_OK);
         }else{
             $lastPayment = Invoice::where('advisor_id','=',$user->id)->orderBy('id','DESC')->limit(1,1)->first();
             $last_payment_invoice="";
@@ -1703,10 +1691,9 @@ class AdvisorController extends Controller
             'invoice_data'=>json_encode(array(
             'new_fess'=>array('cost_of_leads_of_the_month'=>$cost_of_leads_of_the_monthArr,
             'cost_of_leads_sub_total'=>$total_this_month_cost_of_leads_subtotal),
-            // add array for discount section
             'discounts_and_credits'=>array('discount_subtotal'=>$total_this_month_discount_subtotal,
-            'free_introduction_subtotal'=>0,'subtotal'=>$subtotal_of_discount_and_credit),
-            // total dues : subtotal of cost of lead minus discount_and_credit_subtotal
+            'free_introduction_subtotal'=>$total_this_month_free_intro,
+            'subtotal'=>$subtotal_of_discount_and_credit),
             'total_dues'=>$total_dues,
             'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
             'vat_on_invoice'=>number_format((float)($vat_on_this_invoice),2,'.',''),
@@ -1715,12 +1702,20 @@ class AdvisorController extends Controller
             'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
             'discount_credit_data'=>$discountAndCreditArr,
             'discount_credit_total'=>$total_this_month_discount_subtotal,
-            // 'invoice_number'=>$invoice_number,
+
             'seller_address'=>'MortgageBox\n\n123 High Street, Imaginary town\nSurrey TW12 2AA, United Kingdom\n\nThis is not a payment address\nVAT Number: GB1234567890\nCompany number 12345678',
             'bill_to_address'=>$bill_to_address,
             'bid_ids'=>implode(",",$bidArr)
             )),
-            // 'invoice_number'=>$invoice_number,
+            'cost_of_lead'=>$cost_of_lead,
+            'subtotal'=>$total_this_month_cost_of_leads_subtotal,
+            'discount'=>$total_this_month_discount_subtotal,
+            'free_introduction'=>0,
+            'discount_subtotal'=>$subtotal_of_discount_and_credit,
+            'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
+            'vat'=>number_format((float)($vat_on_this_invoice),2,'.',''),
+            'total_current_invoice'=>$total_amount_final,
+            'total_due'=>$total_dues,
             'month'=>$month,
             'year'=>$year,
             'is_paid'=>0,
@@ -1785,43 +1780,15 @@ class AdvisorController extends Controller
         $total_data['last_invoice_amount']=$last_invoice_amount;
         $total_data['last_paid_date']=$last_paid_date;
         $total_data['last_is_paid']=$last_is_paid;
-        // echo json_encode($total_data);exit;
-
         return response()->json([
             'status' => true,
             'message' => 'success',
             'data' => $total_data
         ], Response::HTTP_OK);
     }
-        // return response()->json([
-        //     'status' => true,
-        //     'message' => 'success',
-        //     'data' => array(
-        //         'new_fess'=>array('cost_of_leads_of_the_month'=>$cost_of_leads_of_the_monthArr,
-        //         'cost_of_leads_sub_total'=>$total_this_month_cost_of_leads_subtotal),
-        //         // add array for discount section
-        //         'discounts_and_credits'=>array('discount_subtotal'=>$total_this_month_discount_subtotal,
-        //         'free_introduction_subtotal'=>0,'subtotal'=>$subtotal_of_discount_and_credit),
-        //         // total dues : subtotal of cost of lead minus discount_and_credit_subtotal
-        //         'total_dues'=>$total_dues,
-        //         'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
-        //         'vat_on_invoice'=>number_format((float)($vat_on_this_invoice),2,'.',''),
-        //         'total_current_invoice_amount'=>$total_amount_final,
-        //         'from_address'=>"",
-        //         'bill_to'=>"",
-        //         'new_fees_data'=>$newFeesArr,
-        //         'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
-        //         'discount_credit_data'=>$discountAndCreditArr,
-        //         'discount_credit_total'=>$total_this_month_discount_subtotal,
-        //         'invoice_number'=>'AHI006754457',
-        //         'seller_address'=>'Dancing Ledge ltd\n\n123 High Street, Imaginary town\nSurrey TW12 2AA, United Kingdom\n\nThis is not a payment address\nVAT Number: GB1234567890\nCompany number 12345678',
-        //         'bill_to_address'=>'Bercrow & Wip mortgage advisors\n123 Houses of Parliament\nWestminster, Middx HP11AA,\nUnited Kingdom\n'
-
-                
-        //     )
-        // ], Response::HTTP_OK);
         
     }
+
     public function saveNotification($data) {
         $notification = Notifications::create($data);
         if($notification) {

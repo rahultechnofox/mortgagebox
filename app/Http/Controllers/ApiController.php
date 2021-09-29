@@ -19,6 +19,7 @@ use App\Models\AdvisorPreferencesProducts;
 use App\Models\ServiceType;
 use App\Models\AdvisorPreferencesDefault;
 use App\Models\AdviceAreaSpam;
+use App\Models\StaticPage;
 use App\Models\ReviewSpam;
 use JWTAuth;
 use App\Models\User;
@@ -2468,6 +2469,19 @@ class ApiController extends Controller
             'status' => true,
             'message' => 'Record found.',
             'data'=>$response
+        ], Response::HTTP_OK);
+    }
+
+    public function getCMSData(Request $request) {
+        $post = $request->all();
+        $postData = array(
+            'slug' => $post['page']
+        );
+        $advice_read = StaticPage::where('slug',$postData['slug'])->first();
+        return response()->json([
+            'status' => true,
+            'message' => 'Data fetched successfully.',
+            'data'=> $advice_read
         ], Response::HTTP_OK);
     }
 

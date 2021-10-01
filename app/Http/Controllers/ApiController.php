@@ -605,7 +605,8 @@ class ApiController extends Controller
 
             Advice_area::create([
                 'user_id' => $user->id,
-                'service_type' => $request->service_type,
+                'service_type_id' => (int)$request->service_type_id,
+                // 'service_type' => $request->service_type,
                 'request_time' => $request->request_time,
                 'property' => $request->property,
                 'property_want' => $request->property_want,
@@ -651,7 +652,7 @@ class ApiController extends Controller
     {
         $id = JWTAuth::parseToken()->authenticate();
         // $advice_area = Advice_area::where('user_id', '=', $id->id)->get();
-        $advice_area = Advice_area::where('user_id', '=', $id->id)->orderBy('id', 'DESC')->get();
+        $advice_area = Advice_area::where('user_id', '=', $id->id)->orderBy('id', 'DESC')->with('service')->get();
         // ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.id')
 
         // $advice_area =  DB::select('SELECT advice_areas.*,advisor_bids.status as bid_status FROM advice_areas  LEFT JOIN advisor_bids ON advice_areas.id = advisor_bids.area_id where user_id ='.$id->id.'');
@@ -680,7 +681,7 @@ class ApiController extends Controller
     public function getAdviceAreaById($id)
     {
         JWTAuth::parseToken()->authenticate();
-        $advice_area = Advice_area::where('id', '=', $id)->first();
+        $advice_area = Advice_area::where('id', '=', $id)->with('service')->first();
         $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $advice_area->id AND m.to_user_id_seen = 0");
         $advice_area->unread_message_count = $unread_count_total[0]->count_message;
 
@@ -963,7 +964,7 @@ class ApiController extends Controller
         }
         // DB::enableQueryLog();
         
-       $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')
+       $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->where(function($query) use ($userPreferenceCustomer){
                 if(!empty($userPreferenceCustomer)) {
@@ -991,16 +992,18 @@ class ApiController extends Controller
                         }
                     });
                 }
-        })->where(function($query) use ($service_type){
-                if(!empty($service_type)) {
-                    $query->where(function($q) use ($service_type) {
-                        foreach($service_type as $sitem){
-                            $q->orWhere('advice_areas.service_type',$sitem);
-                        }
-                    });
-                }
+        })
+        // ->where(function($query) use ($service_type){
+        //         if(!empty($service_type)) {
+        //             $query->where(function($q) use ($service_type) {
+        //                 foreach($service_type as $sitem){
+        //                     $q->orWhere('advice_areas.service_type',$sitem);
+        //                 }
+        //             });
+        //         }
             
-        })->where(function($query) use ($ltv_max){
+        // })
+        ->where(function($query) use ($ltv_max){
             if($ltv_max != "") {
                
                 $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));
@@ -1210,12 +1213,11 @@ class ApiController extends Controller
             ->where(function($query) use ($service_type){
                 if(!empty($service_type)  && count($service_type) > 0) {
                     $query->where(function($q) use ($service_type) {
-                        foreach($service_type as $item ){
-                            $q->orWhere('advice_areas.service_type',$item);
+                        foreach($service_type as $item){
+                            $q->orWhere('advice_areas.service_type_id',$item);
                         }
                     });
-                }
-            
+                }            
         })->where(function($query) use ($search){
             if($search != "") {
                 $query->orWhere('advice_areas.service_type', 'like', '%' . $search . '%');
@@ -1705,6 +1707,7 @@ class ApiController extends Controller
         ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
         ->where('advisor_bids.advisor_status', '=', 1)
         ->where('advisor_bids.advisor_id', '=', $user->id)
+        ->with('service')
         ->paginate();
 
         $bidCountArr = array();
@@ -2406,7 +2409,7 @@ class ApiController extends Controller
     }
 
     public function getAllServiceType() {
-        $result = ServiceType::get();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
         if(!empty($result)) {
             return response()->json([
                 'status' => true,

@@ -44,18 +44,24 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('closeAdviceAreaNeed/',  [ApiController::class, 'closeAdviceAreaNeed']);
     Route::post('resendActivationMail/',  [ApiController::class, 'resendActivationMail']);
     Route::post('searchMortgageNeeds/',  [ApiController::class, 'searchMortgageNeeds']);
+    Route::post('searchAcceptedNeeds/',  [ApiController::class, 'searchAcceptedNeeds']);
+
     Route::get('matchLeads/',  [ApiController::class, 'matchLeads']);
     
     Route::post('acceptRejectBid/',  [ApiController::class, 'acceptRejectBid']);
     Route::post('inviteUsers/',  [ApiController::class, 'inviteUsers']);
+    Route::get('getAllAdviser/',  [ApiController::class, 'getAllAdviser']);
+
     
     Route::get('getAdviseAreaBid/{id}/{status}',  [ApiController::class, 'getAdviseAreaBid']);
     Route::post('startChat/',  [ApiController::class, 'startChat']);
     Route::post('sendMessage/',  [ApiController::class, 'sendMessage']);
     Route::get('advisorAcceptedLeads/',  [ApiController::class, 'advisorAcceptedLeads']);
+    Route::post('getTeamMember/',  [ApiController::class, 'getTeamMember']);
+    Route::post('updateCompanyAdmin/',  [ApiController::class, 'updateCompanyAdmin']);
 
     Route::post('accepted-lead-spam',  [ApiController::class, 'makrLeadAsSpam']);
-    Route::get('markAreaAsRead/',  [ApiController::class, 'markAreaAsRead']);
+    Route::post('markAreaAsRead/',  [ApiController::class, 'markAreaAsRead']);
 
     Route::get('getRecentMessages/',  [ApiController::class, 'getRecentMessages']);
     Route::post('seenMessages/',  [ApiController::class, 'seenMessages']);

@@ -66,6 +66,14 @@
                                                 <textarea class="form-control" name="answer" id="editor" value="{{$row->answer}}" placeholder="Answer">{{$row->answer}}</textarea>
                                             </div>
                                         </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-1">
+                                                <div class="form-check form-check-inline mb-10">
+                                                    <input class="form-check-input disabled-checkbox" type="checkbox" id="is_featured" name="is_featured" value="1" <?php if($row->is_featured==1){ echo "checked"; } ?> >
+                                                    <label class="form-check-label" for="is_featured">Featured</label>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="col-12 d-flex flex-sm-row flex-column mt-2">
                                             <button type="submit" class="btn btn-primary mb-1 mb-sm-0 me-0 me-sm-1">Save Changes</button>
                                             <a href="{!! url('admin/faq') !!}" class="btn btn-outline-secondary">Back</a>

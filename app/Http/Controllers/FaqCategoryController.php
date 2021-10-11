@@ -45,6 +45,7 @@ class FaqCategoryController extends Controller
             $post = $request->all();
             $validate = [
                 'name' => 'required',
+                'sub_title' => 'required'
             ];
             $validator = Validator::make($post, $validate);
             if ($validator->fails()) {
@@ -52,6 +53,9 @@ class FaqCategoryController extends Controller
                 return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
             }else{
                 $postData['name'] = $post['name'];
+                if(isset($post['sub_title']) && $post['sub_title']!=''){
+                    $postData['sub_title'] = $post['sub_title'];
+                }
                 if(isset($post['audience']) && $post['audience']!=''){
                     $postData['audience'] = $post['audience'];
                 }
@@ -100,6 +104,15 @@ class FaqCategoryController extends Controller
             }else{
                 $service = FaqCategory::where('id',$post['id'])->first();
                 if($service){
+                    if(isset($service->image)){
+                        if(file_exists(public_path()."/upload/faq_category/original/".$service->image)){
+                            $service->image = url('/upload/faq_category/original/').'/'.$service->image;
+                        }else{
+                            $service->image = url('/upload/faq_category/no-image.png');
+                        }
+                    }else{
+                        $service->image_url = url('/upload/faq_category/no-image.png');
+                    }
                     return response(\Helpers::sendSuccessAjaxResponse('Faq category fetched successfully.',$service));
                 }else{
                     return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));

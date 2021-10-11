@@ -343,13 +343,14 @@ class AdvisorController extends Controller
                 $advisor_data->is_admin = 2;
             }
             if($advisor_data->is_admin!=1){
-                $adviser_company_admin->company_logo = "";
+                $company_logo = "";
                 $company_ad = companies::where('id',$advisor_data->company_id)->first();
                 if($company_ad){
                     $adviser_company_admin = AdvisorProfile::where('advisorId',$company_ad->company_admin)->first();
                     if($adviser_company_admin){
                         if($adviser_company_admin->company_logo!=''){
-                            $adviser_company_admin->company_logo = $adviser_company_admin->company_logo;
+                            $company_logo = $adviser_company_admin->company_logo;
+                            $adviser_company_admin->company_logo = $company_logo;
                         }
                     }
                 }
@@ -995,6 +996,9 @@ class AdvisorController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
         $company_data = CompanyTeamMembers::where('email', '=', $request->email)->first();
+        if(isset($request->company_id) && $request->company_id!=''){
+            $company = companies::where('id',$request->company_id)->first();
+        }
         $checkUser = User::where('email','=',$request->email)->first();
         if (!empty($company_data)) {
             CompanyTeamMembers::where('id',$company_data->id)->update([
@@ -1031,7 +1035,7 @@ class AdvisorController extends Controller
                 'name'=>ucfirst($request->name),
                 'invited_by'=>ucfirst($user->name),
                 'email'=>$request->email,
-                'url' => config('constants.urls.team_signup_url')."?invitedBy=".$this->getEncryptedId($user->id)
+                'url' => config('constants.urls.team_signup_url')."?invitedBy=".$this->getEncryptedId($user->id)."&invitedToEmail=".$request->email."&invitedForCompany=".$company->company_name
             );
             $c = \Helpers::sendEmail('emails.team_email_signup',$newArr ,$request->email,$request->name,'Invitation | Mortgagebox.co.uk','','');
         }
@@ -1077,6 +1081,7 @@ class AdvisorController extends Controller
             $updatedData['status'] = $request->status;
         }
         $profile = CompanyTeamMembers::where('id', '=', $request->team_id)->update($updatedData);
+        User::where('email',$company_data->email)->update(['status'=>2]);
         return response()->json([
             'status' => true,
             'message' => 'Team member updated successfully',

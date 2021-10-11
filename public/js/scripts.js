@@ -453,6 +453,8 @@ function addUpdateFaqCategory(formId){
     }
     if(data.name == ''){
         myToastr('Enter name','error');
+    }else if(data.sub_title == ''){
+        myToastr('Enter sub title','error');
     }else if(data.audience == ''){
         myToastr('Select audience','error');
     }else{
@@ -466,7 +468,7 @@ function addUpdateFaqCategory(formId){
                     hideLoader();
                     myToastr(response.message,'error');
                 }else{
-                    // location.reload();                   
+                    location.reload();                   
                     myToastr(response.message,'success');
                 }
             }
@@ -486,12 +488,15 @@ function getFaqCategoryData(id){
             $('#exampleModalLabel').html('Edit Faq Category');
             $('#id').val(response.data.id);
             $('#name').val(response.data.name);  
+            $('#sub_title').val(response.data.sub_title);  
             if(response.data.audience!=0){
                 $('#audience').val(response.data.audience);
                 $('.audience_id').show();
             }else{
                 $('.audience_id').hide();
             } 
+            $("#show_cat_image_add").show();
+            $('#image_add').attr('src',response.data.image);
             hideLoader();
         }
     });

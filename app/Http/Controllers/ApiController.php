@@ -118,12 +118,21 @@ class ApiController extends Controller
         //Request is validated
         //Crean token
         try {
-            if (!$token = JWTAuth::attempt($credentials)) {
+            $user =  USER::where('email', '=', $request->email)->where('status',"!=",2)->first();
+            if($user){
+                if (!$token = JWTAuth::attempt($credentials)) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Login credentials are invalid.',
+                    ], 400);
+                }
+            }else{
                 return response()->json([
                     'status' => false,
-                    'message' => 'Login credentials are invalid.',
-                ], 400);
+                    'message' => 'Login credentials are invalid.'
+                ]);
             }
+            
         } catch (JWTException $e) {
             return $credentials;
             return response()->json([
@@ -132,7 +141,7 @@ class ApiController extends Controller
             ], 500);
         }
 
-        $user =  USER::where('email', '=', $request->email)->first();
+        
         if($user->user_role == 1) {
             $userDetails =  AdvisorProfile::where('advisorId', '=', $user->id)->first(); 
             if($userDetails){
@@ -405,6 +414,8 @@ class ApiController extends Controller
     {
         //Validate data
         $data = $request->only('name', 'email', 'password');
+        // $post = $request->all();
+        // echo json_encode($post);exit;
         $validator = Validator::make($data, [
             'name' => 'required|string',
             'email' => 'required|email|unique:users',
@@ -415,23 +426,26 @@ class ApiController extends Controller
         if ($validator->fails()) {
             return response()->json(['status' => false, 'error' => $validator->messages()], 200);
         }
-        $company_data = companies::where('company_name', '=', $request->company_name)->first();
-        $company_id = 0;
         $description = "";
-        if (!empty($company_data)) {
-            $parentAdvisor = AdvisorProfile::where('company_id', '=', $company_data->id)->first();
-            if(!empty($parentAdvisor)) {
-                $description = $parentAdvisor->description;
+        if(isset($request->company_name) && $request->company_name!=''){
+            $company_data = companies::where('company_name', '=', $request->company_name)->first();
+            $company_id = 0;
+            
+            if (!empty($company_data)) {
+                $parentAdvisor = AdvisorProfile::where('company_id', '=', $company_data->id)->first();
+                if(!empty($parentAdvisor)) {
+                    $description = $parentAdvisor->description;
+                }
+                $company_id = $company_data->id;
+            } else {
+                $company_data_new = companies::create([
+                    'company_name' => $request->company_name
+                ]);
+                $company_id = $company_data_new->id;
             }
-            $company_id = $company_data->id;
-        } else {
-            $company_data_new = companies::create([
-                'company_name' => $request->company_name
-            ]);
-            $company_id = $company_data_new->id;
         }
         //Request is valid, create new user
-        $user = User::create([
+        $user_data = array(
             'name' => $request->name,
             'email' => $request->email,
             'user_role' => '1',
@@ -441,9 +455,38 @@ class ApiController extends Controller
             'company_name' => $request->company_name,
             'post_code' => $request->post_code,
             'password' => bcrypt($request->password)
-        ]);
+        );
+        if(isset($request->invitedBy) && $request->invitedBy!=''){
+            $user_data['invited_by'] = $this->getDecryptedId($request->invitedBy);
+        }
+        $user = User::create($user_data);
+        if(isset($user->invited_by) && $user->invited_by!=''){
+            $invited_count = User::where('invited_by',$user->invited_by)->count();
+            User::where('id',$user->invited_by)->update(['invite_count'=>$invited_count]);
+            $invited_by_user = AdvisorProfile::where('advisorId',$user->invited_by)->first();
+            if($invited_by_user){
+                $this->saveNotification(array(
+                    'type'=>'1', // 1:
+                    'message'=>'You have got free introduction from refering advisor', // 1:
+                    'read_unread'=>'0', // 1:
+                    'user_id'=>$user->id,// 1:
+                    'advisor_id'=>$team_member_to_update->id, // 1:
+                    'area_id'=>0,// 1:
+                    'notification_to'=>1
+                ));
+                $newArr = array(
+                    'name'=>$invited_by_user->display_name,
+                    'email'=>$invited_by_user->email,
+                    'message' => 'You have got free introduction from refering advisor'
+                );
+                $c = \Helpers::sendEmail('emails.information',$newArr ,$invited_by_user->email,$invited_by_user->display_name,'MortgageBox Free introduction','','');
+            }
+        }
         $advisor_id = $user->id;
-        
+        $company_id_for_ad = 0;
+        if(isset($company_id) && $company_id!=0){
+            $company_id_for_ad = $company_id;
+        }
         //Request is valid, create new user
         $profile = AdvisorProfile::create([
             'advisorId' => $advisor_id,
@@ -452,25 +495,52 @@ class ApiController extends Controller
             'display_name' => $request->name,
             'company_name' => $request->company_name,
             'serve_range' => $request->serve_range,
-            'company_id' => $company_id,
+            'company_id' => $company_id_for_ad,
             'email' => $request->email,
             'postcode' => $request->post_code,
             'description' => $description
 
         ]);
-        companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
         if(isset($company_id) && $company_id!=0){
-            $teamArr = array(
-                'company_id' => $company_id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'advisor_id' => $user->id,
-                'isCompanyAdmin'=>1,
-                'status'=>1,
-                'is_joined'=>1,
-                'created_at'=>date('Y-m-d H:i:s')
+            $company_team = CompanyTeamMembers::where('email',$request->email)->first();
+            companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
+            if($company_team){
+                $teamArr = array(
+                    'name' => $request->name,
+                    'status'=>1,
+                    'is_joined'=>1,
+                    'updated_at'=>date('Y-m-d H:i:s')
+                );
+                CompanyTeamMembers::where('id',$company_team->id)->update($teamArr);
+            }else{
+                $teamArr = array(
+                    'company_id' => $company_id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'advisor_id' => $user->id,
+                    'isCompanyAdmin'=>1,
+                    'status'=>1,
+                    'is_joined'=>1,
+                    'created_at'=>date('Y-m-d H:i:s')
+                );
+                CompanyTeamMembers::insertGetId($teamArr);
+            }
+            $this->saveNotification(array(
+                'type'=>'1', // 1:
+                'message'=>'Your invitation is accepted by team member '.$request->name, // 1:
+                'read_unread'=>'0', // 1:
+                'user_id'=>$advisor_id,// 1:
+                'advisor_id'=>$user->id, // 1:
+                'area_id'=>0,// 1:
+                'notification_to'=>1
+            ));
+            $newArr = array(
+                'name'=>$user->display_name,
+                'email'=>$user->email,
+                'message' => 'Your invitation is accepted by team member '.$request->name
             );
-            CompanyTeamMembers::insertGetId($teamArr);
+            $c = \Helpers::sendEmail('emails.information',$newArr ,$user->email,$user->display_name,'MortgageBox Invitation Accept','','');
+            
 
         }
         // Set Defaul prefrances
@@ -507,7 +577,7 @@ class ApiController extends Controller
         $newArr = array(
             'name'=>$request->name,
             'email'=>$request->email,
-            'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+            'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($advisor_id)
         );
         $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
@@ -1284,10 +1354,10 @@ class ApiController extends Controller
                     }
                 });
             }
-        })->where(function($query) use ($status,$user){
+        })->where(function($query) use ($status,$user,$area_arr){
             $area_arr_data = array(-1);
             if(!empty($status)) {
-                $query->where(function($q) use ($status,$user) {
+                $query->where(function($q) use ($status,$user,$area_arr) {
                     foreach($status as $item){
                         // status: ["unread", "read", "not-interested"]: calculate from bid table: advisor_status column: 
                         if($item == "read") {
@@ -1457,117 +1527,659 @@ class ApiController extends Controller
          
     }
 
-    function acceptRejectBid(Request $request)
-    {
+    function searchAcceptedNeeds(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
-        $bidCount = AdvisorBids::where('area_id','=',$request->area_id)->count();
-        $advisorCountBid = AdvisorBids::where('area_id','=',$request->area_id)->where('advisor_id','=',$user->id)->count();
-        if($advisorCountBid > 0) {
-            return response()->json([
-                'status' => false,
-                'message' => 'You already placed bid on this',
-            ], Response::HTTP_OK);
-        }else{
-            if($bidCount < 5) {
-                if ($request->advisor_status == 1) {
-                    $advisorAreaDetails = Advice_area::where('id',$request->area_id)->first();
-                    $costOfLead = ($advisorAreaDetails->size_want/100)*0.006;
-                    $time1 = Date('Y-m-d H:i:s');
-                    $time2 = Date('Y-m-d H:i:s',strtotime($advisorAreaDetails->created_at));
-                    $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
-                    $discounted_price = 0;
-                    $amount = number_format((float)$costOfLead, 2, '.', '');
-                    if($hourdiff < 24) {
-                        $discounted_price = 0;
-                    }
-                    if($hourdiff > 24 && $hourdiff < 48) {
-                        $discounted_price = number_format((float)($amount/2), 2, '.', '');;
-                    }
-                    if($hourdiff > 48 && $hourdiff < 72) {
-                        $newAmount = (75 / 100) * $amount;
-                        $discounted_price = number_format((float)($newAmount), 2, '.', '');;
-                    }
-                    if($hourdiff > 72) {
-                        $discounted_price = number_format((float)($costOfLead), 2, '.', '');;
+        $message = $request->message;
+        $status = $request->status;
+        $advisor_id = $request->advice_area;
+        $search = $request->search;
+        $lead_submitted = $request->lead_submitted;
+        // $message_arr = array(-1);
+        // if(isset($request->message) && $request->message!=''){
+        //     foreach($request->message as $messages){
+        //         $chat = ChatModel::where('to_user_id_seen',$messages)->get();
+        //         foreach($chat as $chat_data){
+        //             $channel = ChatChannel::where('id',$chat_data->channel_id)->first();
+        //             if($channel){
+        //                 array_push($message_arr,$channel->advicearea_id);
+        //             }
+        //         }
+        //     }
+        // }
+        // $status_arr = array(-1);
+        // if(isset($request->status) && $request->status!=''){
+        //     foreach($request->status as $status_data){
+        //         if($status_data=='accepted'){
+        //             $status_need = AdvisorBids::where('advisor_status',1)->get();
+        //             foreach($status_need as $status_need_data){
+        //                 array_push($status_arr,$status_need_data->area_id);
+        //             }
+        //         }
+        //         if($status_data=='sole_adviser'){
+        //             $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
+        //             foreach($status_need as $status_need_data){
+        //                 array_push($status_arr,$status_need_data->area_id);
+        //             }
+        //         }
+        //         if($status_data=='completed'){
+        //             $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
+        //             foreach($status_need as $status_need_data){
+        //                 array_push($status_arr,$status_need_data->area_id);
+        //             }
+        //         }
+        //         if($status_data=='lost'){
+        //             $status_need = AdvisorBids::where('advisor_status',2)->get();
+        //             foreach($status_need as $status_need_data){
+        //                 array_push($status_arr,$status_need_data->area_id);
+        //             }
+        //         }
+        //         // if($status_data=='no_response'){
+        //         //     $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
+        //         //     foreach($status_need as $status_need_data){
+        //         //         array_push($status_arr,$status_need_data->area_id);
+        //         //     }
+        //         // }
+        //     }
+        // }
+        // $adviser_arr = array(-1);
+        // if(isset($request->advisor_id) && $request->advisor_id!=''){
+        //     foreach($request->advisor_id as $advisor_ids){
+        //         $advisor_data = AdvisorBids::whereIn('advisor_id',$advisor_ids)->where('status',3)->where('advisor_status',2)->get();
+        //         foreach($advisor_data as $advisor_profile_data){
+        //             array_push($adviser_arr,$advisor_profile_data->area_id);
+        //         }
+        //     }
+        // }
+        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
+        ->join('users', 'advice_areas.user_id', '=', 'users.id')
+        ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+        ->where('advisor_bids.advisor_status', '=', 1)
+        // ->where(function($query) use ($search){
+        //     if($search != "") {
+        //         $query->orWhere('advice_areas.service_type', 'like', '%' . $search . '%');
+        //         $query->orWhere('advice_areas.description', 'like', '%' . $search . '%');
+        //         $query->orWhere('advice_areas.request_time', 'like', '%' . $search . '%');
+        //         $query->orWhere('advice_areas.advisor_preference_language', 'like', '%' . $search . '%');
+        //     }
+            
+        // })->where(function($query) use ($lead_submitted){
+        //     if(!empty($lead_submitted)) {
+        //         $query->where(function($q) use ($lead_submitted) {
+        //             foreach($lead_submitted as $item ){
+        //                 //lead_submitted: ["anytime", "yesterday", "last_hour", "less_3_days", "today", "less_3_week"]: ///
+        //                 if($item!="anytime"){
+        //                     if($item=="today"){
+        //                         $q->orWhereDate('advice_areas.created_at', Carbon::today());
+        //                     }else if($item=="yesterday") {
+        //                         $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
+        //                     }else if($item=="last_hour") {
+        //                         //TODO last hour query
+        //                         // $q->orWhereDate('created_at', Carbon::yesterday());
+        //                     }else if($item=="less_3_days") {
+        //                         $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
+        //                     }else if($item=="less_3_week") {
+        //                         $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
+        //                     }
+        //                 }
+                        
+        //             }
+        //         });
+        //     }
+        // })->
+        // where(function($query) use ($advisor_id, $adviser_arr){
+        //     if(!empty($advisor_id)) {
+        //         $query->where(function($q) use ($advisor_id, $adviser_arr) {
+        //             $q->orWhereIn('advice_areas.id', $adviser_arr);  
+        //         });
+        //     }
+        // })->
+        ->with('service')
+        ->paginate();
+
+        $bidCountArr = array();
+        foreach($advice_area as $key=> $item) {
+            $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
+            foreach($adviceBid as $bid) {
+                $bidCountArr[] = ($bid->status == 3)? 0:1;
+            }
+            $adviceBidMainStatus = AdvisorBids::where('area_id',$item->id)->where('status','>','0')->orderBy('status','ASC')->first();
+            if(!empty($adviceBidMainStatus)) {
+                 $advice_area[$key]->bid_status = $adviceBidMainStatus->status;
+            }else{
+                 $advice_area[$key]->bid_status = 0;
+            }
+            $advice_area[$key]->totalBids = $bidCountArr;
+            $advice_area[$key]->is_accepted = 1;
+            $costOfLead = ($item->size_want/100)*0.006;
+            $time1 = Date('Y-m-d H:i:s');
+            $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
+            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+            $costOfLeadsStr = "";
+            $costOfLeadsDropStr = "";
+            $amount = number_format((float)$costOfLead, 2, '.', '');
+            if($hourdiff < 24) {
+                $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                $in = 24-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 24 && $hourdiff < 48) {
+                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $in = 48-$hourdiff;
+                $newAmount = (75 / 100) * $amount;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 48 && $hourdiff < 72) {
+                $newAmount = (75 / 100) * $amount;
+                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $in = 72-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 72) {
+                $costOfLeadsStr = ""."Free";
+                $costOfLeadsDropStr = "";
+            }
+            
+            $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
+            $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+            $area_owner_details = User::where('id',$item->user_id)->first();
+            $address = "";
+            if(!empty($area_owner_details)) {
+                $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
+                if(!empty($addressDetails)) {
+                    if($addressDetails->Country != ""){
+                        $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                        // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
+                        $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                        $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
                     }
                     
-                    $advice_area = AdvisorBids::create([
-                        'advisor_id' => $request->advisor_id,
-                        'area_id' => $request->area_id,
-                        'advisor_status' => $request->advisor_status,
-                        'cost_leads'=>$costOfLead,
-                        'cost_discounted'=>$discounted_price
-                    ]);
-                   
-                    $this->saveNotification(array(
-                        'type'=>'1', // 1:
-                        'message'=>'A new bid placed', // 1:
-                        'read_unread'=>'0', // 1:
-                        'user_id'=>$advisorAreaDetails->user_id,// 1:
-                        'advisor_id'=>$request->advisor_id, // 1:
-                        'area_id'=>$request->area_id,// 1:
-                        'notification_to'=>0
-                    ));
-                    return response()->json([
-                        'status' => true,
-                        'message' => 'Bid placed successfully',
-                    ], Response::HTTP_OK);
-                } else if ($request->advisor_status == 2) {
-                    $advice_area = AdvisorBids::create([
-                        'advisor_id' => $request->advisor_id,
-                        'area_id' => $request->area_id,
-                        'advisor_status' => $request->advisor_status,
-                    ]);
-                    $this->saveNotification(array(
-                        'type'=>'1', // 1:
-                        'message'=>'Not interest ', // 1:
-                        'read_unread'=>'0', // 1:
-                        'user_id'=>$user->id,// 1:
-                        'advisor_id'=>$request->advisor_id, // 1:
-                        'area_id'=>$request->area_id// 1:
-                    ));
-                    
-                    return response()->json([
-                        'status' => true,
-                        'message' => 'Mark as not intrested',
-                    ], Response::HTTP_OK);
+                }
+            }
+            $lead_value = "";
+            $main_value = ($item->size_want/100);
+            $advisorDetaultValue = "";
+            if($item->service_type=="remortgage") {
+                $advisorDetaultValue = "remortgage";
+            }else if($item->service_type=="first time buyer") {
+                $advisorDetaultValue = "first_buyer";
+            }else if($item->service_type=="next time buyer") {
+                $advisorDetaultValue = "next_buyer";
+            }else if($item->service_type=="buy to let") {
+                $advisorDetaultValue = "but_let";
+            }else if($item->service_type=="equity release") {
+                $advisorDetaultValue = "equity_release";
+            }else if($item->service_type=="overseas") {
+                $advisorDetaultValue = "overseas";
+            }else if($item->service_type=="self build") {
+                $advisorDetaultValue = "self_build";
+            }else if($item->service_type=="mortgage protection") {
+                $advisorDetaultValue = "mortgage_protection";
+            }else if($item->service_type=="secured loan") {
+                $advisorDetaultValue = "secured_loan";
+            }else if($item->service_type=="bridging loan") {
+                $advisorDetaultValue = "bridging_loan";
+            }else if($item->service_type=="commercial") {
+                $advisorDetaultValue = "commercial";
+            }else if($item->service_type=="something else") {
+                $advisorDetaultValue = "something_else";
+            }   
+            $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
+            
+            $advice_area[$key]->lead_address = $address;
+            $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            // $show_status = "Live Leads"; 
+            $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
+            if(!empty($bidDetailsStatus)) {
+                if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Not Proceeding"; 
+                }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Hired"; 
+                }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Lost"; 
+                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Closed"; 
+                }else{
+                    $show_status = "Live Leads";     
                 }
             }else{
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Maximum bids are placed.',
-                ], Response::HTTP_OK);
+                $show_status = "Live Leads";     
             }
+            $advice_area[$key]->show_status = $show_status;
+
+            $channelIds = array(-1);
+            $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
+            foreach ($channelID as $chanalesR) {
+                array_push($channelIds, $chanalesR->id);
+            }
+            $advice_area[$key]->last_notes = UserNotes::where('advice_id', '=', $item->id)->where('user_id',$user->id)->get();
+            $last_chat_data = ChatModel::whereIn('channel_id',$channelIds)->take(5)->orderBy('id','DESC')->with('from_user')->with('to_user')->get();
+            if(isset($last_chat_data) && count($last_chat_data)){
+                 foreach($last_chat_data as $chat){
+                    $chat->show_name = "";
+                    if($chat->from_user_id==$user->id){
+                        if(isset($chat->from_user) && $chat->from_user){
+                            $chat->show_name = "You";
+                        }else{
+                            $chat->show_name = $chat->from_user->name;
+                        }
+                    }else{
+                        $chat->show_name = $chat->from_user->name;
+                    }
+                    // if($chat->to_user_id==$user->id){
+                    //     if(isset($chat->to_user) && $chat->to_user){
+                    //         $chat->from_user->show_name = $chat->from_user->name;
+                    //     }
+                    // }
+                     if(date('Y-m-d')==date("Y-m-d",strtotime($chat->created_at))){
+                        $chat->date_time = date("H:i",strtotime($chat->created_at));
+                    }else{
+                        $chat->date_time = date("d M Y H:i",strtotime($chat->created_at));
+                    }
+                 }
+            }
+
+            $advice_area[$key]->spam_info = AdviceAreaSpam::where('area_id',$item->id)->where('user_id','=',$user->id)->first();
+            
+            $advice_area[$key]->last_chat = $last_chat_data;
         }
+
+        return response()->json([
+            'status' => true,
+            'data' => $advice_area->items(),
+            'current_page' => $advice_area->currentPage(),
+            'first_page_url' => $advice_area->url(1),
+            'last_page_url' => $advice_area->url($advice_area->lastPage()),
+            'per_page' => $advice_area->perPage(),
+            'next_page_url' => $advice_area->nextPageUrl(),
+            'prev_page_url' => $advice_area->previousPageUrl(),
+            'total' => $advice_area->total(),
+            'total_on_current_page' => $advice_area->count(),
+            'has_more_page' => $advice_area->hasMorePages(),
+        ], Response::HTTP_OK);
+    //     $user = JWTAuth::parseToken()->authenticate();
+    //     $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
+    //     $ltv_max = $userPreferenceCustomer->ltv_max;
+    //     $lti_max = $userPreferenceCustomer->lti_max;
+    //     // TODO: Ltv max and Lti Max need to check for filter
+    //     $service_type = $request->advice_area;
+    //     // echo print_r($service_type);die;
+    //     $fees_preference = $request->fees_preference;
+    //     $promotion = $request->promotion;
+    //     $mortgage_value = $request->mortgage_value;
+    //     $lead_submitted = $request->lead_submitted;
+    //     $status = $request->status;
+    //     $search = $request->search;
+    //     $area_arr = array(-1);
+    //     if(isset($status) && count($status)){
+    //         foreach($status as $items){
+    //             if($items=='read' || $items=='unread'){
+    //                 $area = AdviceAreaRead::where('adviser_id',$user->id)->get();
+    //                 foreach($area as $area_data){
+    //                     array_push($area_arr,$area_data->area_id);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     $advice_area =  Advice_area::select('advice_areas.*','users.name', 'users.email', 'users.address')
+    //         ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
+    //         ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+    //         ->where(function($query) use ($service_type){
+    //             if(!empty($service_type)  && count($service_type) > 0) {
+    //                 $query->where(function($q) use ($service_type) {
+    //                     foreach($service_type as $item){
+    //                         $q->orWhere('advice_areas.service_type_id',$item);
+    //                     }
+    //                 });
+    //             }            
+    //     })->where(function($query) use ($search){
+    //         if($search != "") {
+    //             $query->orWhere('advice_areas.service_type', 'like', '%' . $search . '%');
+    //             $query->orWhere('advice_areas.description', 'like', '%' . $search . '%');
+    //             $query->orWhere('advice_areas.request_time', 'like', '%' . $search . '%');
+    //             $query->orWhere('advice_areas.advisor_preference_language', 'like', '%' . $search . '%');
+    //         }
+            
+    //     })->where(function($query) use ($fees_preference){
+    //         if(!empty($fees_preference) && count($fees_preference) > 0) {
+    //             $query->where(function($q) use ($fees_preference) {
+    //                 foreach($fees_preference as $item ){
+    //                     if($item=="no_fee") {
+    //                         $q->where('advice_areas.fees_preference',0);
+    //                     }
+    //                 }
+    //             });
+    //         }
+    //     })->where(function($query) use ($mortgage_value){
+    //         if(!empty($mortgage_value) && count($mortgage_value) > 0) {
+    //             $query->where(function($q) use ($mortgage_value) {
+    //                 $minMaxArr = array();
+    //                 foreach($mortgage_value as $item ){
+    //                     if($item != "") {
+    //                         if($item=="1m"){
+    //                             $minMaxArr[] = 1000000;
+    //                             $minMaxArr[] = 1000000*100000;
+    //                          }else{
+    //                             [$min,$max] = explode("_",$item);
+    //                             $minMaxArr[] = $min*1000;
+    //                             $minMaxArr[] = $max*1000;
+    //                          }
+    //                     }
+                         
+    //                 }
+    //                 if(count($minMaxArr) > 0) {
+    //                     $q->where('advice_areas.size_want','>=',min($minMaxArr));
+    //                     $q->where('advice_areas.size_want','>=',max($minMaxArr));
+    //                 }
+    //             });
+    //         }
+    //     })->where(function($query) use ($lead_submitted){
+
+    //         //
+    //         if(!empty($lead_submitted)) {
+    //             $query->where(function($q) use ($lead_submitted) {
+    //                 foreach($lead_submitted as $item ){
+    //                     //lead_submitted: ["anytime", "yesterday", "last_hour", "less_3_days", "today", "less_3_week"]: ///
+    //                     if($item!="anytime"){
+    //                         if($item=="today"){
+    //                             $q->orWhereDate('advice_areas.created_at', Carbon::today());
+    //                         }else if($item=="yesterday") {
+    //                             $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
+    //                         }else if($item=="last_hour") {
+    //                             //TODO last hour query
+    //                            // $q->orWhereDate('created_at', Carbon::yesterday());
+    //                         }else if($item=="less_3_days") {
+    //                          $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
+    //                         }else if($item=="less_3_week") {
+    //                             $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
+    //                         }
+    //                     }
+                        
+    //                 }
+    //             });
+    //         }
+    //     })->where(function($query) use ($status,$user,$area_arr){
+    //         $area_arr_data = array(-1);
+    //         if(!empty($status)) {
+    //             $query->where(function($q) use ($status,$user,$area_arr) {
+    //                 foreach($status as $item){
+    //                     // status: ["unread", "read", "not-interested"]: calculate from bid table: advisor_status column: 
+    //                     if($item == "read") {
+    //                         $q->whereIn('advice_areas.id',$area_arr);
+    //                     }else if($item == "unread") {
+    //                         $q->whereNotIn('advice_areas.id',$area_arr);
+    //                     }else if($item == "not-interested") {
+    //                         $q->orWhere('advisor_bids.advisor_status','=',2)->where('advisor_bids.advisor_id',$user->id);
+    //                     }
+    //                 }
+    //             });
+    //         }
+    //     })->where(function($query) use ($ltv_max){
+    //         if($ltv_max != "") {
+               
+    //             $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));
+    //             $query->where('advice_areas.ltv_max','>',0);
+    //         }
+    //     })->where(function($query) use ($lti_max){
+    //         if($lti_max != "") {
+    //             //  echo chop($ltv_max,"%");die;
+    //             $query->where('advice_areas.lti_max','<=',chop($lti_max,"x"));
+    //             $query->where('advice_areas.lti_max','>',0);
+    //         }
+    //     })->groupBy('advice_areas.'.'id')
+    //     ->groupBy('advice_areas.'.'user_id')
+    //     ->groupBy('advice_areas.'.'service_type')
+    //     ->groupBy('advice_areas.'.'request_time')
+    //     ->groupBy('advice_areas.'.'property')
+    //     ->groupBy('advice_areas.'.'property_want')
+    //     ->groupBy('advice_areas.'.'size_want')
+    //     ->groupBy('advice_areas.'.'combined_income')
+    //     ->groupBy('advice_areas.'.'description')
+    //     ->groupBy('advice_areas.'.'occupation')
+    //     ->groupBy('advice_areas.'.'contact_preference')
+    //     ->groupBy('advice_areas.'.'advisor_preference')
+    //     ->groupBy('advice_areas.'.'fees_preference')
+    //     ->groupBy('advice_areas.'.'self_employed')
+    //     ->groupBy('advice_areas.'.'non_uk_citizen')
+    //     ->groupBy('advice_areas.'.'adverse_credit')
+    //     ->groupBy('advice_areas.'.'contact_preference_face_to_face')
+    //     ->groupBy('advice_areas.'.'contact_preference_online')
+    //     ->groupBy('advice_areas.'.'contact_preference_telephone')
+    //     ->groupBy('advice_areas.'.'contact_preference_evening_weekend')
+    //     ->groupBy('advice_areas.'.'advisor_preference_local')
+    //     ->groupBy('advice_areas.'.'advisor_preference_gender')
+    //     ->groupBy('advice_areas.'.'status')
+    //     ->groupBy('advice_areas.'.'combined_income_currency')
+    //     ->groupBy('advice_areas.'.'property_currency')
+    //     ->groupBy('advice_areas.'.'size_want_currency')
+    //     ->groupBy('advice_areas.'.'advisor_id')
+    //     ->groupBy('advice_areas.'.'close_type')
+    //     ->groupBy('advice_areas.'.'need_reminder')
+    //     ->groupBy('advice_areas.'.'initial_term')
+    //     ->groupBy('advice_areas.'.'start_date')
+    //     ->groupBy('advice_areas.'.'created_at')
+    //     ->groupBy('advice_areas.'.'updated_at')
+    //     ->groupBy('advice_areas.'.'advisor_preference_language')
+    //     ->groupBy('users.'.'name')
+    //     ->groupBy('users.'.'email')
+    //     ->groupBy('users.'.'address')
+    //     ->groupBy('advice_areas.'.'ltv_max')
+    //     ->groupBy('advice_areas.'.'lti_max')
+    //     ->paginate();
+    //     $bidCountArr = array();
+    //     foreach($advice_area as $key=> $item) {
+    //         $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
+    //         foreach($adviceBid as $bid) {
+    //             $bidCountArr[] = ($bid->status == 3)? 0:1;
+    //         }
+    //         $advice_area[$key]->totalBids = $bidCountArr;
+
+    //         $costOfLead = ($item->size_want/100)*0.006;
+    //         $time1 = Date('Y-m-d H:i:s');
+    //         $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
+    //         $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+    //         $costOfLeadsStr = "";
+    //         $costOfLeadsDropStr = "";
+    //         $amount = number_format((float)$costOfLead, 2, '.', '');
+    //         if($hourdiff < 24) {
+    //             $costOfLeadsStr = "".$item->size_want_currency.$amount;
+    //             $in = 24-$hourdiff;
+    //             $hrArr = explode(".",$in);
+    //             $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+    //         }
+    //         if($hourdiff > 24 && $hourdiff < 48) {
+    //             $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+    //             $in = 48-$hourdiff;
+    //             $newAmount = (75 / 100) * $amount;
+    //             $hrArr = explode(".",$in);
+    //             $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+    //         }
+    //         if($hourdiff > 48 && $hourdiff < 72) {
+    //             $newAmount = (75 / 100) * $amount;
+    //             $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+    //             $in = 72-$hourdiff;
+    //             $hrArr = explode(".",$in);
+    //             $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+    //         }
+    //         if($hourdiff > 72) {
+    //             $costOfLeadsStr = ""."Free";
+    //             $costOfLeadsDropStr = "";
+    //         }
+            
+    //         $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
+    //         $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+    //         $area_owner_details = User::where('id',$item->user_id)->first();
+    //         $address = "";
+    //         if(!empty($area_owner_details)) {
+    //             $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
+    //             if(!empty($addressDetails)) {
+    //                 if($addressDetails->Country != ""){
+    //                     $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+    //                     // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
+    //                     $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+    //                     $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+    //                 }
+                    
+    //             }
+    //         }
+    //         $lead_value = "";
+    //         $main_value = ($item->size_want/100);
+    //         $advisorDetaultValue = "";
+    //         if($item->service_type=="remortgage") {
+    //             $advisorDetaultValue = "remortgage";
+    //         }else if($item->service_type=="first time buyer") {
+    //             $advisorDetaultValue = "first_buyer";
+    //         }else if($item->service_type=="next time buyer") {
+    //             $advisorDetaultValue = "next_buyer";
+    //         }else if($item->service_type=="buy to let") {
+    //             $advisorDetaultValue = "but_let";
+    //         }else if($item->service_type=="equity release") {
+    //             $advisorDetaultValue = "equity_release";
+    //         }else if($item->service_type=="overseas") {
+    //             $advisorDetaultValue = "overseas";
+    //         }else if($item->service_type=="self build") {
+    //             $advisorDetaultValue = "self_build";
+    //         }else if($item->service_type=="mortgage protection") {
+    //             $advisorDetaultValue = "mortgage_protection";
+    //         }else if($item->service_type=="secured loan") {
+    //             $advisorDetaultValue = "secured_loan";
+    //         }else if($item->service_type=="bridging loan") {
+    //             $advisorDetaultValue = "bridging_loan";
+    //         }else if($item->service_type=="commercial") {
+    //             $advisorDetaultValue = "commercial";
+    //         }else if($item->service_type=="something else") {
+    //             $advisorDetaultValue = "something_else";
+    //         }   
+    //         $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
+    //         $advice_area[$key]->lead_address = $address;
+    //         $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+    //         $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+    //     }
+    //     return response()->json([
+    //         'status' => true,
+    //         'data' => $advice_area->items(),
+    //         'current_page' => $advice_area->currentPage(),
+    //         'first_page_url' => $advice_area->url(1),
+    //         'last_page_url' => $advice_area->url($advice_area->lastPage()),
+    //         'per_page' => $advice_area->perPage(),
+    //         'next_page_url' => $advice_area->nextPageUrl(),
+    //         'prev_page_url' => $advice_area->previousPageUrl(),
+    //         'total' => $advice_area->total(),
+    //         'total_on_current_page' => $advice_area->count(),
+    //         'has_more_page' => $advice_area->hasMorePages(),
+    //     ], Response::HTTP_OK);
+         
+    // }
+
+    // function acceptRejectBid(Request $request)
+    // {
+    //     $user = JWTAuth::parseToken()->authenticate();
+    //     $bidCount = AdvisorBids::where('area_id','=',$request->area_id)->count();
+    //     $advisorCountBid = AdvisorBids::where('area_id','=',$request->area_id)->where('advisor_id','=',$user->id)->count();
+    //     if($advisorCountBid > 0) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'You already placed bid on this',
+    //         ], Response::HTTP_OK);
+    //     }else{
+    //         if($bidCount < 5) {
+    //             if ($request->advisor_status == 1) {
+    //                 $advisorAreaDetails = Advice_area::where('id',$request->area_id)->first();
+    //                 $costOfLead = ($advisorAreaDetails->size_want/100)*0.006;
+    //                 $time1 = Date('Y-m-d H:i:s');
+    //                 $time2 = Date('Y-m-d H:i:s',strtotime($advisorAreaDetails->created_at));
+    //                 $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+    //                 $discounted_price = 0;
+    //                 $amount = number_format((float)$costOfLead, 2, '.', '');
+    //                 if($hourdiff < 24) {
+    //                     $discounted_price = 0;
+    //                 }
+    //                 if($hourdiff > 24 && $hourdiff < 48) {
+    //                     $discounted_price = number_format((float)($amount/2), 2, '.', '');;
+    //                 }
+    //                 if($hourdiff > 48 && $hourdiff < 72) {
+    //                     $newAmount = (75 / 100) * $amount;
+    //                     $discounted_price = number_format((float)($newAmount), 2, '.', '');;
+    //                 }
+    //                 if($hourdiff > 72) {
+    //                     $discounted_price = number_format((float)($costOfLead), 2, '.', '');;
+    //                 }
+                    
+    //                 $advice_area = AdvisorBids::create([
+    //                     'advisor_id' => $request->advisor_id,
+    //                     'area_id' => $request->area_id,
+    //                     'advisor_status' => $request->advisor_status,
+    //                     'cost_leads'=>$costOfLead,
+    //                     'cost_discounted'=>$discounted_price
+    //                 ]);
+                   
+    //                 $this->saveNotification(array(
+    //                     'type'=>'1', // 1:
+    //                     'message'=>'A new bid placed', // 1:
+    //                     'read_unread'=>'0', // 1:
+    //                     'user_id'=>$advisorAreaDetails->user_id,// 1:
+    //                     'advisor_id'=>$request->advisor_id, // 1:
+    //                     'area_id'=>$request->area_id,// 1:
+    //                     'notification_to'=>0
+    //                 ));
+    //                 return response()->json([
+    //                     'status' => true,
+    //                     'message' => 'Bid placed successfully',
+    //                 ], Response::HTTP_OK);
+    //             } else if ($request->advisor_status == 2) {
+    //                 $advice_area = AdvisorBids::create([
+    //                     'advisor_id' => $request->advisor_id,
+    //                     'area_id' => $request->area_id,
+    //                     'advisor_status' => $request->advisor_status,
+    //                 ]);
+    //                 $this->saveNotification(array(
+    //                     'type'=>'1', // 1:
+    //                     'message'=>'Not interest ', // 1:
+    //                     'read_unread'=>'0', // 1:
+    //                     'user_id'=>$user->id,// 1:
+    //                     'advisor_id'=>$request->advisor_id, // 1:
+    //                     'area_id'=>$request->area_id// 1:
+    //                 ));
+                    
+    //                 return response()->json([
+    //                     'status' => true,
+    //                     'message' => 'Mark as not intrested',
+    //                 ], Response::HTTP_OK);
+    //             }
+    //         }else{
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Maximum bids are placed.',
+    //             ], Response::HTTP_OK);
+    //         }
+    //     }
     }
 
     public function inviteUsers(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
         if (isset($request->emails) && !empty($request->emails)) {
-            //To be discussed
-            // $invitedUrl = config('constants.urls.host_url');
-            // $invitedUrl .= "/invite/" . $this->getEncryptedId($user->id);
-            // $emailSubject = "MortgageBox Invitation";
-            // $emailList = implode(", ", $request->emails);
-
-            // $to = $request->emails[0];
-            // $subject = $emailSubject;
-            // $headers = "Bcc: " . $emailList . "\r\n";
-            // $headers .= "From: no-reply@mortgagebox.com\r\n" .
-            //     "X-Mailer: php";
-            // $headers .= "MIME-Version: 1.0\r\n";
-            // $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-            // $message = '<html><body>';
-            // $message .= "Hi,\r\n";
-            // $message .= $user->name . " invites you to join MortgageBox. Please click on below link to join\r\n<br>";
-            // $message .= $invitedUrl;
-            // $message .= '</body></html>';
-            // $message = wordwrap($message, 70);
-            // //echo $invitedUrl;
-
-            // mail($to, $subject, $message, $headers);
-
+            foreach($request->emails as $email_id){
+                $invitedUrl = "";
+                if(isset($request->user_role) && $request->user_role!=''){
+                    if($request->user_role==1){
+                        $invitedUrl = config('constants.urls.host_url');
+                        $invitedUrl .= "/invite-advisor/" . $this->getEncryptedId($user->id)."?invitedToEmail=".$email_id;
+                    }else{
+                        $invitedUrl = config('constants.urls.host_url');
+                        $invitedUrl .= "/invite/" . $this->getEncryptedId($user->id)."?invitedToEmail=".$email_id;
+                    }
+                }
+                $newArr = array(
+                    'name'=>$user->name,
+                    'email'=>$email_id,
+                    'url' => $invitedUrl
+                );
+                $c = \Helpers::sendEmail('emails.invitation',$newArr ,$email_id,$user->name,'MortgageBox Invitation','','');
+            }
             return response()->json([
                 'status' => true,
                 'message' => 'Invite sent on mentioned emails.',
@@ -1680,7 +2292,7 @@ class ApiController extends Controller
 
     public function sendMessage(Request $request)
     {
-        JWTAuth::parseToken()->authenticate();
+        $user = JWTAuth::parseToken()->authenticate();
         $chatData = array();
         $message = ChatModel::create([
             'from_user_id' => $request->from_user_id,
@@ -1692,6 +2304,27 @@ class ApiController extends Controller
         $message_id  = $message->id;
 
         $chatData = ChatModel::where('id', '=', $message_id)->orderBy('id', 'desc')->first();
+        $channel = ChatChannel::where('id', '=', $request->channel_id)->first();
+        $area_id = 0;
+        if($channel){
+            $area_id = $channel->area_id;
+        }
+        $advisor = AdvisorProfile::where('advisorId',$request->to_user_id)->first();
+        $this->saveNotification(array(
+            'type'=>'1', // 1:
+            'message'=>'New message arrived from '.$user->name, // 1:
+            'read_unread'=>'0', // 1:
+            'user_id'=>$request->from_user_id,// 1:
+            'advisor_id'=>$request->to_user_id, // 1:
+            'area_id'=>$area_id,// 1:
+            'notification_to'=>1
+        ));
+        $newArr = array(
+            'name'=>$advisor->display_name,
+            'email'=>$advisor->email,
+            'message' => 'New message arrived from '.$user->name
+        );
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox New Review','','');
         return response()->json([
             'status' => true,
             'channel' => $request->channel_id,
@@ -1833,6 +2466,21 @@ class ApiController extends Controller
             $last_chat_data = ChatModel::whereIn('channel_id',$channelIds)->take(5)->orderBy('id','DESC')->with('from_user')->with('to_user')->get();
             if(isset($last_chat_data) && count($last_chat_data)){
                  foreach($last_chat_data as $chat){
+                    $chat->show_name = "";
+                    if($chat->from_user_id==$user->id){
+                        if(isset($chat->from_user) && $chat->from_user){
+                            $chat->show_name = "You";
+                        }else{
+                            $chat->show_name = $chat->from_user->name;
+                        }
+                    }else{
+                        $chat->show_name = $chat->from_user->name;
+                    }
+                    // if($chat->to_user_id==$user->id){
+                    //     if(isset($chat->to_user) && $chat->to_user){
+                    //         $chat->from_user->show_name = $chat->from_user->name;
+                    //     }
+                    // }
                      if(date('Y-m-d')==date("Y-m-d",strtotime($chat->created_at))){
                         $chat->date_time = date("H:i",strtotime($chat->created_at));
                     }else{
@@ -1905,49 +2553,65 @@ class ApiController extends Controller
         $id = JWTAuth::parseToken()->authenticate();
         $message_type = 2;
         if ($request->hasFile('image')) {
-            $uploadFolder = 'chat';
-            $image = $request->file('image');
-            // $image_uploaded_path = $image->store($uploadFolder, 'public');
-            $name = $request->file('image')->getClientOriginalName();
-            $extension = $request->file('image')->extension();
-            $originalString = str_replace("." . $extension, "", $name);
-            //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
-            $upfileName = $name;
-
-            $num = 1;
-
-
-            while (Storage::exists("public/" . $uploadFolder . "/" . $upfileName)) {
-                $file_name = (string) $originalString . "-" . $num;
-                $upfileName = $file_name . "." . $extension;
-                $num++;
-            }
-            $image_uploaded_path = $image->storeAs($uploadFolder, $upfileName, 'public');
-            $request->image = basename($image_uploaded_path);
-
-
-            $uploadedImageResponse = array(
-                "image_name" => basename($image_uploaded_path),
-                "image_url" => Storage::disk('public')->url($image_uploaded_path),
-                "mime" => $image->getClientMimeType()
-            );
-
-
-            if ($uploadedImageResponse['mime'] == "image/png" || $uploadedImageResponse['mime'] == "image/jpeg" || $uploadedImageResponse['mime'] == "image/jpg" || $uploadedImageResponse['mime'] == "image/gif") {
+            $images = $request->file('image');
+            $request->image = time() . rand() .'.'.$images->getClientOriginalExtension();
+            $destinationPath = public_path('/upload/chat/');
+            $images->move($destinationPath, $request->image);
+            if($images->getClientOriginalExtension()=='jpg' || $images->getClientOriginalExtension()=='jpeg' || $images->getClientOriginalExtension()=='png' || $images->getClientOriginalExtension()=='gif'){
                 $message_type = 1;
-            } else if ($uploadedImageResponse['mime'] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+            }else if($images->getClientOriginalExtension()=='xml'){
                 $message_type = 2;
-            } else if ($uploadedImageResponse['mime'] == "application/pdf") {
+            }else if($images->getClientOriginalExtension()=='pdf'){
                 $message_type = 3;
-            } else if ($uploadedImageResponse['mime'] == "application/csv") {
+            }else if($images->getClientOriginalExtension()=='csv'){
                 $message_type = 4;
-            } else if ($uploadedImageResponse['mime'] == "application/zip") {
+            }else if($images->getClientOriginalExtension()=='zip'){
                 $message_type = 6;
-            } else {
+            }else{
                 $message_type = 7;
             }
+            // $uploadFolder = 'chat';
+            // $image = $request->file('image');
+            // // $image_uploaded_path = $image->store($uploadFolder, 'public');
+            // $name = $request->file('image')->getClientOriginalName();
+            // $extension = $request->file('image')->extension();
+            // $originalString = str_replace("." . $extension, "", $name);
+            // //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
+            // $upfileName = $name;
+
+            // $num = 1;
+
+
+            // while (Storage::exists("public/" . $uploadFolder . "/" . $upfileName)) {
+            //     $file_name = (string) $originalString . "-" . $num;
+            //     $upfileName = $file_name . "." . $extension;
+            //     $num++;
+            // }
+            // $image_uploaded_path = $image->storeAs($uploadFolder, $upfileName, 'public');
+            // $request->image = basename($image_uploaded_path);
+
+
+            // $uploadedImageResponse = array(
+            //     "image_name" => basename($image_uploaded_path),
+            //     "image_url" => Storage::disk('public')->url($image_uploaded_path),
+            //     "mime" => $image->getClientMimeType()
+            // );
+
+            // if ($uploadedImageResponse['mime'] == "image/png" || $uploadedImageResponse['mime'] == "image/jpeg" || $uploadedImageResponse['mime'] == "image/jpg" || $uploadedImageResponse['mime'] == "image/gif") {
+            //     $message_type = 1;
+            // } else if ($uploadedImageResponse['mime'] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+            //     $message_type = 2;
+            // } else if ($uploadedImageResponse['mime'] == "application/pdf") {
+            //     $message_type = 3;
+            // } else if ($uploadedImageResponse['mime'] == "application/csv") {
+            //     $message_type = 4;
+            // } else if ($uploadedImageResponse['mime'] == "application/zip") {
+            //     $message_type = 6;
+            // } else {
+            //     $message_type = 7;
+            // }
         }
-        $uploadedImageResponse['image_url'];
+        // $uploadedImageResponse['image_url'];
         $chatData = array();
         $message = ChatModel::create([
             'from_user_id' => $request->from_user_id,
@@ -1963,7 +2627,8 @@ class ApiController extends Controller
         return response()->json([
             'status' => true,
             'channel' => $request->channel_id,
-            'data' => $chatData
+            'data' => $chatData,
+            'image_data'=>$images
         ], Response::HTTP_OK);
     }
 
@@ -2098,6 +2763,13 @@ class ApiController extends Controller
                 'area_id'=>$bidDetails->area_id,// 1:
                 'notification_to'=>1
             ));
+            $advisor = AdvisorProfile::where('advisorId',$bidDetails->advisor_id)->first();
+            $newArr = array(
+                'name'=>$advisor->display_name,
+                'email'=>$advisor->email,
+                'message' => 'Your bid accepted by customer '.$user->name
+            );
+            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox Bid Accepted','','');
         }else{
             $message = "Offer declined";
             $this->saveNotification(array(
@@ -2109,6 +2781,13 @@ class ApiController extends Controller
                 'area_id'=>$bidDetails->area_id,// 1:
                 'notification_to'=>1
             ));
+            $advisor = AdvisorProfile::where('advisorId',$bidDetails->advisor_id)->first();
+            $newArr = array(
+                'name'=>$advisor->display_name,
+                'email'=>$advisor->email,
+                'message' => 'Your bid declined by customer '.$user->name
+            );
+            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox Bid Declined','','');
         }
         return response()->json([
             'status' => true,
@@ -2607,6 +3286,109 @@ class ApiController extends Controller
                     'data'=> []
                 ], Response::HTTP_OK);
             }
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+    }
+
+    public function getTeamMember(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $post = $request->all();
+            $advice_read = CompanyTeamMembers::where('id',$post['id'])->first();
+            return response()->json([
+                'status' => true,
+                'message' => 'Team member data fetched successfully',
+                'data'=> $advice_read
+            ], Response::HTTP_OK);
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+    }
+
+
+    public function getAllAdviser(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $post = $request->all();
+            $advice_read = User::where('user_role',1)->where('status',1)->get();
+            if(count($advice_read)){
+                foreach($advice_read as $advice_read_data){
+                    $advice_read_data_ad = AdvisorProfile::where('advisorId',$advice_read_data->id)->first();
+                    if($advice_read_data_ad){
+                        $advice_read_data->advisor_data = $advice_read_data_ad;
+                    }
+                }
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Team member data fetched successfully',
+                'data'=> $advice_read
+            ], Response::HTTP_OK);
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+    }
+
+    public function updateCompanyAdmin(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $post = $request->all();
+            $advisor_profiles = AdvisorProfile::where('advisorId',$user->id)->first();
+            if($advisor_profiles){
+                AdvisorProfile::where('advisorId',$post['company_admin'])->update(['company_logo'=>$advisor_profiles->company_logo]);
+                companies::where('id',$post['company_id'])->update(['company_admin'=>$post['company_admin']]);
+                $team_member = CompanyTeamMembers::where('company_id',$post['company_id'])->where('advisor_id',$user->id)->get();
+                foreach($team_member as $team_member_data){
+                    CompanyTeamMembers::where('id',$team_member_data->id)->update(['isCompanyAdmin'=>0,'advisor_id'=>$post['company_admin']]);
+                }
+                $advisor_update_to = AdvisorProfile::where('advisorId',$post['company_admin'])->first();
+                if($advisor_update_to){
+                    $team_member_to_update = CompanyTeamMembers::where('company_id',$post['company_id'])->where('email',$advisor_update_to->email)->first();
+                    if($team_member_to_update){
+                        CompanyTeamMembers::where('id',$team_member_to_update->id)->update(['isCompanyAdmin'=>1]);
+                        $advisor = AdvisorProfile::where('advisorId',$request->to_user_id)->first();
+                        $this->saveNotification(array(
+                            'type'=>'1', // 1:
+                            'message'=>'You are a company admin now', // 1:
+                            'read_unread'=>'0', // 1:
+                            'user_id'=>$user->id,// 1:
+                            'advisor_id'=>$team_member_to_update->id, // 1:
+                            'area_id'=>0,// 1:
+                            'notification_to'=>1
+                        ));
+                        $newArr = array(
+                            'name'=>$advisor_update_to->display_name,
+                            'email'=>$advisor_update_to->email,
+                            'message' => 'You are a company admin now'
+                        );
+                        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_update_to->email,$advisor_update_to->display_name,'MortgageBox Company Admin','','');
+                    }
+                }
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Team member data fetched successfully',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }else{
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Something went wrong.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }            
         }else{
             return response()->json([
                 'status' => false,

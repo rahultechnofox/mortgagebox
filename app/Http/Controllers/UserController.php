@@ -187,6 +187,13 @@ class UserController extends Controller
             'area_id'=>0,// 1:
             'notification_to'=>1
         ));
+        $advisor = AdvisorProfile::where('advisorId',$request->advisor_id)->first();
+        $newArr = array(
+            'name'=>$advisor->display_name,
+            'email'=>$advisor->email,
+            'message' => 'New review recieved from customer '.$userDetails->name
+        );
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox New Review','','');
         return response()->json([
             'status' => true,
             'message' => 'Rating added successfully',

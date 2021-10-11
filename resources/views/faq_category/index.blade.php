@@ -74,7 +74,10 @@
                     <label class="form-label" for="name">Name</label>
                     <input type="text" class="form-control" placeholder="Name" name="name" id="name" />
                 </div>
-
+                <div class="mb-1">
+                    <label class="form-label" for="name">Sub Title</label>
+                    <input type="text" class="form-control" placeholder="Sub Title" name="sub_title" id="sub_title" />
+                </div>
                 <div class="mb-1">
                     <div class="col-md-12 hide" id="show_cat_image_add">
                         <div class="m-b-10">

@@ -58,6 +58,14 @@ class FaqController extends Controller
                 if(isset($post['audience']) && $post['audience']!=''){
                     $postData['audience'] = $post['audience'];
                 }
+                if(isset($post['audience']) && $post['audience']!=''){
+                    $postData['audience'] = $post['audience'];
+                }
+                if(isset($post['is_featured']) && $post['is_featured']!=''){
+                    $postData['is_featured'] = $post['is_featured'];
+                }else{
+                    $postData['is_featured'] = 0;
+                }
                 unset($post['_token']);
                 if(isset($post['id'])){
                     $id = Faq::where('id',$post['id'])->update($postData);

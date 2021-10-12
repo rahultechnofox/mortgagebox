@@ -443,6 +443,7 @@ function resetFaqCategoryForm(){
     $('#id').val('');
     $('#audience').val('');
     $('#exampleModalLabel').html('Add Faq Category');
+    $("#show_cat_image_add").hide();
 }
 
 function addUpdateFaqCategory(formId){

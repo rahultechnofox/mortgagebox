@@ -3,7 +3,7 @@ return [
     'urls' => [
         'email_verification_url' => 'http://mbox2.technofox.co.in/backend/api/verifyEmail/',
         'team_email_verification_url' => 'http://mbox2.technofox.co.in/backend/api/verifyTeamEmail/',
-        'team_signup_url' => 'http://mbox2.technofox.co.in/ /',
+        'team_signup_url' => 'http://mbox2.technofox.co.in/register/',
         'host_url' => 'http://mbox2.technofox.co.in',
         ],
     'stripe' => [

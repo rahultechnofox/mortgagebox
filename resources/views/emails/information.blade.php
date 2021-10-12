@@ -10,7 +10,7 @@
 			</h2>
 		</center>
 		<p>Hello {{$name}},</p>
-		<p>{{$message}}</p>
+		<p>{{$message_text}}</p>
 		<strong>Thank you :)</strong>
 	</body>
 </html>

@@ -470,16 +470,16 @@ class ApiController extends Controller
                     'message'=>'You have got free introduction from refering advisor', // 1:
                     'read_unread'=>'0', // 1:
                     'user_id'=>$user->id,// 1:
-                    'advisor_id'=>$team_member_to_update->id, // 1:
+                    'advisor_id'=>$invited_by_user->advisorId, // 1:
                     'area_id'=>0,// 1:
                     'notification_to'=>1
                 ));
                 $newArr = array(
-                    'name'=>$invited_by_user->display_name,
-                    'email'=>$invited_by_user->email,
-                    'message' => 'You have got free introduction from refering advisor'
+                    'name'=>$user->display_name,
+                    'email'=>$user->email,
+                    'message_text' => 'You have got free introduction from refering advisor'
                 );
-                $c = \Helpers::sendEmail('emails.information',$newArr ,$invited_by_user->email,$invited_by_user->display_name,'MortgageBox Free introduction','','');
+                $c = \Helpers::sendEmail('emails.information',$newArr ,$user->email,$user->name,'MortgageBox Free introduction','','');
             }
         }
         $advisor_id = $user->id;
@@ -534,14 +534,12 @@ class ApiController extends Controller
                 'area_id'=>0,// 1:
                 'notification_to'=>1
             ));
-            $newArr = array(
-                'name'=>$user->display_name,
+            $newArr1 = array(
+                'name'=>$user->name,
                 'email'=>$user->email,
-                'message' => 'Your invitation is accepted by team member '.$request->name
+                'message_text' => 'Your invitation is accepted by team member '.$request->name
             );
-            $c = \Helpers::sendEmail('emails.information',$newArr ,$user->email,$user->display_name,'MortgageBox Invitation Accept','','');
-            
-
+            $c = \Helpers::sendEmail('emails.information',$newArr1 ,$user->email,$user->name,'MortgageBox Invitation Accept','','');
         }
         // Set Defaul prefrances
         $notification = AdvisorPreferencesDefault::where('advisor_id', '=', $advisor_id)->first();
@@ -574,12 +572,12 @@ class ApiController extends Controller
         //  $msg = wordwrap($msg, 70);
 
         // $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
-        $newArr = array(
+        $newArr2 = array(
             'name'=>$request->name,
             'email'=>$request->email,
             'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($advisor_id)
         );
-        $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
+        $c = \Helpers::sendEmail('emails.email_verification',$newArr2 ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
         
         return response()->json([
@@ -2157,7 +2155,90 @@ class ApiController extends Controller
     //         }
     //     }
     }
-
+    function acceptRejectBid(Request $request)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $bidCount = AdvisorBids::where('area_id','=',$request->area_id)->count();
+        $advisorCountBid = AdvisorBids::where('area_id','=',$request->area_id)->where('advisor_id','=',$user->id)->count();
+        if($advisorCountBid > 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You already placed bid on this',
+            ], Response::HTTP_OK);
+        }else{
+            if($bidCount < 5) {
+                if ($request->advisor_status == 1) {
+                    $advisorAreaDetails = Advice_area::where('id',$request->area_id)->first();
+                    $costOfLead = ($advisorAreaDetails->size_want/100)*0.006;
+                    $time1 = Date('Y-m-d H:i:s');
+                    $time2 = Date('Y-m-d H:i:s',strtotime($advisorAreaDetails->created_at));
+                    $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+                    $discounted_price = 0;
+                    $amount = number_format((float)$costOfLead, 2, '.', '');
+                    if($hourdiff < 24) {
+                        $discounted_price = 0;
+                    }
+                    if($hourdiff > 24 && $hourdiff < 48) {
+                        $discounted_price = number_format((float)($amount/2), 2, '.', '');;
+                    }
+                    if($hourdiff > 48 && $hourdiff < 72) {
+                        $newAmount = (75 / 100) * $amount;
+                        $discounted_price = number_format((float)($newAmount), 2, '.', '');;
+                    }
+                    if($hourdiff > 72) {
+                        $discounted_price = number_format((float)($costOfLead), 2, '.', '');;
+                    }
+                    
+                    $advice_area = AdvisorBids::create([
+                        'advisor_id' => $request->advisor_id,
+                        'area_id' => $request->area_id,
+                        'advisor_status' => $request->advisor_status,
+                        'cost_leads'=>$costOfLead,
+                        'cost_discounted'=>$discounted_price
+                    ]);
+                   
+                    $this->saveNotification(array(
+                        'type'=>'1', // 1:
+                        'message'=>'A new bid placed', // 1:
+                        'read_unread'=>'0', // 1:
+                        'user_id'=>$advisorAreaDetails->user_id,// 1:
+                        'advisor_id'=>$request->advisor_id, // 1:
+                        'area_id'=>$request->area_id,// 1:
+                        'notification_to'=>0
+                    ));
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Bid placed successfully',
+                    ], Response::HTTP_OK);
+                } else if ($request->advisor_status == 2) {
+                    $advice_area = AdvisorBids::create([
+                        'advisor_id' => $request->advisor_id,
+                        'area_id' => $request->area_id,
+                        'advisor_status' => $request->advisor_status,
+                    ]);
+                    $this->saveNotification(array(
+                        'type'=>'1', // 1:
+                        'message'=>'Not interest ', // 1:
+                        'read_unread'=>'0', // 1:
+                        'user_id'=>$user->id,// 1:
+                        'advisor_id'=>$request->advisor_id, // 1:
+                        'area_id'=>$request->area_id// 1:
+                    ));
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Mark as not intrested',
+                    ], Response::HTTP_OK);
+                }
+            }else{
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Maximum bids are placed.',
+                ], Response::HTTP_OK);
+            }
+        }
+        
+        
+    }
     public function inviteUsers(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -2309,7 +2390,11 @@ class ApiController extends Controller
         if($channel){
             $area_id = $channel->area_id;
         }
+        if($area_id=='' || $area_id==null){
+            $area_id = 0;
+        }
         $advisor = AdvisorProfile::where('advisorId',$request->to_user_id)->first();
+        $message = 'New message arrived from '.$user->name;
         $this->saveNotification(array(
             'type'=>'1', // 1:
             'message'=>'New message arrived from '.$user->name, // 1:
@@ -2322,9 +2407,9 @@ class ApiController extends Controller
         $newArr = array(
             'name'=>$advisor->display_name,
             'email'=>$advisor->email,
-            'message' => 'New message arrived from '.$user->name
+            'message_text' => $message
         );
-        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox New Review','','');
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox New Message','','');
         return response()->json([
             'status' => true,
             'channel' => $request->channel_id,
@@ -2767,7 +2852,7 @@ class ApiController extends Controller
             $newArr = array(
                 'name'=>$advisor->display_name,
                 'email'=>$advisor->email,
-                'message' => 'Your bid accepted by customer '.$user->name
+                'message_text' => 'Your bid accepted by customer '.$user->name
             );
             $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox Bid Accepted','','');
         }else{
@@ -2785,7 +2870,7 @@ class ApiController extends Controller
             $newArr = array(
                 'name'=>$advisor->display_name,
                 'email'=>$advisor->email,
-                'message' => 'Your bid declined by customer '.$user->name
+                'message_text' => 'Your bid declined by customer '.$user->name
             );
             $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox Bid Declined','','');
         }
@@ -3372,7 +3457,7 @@ class ApiController extends Controller
                         $newArr = array(
                             'name'=>$advisor_update_to->display_name,
                             'email'=>$advisor_update_to->email,
-                            'message' => 'You are a company admin now'
+                            'message_text' => 'You are a company admin now'
                         );
                         $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_update_to->email,$advisor_update_to->display_name,'MortgageBox Company Admin','','');
                     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Advice_area;
+use App\Models\DefaultPercent;
 use App\Models\AdvisorBids;
 use App\Models\AdvisorOffers;
 use App\Models\AdvisorProfile;
@@ -499,8 +500,20 @@ class ApiController extends Controller
             'email' => $request->email,
             'postcode' => $request->post_code,
             'description' => $description
-
         ]);
+        $serviceType = ServiceType::where('parent_id','!=',0)->where('status',1)->get();
+        if(count($serviceType)){
+            foreach($serviceType as $serviceType_data){
+                $default_arr = array(
+                    'service_id'=>$serviceType_data->id,
+                    'adviser_id'=>$advisor_id,
+                    'value_percent'=>0.30,
+                    'status'=>1,
+                    'created_at'=>date('Y-m-d H:i:s'),
+                );
+                DefaultPercent::insertGetId($default_arr);
+            }
+        }
         if(isset($company_id) && $company_id!=0){
             $company_team = CompanyTeamMembers::where('email',$request->email)->first();
             companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
@@ -555,23 +568,6 @@ class ApiController extends Controller
                 'advisor_id' => $user->id,
             ]);
         }
-        
-        // $msg = "";
-        // $msg .= "Welcome\n\n";
-        // $msg .= "Hello ".ucfirst($request->name).",\n\n";
-        // $msg .= "<p>Mortgogebox is the smart and cost-effective way for finding new customers actively looking for mortgages based on your specialties and preferences. We let you focus on what you do best ... arranging great mortgages for your customers rather than scrambling around for leads</p>\n\n";
-        // $msg .= "<p>Mortgogebox will help grow and sustain your business and allow you to efficiently manage your customer relationships. We also give you the tools to manage them all in one place.</p>\n\n";
-        // $msg .= "<p>To activate your account and start finding mortgage advisors please click on the following link</p>\n\n";
-        // $msg .= "<a href='".config('constants.urls.email_verification_url').$this->getEncryptedId($advisor_id)."'>Activate Account</a>\n\n";
-        // $msg .= "Best wishes\n\n";
-        // $msg .= "The Mortgagebox team\n\n";
-        // $msg = "You have successfully created account.\n Please verfiy your account by click below link ";
-        // $msg .= config('constants.urls.email_verification_url');
-
-        // $msg .= $this->getEncryptedId($request->user_id);
-        //  $msg = wordwrap($msg, 70);
-
-        // $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
         $newArr2 = array(
             'name'=>$request->name,
             'email'=>$request->email,
@@ -664,6 +660,27 @@ class ApiController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
+
+    public function getAdvisorDetails($id)
+    {
+        $user_id = $this->getDecryptedId($id);
+        $user = User::where('id',$user_id)->first();
+        if($user) {
+            $user->advisor_data = AdvisorProfile::where('advisorId', '=', $user_id)->first();
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data' => $user,
+
+            ], Response::HTTP_OK);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Not found',
+                'data' => []
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+    }
     public function addNewAdviceArea(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -731,6 +748,20 @@ class ApiController extends Controller
             $advice_area[$key]->unread_message_count = $unread_count_total[0]->count_message;
             $offer_count = AdvisorBids::where('area_id','=',$item->id)->count();
             $advice_area[$key]->offer_count = $offer_count;
+            $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->first();
+            $advice_area[$key]->bid_data = $bidDetailsStatus;
+            if($item->area_status=='0'){
+                $show_status = "Matching";
+            }else if($item->area_status=='1'){
+                $show_status = "Matched";
+            }else if($item->area_status=='2'){
+                $show_status = "Adviser Selected";
+            }else if($item->area_status=='3'){
+                $show_status = "Completed";
+            }else if($item->area_status=='4'){
+                $show_status = "Closed";
+            }
+            $advice_area[$key]->show_status = $show_status;
         }
         if ($advice_area) {
             return response()->json([
@@ -842,6 +873,7 @@ class ApiController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $advice_area = Advice_area::where('id', '=', $request->id)->update([
             'status' => 2,
+            'area_status'=>4,
             'close_type' => $request->close_type,
             'advisor_id' => $request->advisor_id,
             'need_reminder' => $request->need_reminder,
@@ -1187,35 +1219,44 @@ class ApiController extends Controller
             $lead_value = "";
             $main_value = ($item->size_want/100);
             $advisorDetaultValue = "";
-            if($item->service_type=="remortgage") {
-                $advisorDetaultValue = "remortgage";
-            }else if($item->service_type=="first time buyer") {
-                $advisorDetaultValue = "first_buyer";
-            }else if($item->service_type=="next time buyer") {
-                $advisorDetaultValue = "next_buyer";
-            }else if($item->service_type=="buy to let") {
-                $advisorDetaultValue = "but_let";
-            }else if($item->service_type=="equity release") {
-                $advisorDetaultValue = "equity_release";
-            }else if($item->service_type=="overseas") {
-                $advisorDetaultValue = "overseas";
-            }else if($item->service_type=="self build") {
-                $advisorDetaultValue = "self_build";
-            }else if($item->service_type=="mortgage protection") {
-                $advisorDetaultValue = "mortgage_protection";
-            }else if($item->service_type=="secured loan") {
-                $advisorDetaultValue = "secured_loan";
-            }else if($item->service_type=="bridging loan") {
-                $advisorDetaultValue = "bridging_loan";
-            }else if($item->service_type=="commercial") {
-                $advisorDetaultValue = "commercial";
-            }else if($item->service_type=="something else") {
-                $advisorDetaultValue = "something_else";
-            }   
-            $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-            $advice_area[$key]->lead_address = $address;
-            $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            $advisorDetaultPercent = 0;
+            if($item->service_type_id!=0){
+                $services = DefaultPercent::where('adviser_id',$user->id)->where('service_id',$item->service_type_id)->first();
+                if($services){
+                    $advisorDetaultPercent = $services->value_percent;
+                }
+            }
+            $lead_value = ($main_value)*($advisorDetaultPercent);
             $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            // if($item->service_type=="remortgage") {
+            //     $advisorDetaultValue = "remortgage";
+            // }else if($item->service_type=="first time buyer") {
+            //     $advisorDetaultValue = "first_buyer";
+            // }else if($item->service_type=="next time buyer") {
+            //     $advisorDetaultValue = "next_buyer";
+            // }else if($item->service_type=="buy to let") {
+            //     $advisorDetaultValue = "but_let";
+            // }else if($item->service_type=="equity release") {
+            //     $advisorDetaultValue = "equity_release";
+            // }else if($item->service_type=="overseas") {
+            //     $advisorDetaultValue = "overseas";
+            // }else if($item->service_type=="self build") {
+            //     $advisorDetaultValue = "self_build";
+            // }else if($item->service_type=="mortgage protection") {
+            //     $advisorDetaultValue = "mortgage_protection";
+            // }else if($item->service_type=="secured loan") {
+            //     $advisorDetaultValue = "secured_loan";
+            // }else if($item->service_type=="bridging loan") {
+            //     $advisorDetaultValue = "bridging_loan";
+            // }else if($item->service_type=="commercial") {
+            //     $advisorDetaultValue = "commercial";
+            // }else if($item->service_type=="something else") {
+            //     $advisorDetaultValue = "something_else";
+            // }   
+            // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
+            $advice_area[$key]->lead_address = $address;
+            // $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            // $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
             $advice_area[$key]->is_read = 0;
             $read = AdviceAreaRead::where('area_id',$item->id)->where('adviser_id','=',$user->id)->first();
             if($read){
@@ -1479,35 +1520,44 @@ class ApiController extends Controller
             $lead_value = "";
             $main_value = ($item->size_want/100);
             $advisorDetaultValue = "";
-            if($item->service_type=="remortgage") {
-                $advisorDetaultValue = "remortgage";
-            }else if($item->service_type=="first time buyer") {
-                $advisorDetaultValue = "first_buyer";
-            }else if($item->service_type=="next time buyer") {
-                $advisorDetaultValue = "next_buyer";
-            }else if($item->service_type=="buy to let") {
-                $advisorDetaultValue = "but_let";
-            }else if($item->service_type=="equity release") {
-                $advisorDetaultValue = "equity_release";
-            }else if($item->service_type=="overseas") {
-                $advisorDetaultValue = "overseas";
-            }else if($item->service_type=="self build") {
-                $advisorDetaultValue = "self_build";
-            }else if($item->service_type=="mortgage protection") {
-                $advisorDetaultValue = "mortgage_protection";
-            }else if($item->service_type=="secured loan") {
-                $advisorDetaultValue = "secured_loan";
-            }else if($item->service_type=="bridging loan") {
-                $advisorDetaultValue = "bridging_loan";
-            }else if($item->service_type=="commercial") {
-                $advisorDetaultValue = "commercial";
-            }else if($item->service_type=="something else") {
-                $advisorDetaultValue = "something_else";
-            }   
-            $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-            $advice_area[$key]->lead_address = $address;
-            $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            $advisorDetaultPercent = 0;
+            if($item->service_type_id!=0){
+                $services = DefaultPercent::where('adviser_id',$user->id)->where('service_id',$item->service_type_id)->first();
+                if($services){
+                    $advisorDetaultPercent = $services->value_percent;
+                }
+            }
+            $lead_value = ($main_value)*($advisorDetaultPercent);
             $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            // if($item->service_type=="remortgage") {
+            //     $advisorDetaultValue = "remortgage";
+            // }else if($item->service_type=="first time buyer") {
+            //     $advisorDetaultValue = "first_buyer";
+            // }else if($item->service_type=="next time buyer") {
+            //     $advisorDetaultValue = "next_buyer";
+            // }else if($item->service_type=="buy to let") {
+            //     $advisorDetaultValue = "but_let";
+            // }else if($item->service_type=="equity release") {
+            //     $advisorDetaultValue = "equity_release";
+            // }else if($item->service_type=="overseas") {
+            //     $advisorDetaultValue = "overseas";
+            // }else if($item->service_type=="self build") {
+            //     $advisorDetaultValue = "self_build";
+            // }else if($item->service_type=="mortgage protection") {
+            //     $advisorDetaultValue = "mortgage_protection";
+            // }else if($item->service_type=="secured loan") {
+            //     $advisorDetaultValue = "secured_loan";
+            // }else if($item->service_type=="bridging loan") {
+            //     $advisorDetaultValue = "bridging_loan";
+            // }else if($item->service_type=="commercial") {
+            //     $advisorDetaultValue = "commercial";
+            // }else if($item->service_type=="something else") {
+            //     $advisorDetaultValue = "something_else";
+            // }   
+            // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
+            $advice_area[$key]->lead_address = $address;
+            // $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            // $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
         }
         return response()->json([
             'status' => true,
@@ -2196,6 +2246,12 @@ class ApiController extends Controller
                         'cost_leads'=>$costOfLead,
                         'cost_discounted'=>$discounted_price
                     ]);
+                    if($advice_area){
+                        $area = Advice_area::where('id',$request->area_id)->first();
+                        if($area && $area->status==0){
+                            Advice_area::where('id',$request->area_id)->update(['area_status'=>1]);
+                        }
+                    }
                    
                     $this->saveNotification(array(
                         'type'=>'1', // 1:
@@ -2375,6 +2431,8 @@ class ApiController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
         $chatData = array();
+        $advisor = AdvisorProfile::where('advisorId',$request->to_user_id)->first();
+        $advisor_user = User::where('id',$request->to_user_id)->first();
         $message = ChatModel::create([
             'from_user_id' => $request->from_user_id,
             'to_user_id' => $request->to_user_id,
@@ -2393,7 +2451,7 @@ class ApiController extends Controller
         if($area_id=='' || $area_id==null){
             $area_id = 0;
         }
-        $advisor = AdvisorProfile::where('advisorId',$request->to_user_id)->first();
+        
         $message = 'New message arrived from '.$user->name;
         $this->saveNotification(array(
             'type'=>'1', // 1:
@@ -2404,12 +2462,19 @@ class ApiController extends Controller
             'area_id'=>$area_id,// 1:
             'notification_to'=>1
         ));
+        $display_name = "";
+        if($advisor){
+            $display_name = $advisor->display_name;
+        }else{
+            $display_name = $advisor_user->display_name;
+
+        }
         $newArr = array(
-            'name'=>$advisor->display_name,
-            'email'=>$advisor->email,
+            'name'=>$display_name,
+            'email'=>$advisor_user->email,
             'message_text' => $message
         );
-        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox New Message','','');
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'MortgageBox New Message','','');
         return response()->json([
             'status' => true,
             'channel' => $request->channel_id,
@@ -2493,55 +2558,62 @@ class ApiController extends Controller
             $lead_value = "";
             $main_value = ($item->size_want/100);
             $advisorDetaultValue = "";
-            if($item->service_type=="remortgage") {
-                $advisorDetaultValue = "remortgage";
-            }else if($item->service_type=="first time buyer") {
-                $advisorDetaultValue = "first_buyer";
-            }else if($item->service_type=="next time buyer") {
-                $advisorDetaultValue = "next_buyer";
-            }else if($item->service_type=="buy to let") {
-                $advisorDetaultValue = "but_let";
-            }else if($item->service_type=="equity release") {
-                $advisorDetaultValue = "equity_release";
-            }else if($item->service_type=="overseas") {
-                $advisorDetaultValue = "overseas";
-            }else if($item->service_type=="self build") {
-                $advisorDetaultValue = "self_build";
-            }else if($item->service_type=="mortgage protection") {
-                $advisorDetaultValue = "mortgage_protection";
-            }else if($item->service_type=="secured loan") {
-                $advisorDetaultValue = "secured_loan";
-            }else if($item->service_type=="bridging loan") {
-                $advisorDetaultValue = "bridging_loan";
-            }else if($item->service_type=="commercial") {
-                $advisorDetaultValue = "commercial";
-            }else if($item->service_type=="something else") {
-                $advisorDetaultValue = "something_else";
-            }   
-            $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-            
-            $advice_area[$key]->lead_address = $address;
-            $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
+            $advisorDetaultPercent = 0;
+            if($item->service_type_id!=0){
+                $services = DefaultPercent::where('adviser_id',$user->id)->where('service_id',$item->service_type_id)->first();
+                if($services){
+                    $advisorDetaultPercent = $services->value_percent;
+                }
+            }
+            $lead_value = ($main_value)*($advisorDetaultPercent);
             $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            // if($item->service_type=="remortgage") {
+            //     $advisorDetaultValue = "remortgage";
+            // }else if($item->service_type=="first time buyer") {
+            //     $advisorDetaultValue = "first_buyer";
+            // }else if($item->service_type=="next time buyer") {
+            //     $advisorDetaultValue = "next_buyer";
+            // }else if($item->service_type=="buy to let") {
+            //     $advisorDetaultValue = "but_let";
+            // }else if($item->service_type=="equity release") {
+            //     $advisorDetaultValue = "equity_release";
+            // }else if($item->service_type=="overseas") {
+            //     $advisorDetaultValue = "overseas";
+            // }else if($item->service_type=="self build") {
+            //     $advisorDetaultValue = "self_build";
+            // }else if($item->service_type=="mortgage protection") {
+            //     $advisorDetaultValue = "mortgage_protection";
+            // }else if($item->service_type=="secured loan") {
+            //     $advisorDetaultValue = "secured_loan";
+            // }else if($item->service_type=="bridging loan") {
+            //     $advisorDetaultValue = "bridging_loan";
+            // }else if($item->service_type=="commercial") {
+            //     $advisorDetaultValue = "commercial";
+            // }else if($item->service_type=="something else") {
+            //     $advisorDetaultValue = "something_else";
+            // }   
+            // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
+            
+            // $advice_area[$key]->lead_address = $address;
+            // 
             // $show_status = "Live Leads"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
+            $show_status = "Live Leads"; 
             if(!empty($bidDetailsStatus)) {
+
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
                     $show_status = "Not Proceeding"; 
-                }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
+                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+                    $show_status = "Completed"; 
+                }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
                     $show_status = "Hired"; 
                 }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Lost"; 
-                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Closed"; 
+                    $show_status = "Lost";
                 }else{
-                    $show_status = "Live Leads";     
+                    $show_status = "Live Leads";    
                 }
-            }else{
-                $show_status = "Live Leads";     
             }
             $advice_area[$key]->show_status = $show_status;
-
             $channelIds = array(-1);
             $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
             foreach ($channelID as $chanalesR) {
@@ -2838,6 +2910,7 @@ class ApiController extends Controller
         $bidDetails = AdvisorBids::where('id', '=', $id)->first();
         $message = "";
         if($status==1){
+            Advice_area::where('id',$bidDetails->area_id)->update(['area_status'=>2,'advisor_id'=>$bidDetails->advisor_id]);
             $message = "Offer accepted";
             $this->saveNotification(array(
                 'type'=>'1', // 1:
@@ -3175,6 +3248,35 @@ class ApiController extends Controller
     public function getAllServiceType() {
         $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
         if(!empty($result)) {
+            foreach($result as $row){
+
+                $row->value = 0;
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data'=>$result
+            ], Response::HTTP_OK);  
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'No Service type available',
+                'data'=>$result
+            ], Response::HTTP_OK);  
+        }           
+    }
+
+    public function getAllServiceTypeWithAuth() {
+        $user = JWTAuth::parseToken()->authenticate();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
+        if(!empty($result)) {
+            foreach($result as $row){
+                $row->value = 0;
+                $default = DefaultPercent::where('service_id',$row->id)->where('adviser_id',$user->id)->first();
+                if($default){
+                    $row->value = $default->value_percent;
+                }
+            }
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -3474,6 +3576,34 @@ class ApiController extends Controller
                     'data'=> []
                 ], Response::HTTP_OK);
             }            
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+    }
+
+    public function markProjectCompleted(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $post = $request->all();
+            if(isset($post) && !empty($post)){
+                AdvisorBids::where('advisor_id',$post['advisor_id'])->where('area_id',$post['area_id'])->update(['status'=>$post['advisor_status']]);
+                Advice_area::where('id',$post['area_id'])->update(['area_status'=>3]);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Status updated successfully',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }else{
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Something went wrong.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }           
         }else{
             return response()->json([
                 'status' => false,

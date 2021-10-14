@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use DB;
 use App\Models\User;
 use App\Models\Advice_area;
 use App\Models\AdvisorBids;
@@ -14,6 +15,8 @@ use App\Models\CompanyTeamMembers;
 use App\Models\StaticPage;
 use App\Models\ServiceType;
 use App\Models\UserNotes;
+use App\Models\AppSettings;
+
 
 
 use Illuminate\Http\Request;
@@ -44,6 +47,7 @@ class NeedController extends Controller
         $needDetails = Advice_area::select('advice_areas.*','users.name','user_notes.notes')->where('advice_areas.id','=',$id)
         ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
         ->leftJoin('user_notes', 'advice_areas.id', '=', 'user_notes.advice_id')
+        ->with('service')
         ->first();
         $costOfLeadsStr = "";
         $costOfLeadsDropStr = "";
@@ -92,6 +96,25 @@ class NeedController extends Controller
             }
             $needDetails->cost_of_lead = $costOfLeadsStr1;
             $needDetails->cost_of_lead_drop = $costOfLeadsDropStr1;
+            $main_value = ($needDetails->size_want/100);
+            $advisorDetaultValue = "";
+            $advisorDetaultPercent = 0;
+            $setting = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
+            if($setting){
+                $lead_value = ($main_value)*($setting->value);
+                $needDetails->lead_value = $needDetails->size_want_currency.round($lead_value,2);
+            }else{
+                $needDetails->lead_value = 0;
+            }
+            // $advisorDetaultPercent = 0;
+            // if($item->service_type_id!=0){
+            //     $services = DefaultPercent::where('adviser_id',$user->id)->where('service_id',$item->service_type_id)->first();
+            //     if($services){
+            //         $advisorDetaultPercent = $services->value_percent;
+            //     }
+            // }
+            // $lead_value = ($main_value)*($advisorDetaultPercent);
+            // $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
             // $lead_value = "";
             // $main_value = ($needDetails->size_want/100);
             // $advisorDetaultValue = "";

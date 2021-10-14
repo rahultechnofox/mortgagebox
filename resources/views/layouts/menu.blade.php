@@ -1,5 +1,5 @@
 <li class="{{ Request::is('/') || Request::is('/home*') ? 'active' : '' }} nav-item">
-    <a class="d-flex align-items-center" href="{{ url('/') }}"><i data-feather="grid"></i><span class="menu-title text-truncate" data-i18n="Dashboards">Dashboard</span></a>
+    <a class="d-flex align-items-center" href="{{ url('/home') }}"><i data-feather="grid"></i><span class="menu-title text-truncate" data-i18n="Dashboards">Dashboard</span></a>
 </li>
 
 <li class="{{ Request::is('admin/users*') || Request::is('admin/users/show*') ? 'active' : '' }} nav-item">

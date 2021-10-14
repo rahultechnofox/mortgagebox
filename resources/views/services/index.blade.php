@@ -63,7 +63,7 @@
             <input name="id" id="id" type="hidden">
             <div class="modal-body flex-grow-1">
                 <div class="mb-1 parent_id">
-                    <input type="hidden" name="parent_id" id="parent_id" value="{{$services[0]->id}}">
+                    <input type="hidden" name="parent_id" id="parent_id" value="@if(isset($services) && count($services)){{$services[0]->id}}@endif">
                     <label class="form-label" for="Department">Services</label>
                     <select class="form-control" name="parent_id">
                         @foreach($services as $service_data)

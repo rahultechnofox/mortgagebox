@@ -47,8 +47,10 @@ class InvoiceController extends Controller
         $data['result'] = Invoice::getInvoiceList($post);
         $data['post_code'] = PostalCodes::get();
         $data['adviser_data'] = User::where('user_role',1)->get();
-        foreach($data['result'] as $row){
-            $row->invoice_data = json_decode($row->invoice_data);
+        if(count($data['result'])){
+            foreach($data['result'] as $row){
+                $row->invoice_data = json_decode($row->invoice_data);
+            }
         }
         return view('invoice.index',$data);
     }

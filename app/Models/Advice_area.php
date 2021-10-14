@@ -47,7 +47,7 @@ class Advice_area extends Model
                 $query = $query->whereDate('advice_areas.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
             $advice_area = $query->select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-            ->orderBy('id','DESC')->paginate($perpage);
+            ->with('service')->orderBy('id','DESC')->paginate($perpage);
             $count = 0;
             // echo json_encode($advice_area);exit;
             foreach ($advice_area as $key => $item) {

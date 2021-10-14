@@ -37,7 +37,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Mortgage Type:') }}</h6>
-                                        <small>{{isset($needDetails->service_type) ? old('name', ucfirst($needDetails->service_type)) : '--'}}</small>
+                                        <small>@if(isset($needDetails->service) && $needDetails->service!='') {{ $needDetails->service->name }} @else -- @endif</small>
                                     </div>
                                 </div>
                             </div>
@@ -100,7 +100,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Average Value:') }}</h6>
-                                        <small>{{isset($needDetails->adverse_credit) ? \Helpers::currency($needDetails->adverse_credit) : '--'}}</small>
+                                        <small>{{isset($needDetails->lead_value) ? $needDetails->lead_value : '--'}}</small>
                                     </div>
                                 </div>
                             </div>

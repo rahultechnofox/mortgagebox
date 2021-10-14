@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ServiceType;
+use App\Models\DefaultPercent;
 use App\Models\Advice_area;
 use App\Models\AdvisorBids;
 use App\Models\AdvisorEnquiries;
@@ -20,6 +22,7 @@ use App\Models\PostalCodes;
 use App\Models\ReviewRatings;
 use App\Models\Notifications;
 use App\Models\Invoice;
+use App\Models\ReviewSpam;
 use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
@@ -365,7 +368,7 @@ class AdvisorController extends Controller
             ->leftJoin('review_spam', 'review_ratings.id', '=', 'review_spam.review_id')
             ->where('review_ratings.advisor_id', '=', $id)
             ->where('review_ratings.status', '=', 0)
-            ->where('review_spam.spam_status', '!=', 0)
+            // ->where('review_spam.spam_status', '!=', 0)
             ->get();
         if(count($rating)){
             foreach($rating as $rating_data){
@@ -1301,12 +1304,44 @@ class AdvisorController extends Controller
         $matched_last_today = Advice_area::whereDate('created_at', Carbon::today())->count();
         $matched_last_yesterday = Advice_area::whereDate('created_at', Carbon::yesterday())->count();
         $less_than_3_days = Advice_area::where('created_at', '>', Carbon::yesterday()->subDays(3))->where('created_at', '<', Carbon::today())->count();
-        $remortgage = Advice_area::where('service_type', '=', 'remortgage')->count();
-        $next_time_buyer = Advice_area::where('service_type', '=', 'first time buyer')->count();
-        $first_time_buyer = Advice_area::where('service_type', '=', 'next time buyer')->count();
-        $buy_to_let = Advice_area::where('service_type', '=', 'buy to let')->count();
+        // $remortgage = Advice_area::where('service_type', '=', 'remortgage')->count();
+        // $next_time_buyer = Advice_area::where('service_type', '=', 'first time buyer')->count();
+        // $first_time_buyer = Advice_area::where('service_type', '=', 'next time buyer')->count();
+        // $buy_to_let = Advice_area::where('service_type', '=', 'buy to let')->count();
         $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE  m.to_user_id = $userDetails->id AND m.to_user_id_seen = 0");
         
+        $service = ServiceType::where('parent_id','!=',0)->where('status',1)->limit(4)->orderBy('sequence','ASC')->get();
+        foreach($service as $service_data){
+            $service_data->service_data_count = Advice_area::where('service_type_id', '=', $service_data->id)->count();
+        }
+        $service_arr = array();
+        if(count($service)){    
+            $service_arr = array(
+                $service[0]->name => $service[0]->service_data_count,
+                $service[1]->name => $service[1]->service_data_count,
+                $service[2]->name => $service[2]->service_data_count,
+                $service[3]->name => $service[3]->service_data_count,
+            );
+        }
+        $accepted_leads = AdvisorBids::where('advisor_id','=',$userDetails->id)
+            ->where('status', '!=', 3)
+            ->where('advisor_status', '=', 1)
+            ->sum('cost_leads');
+        $hired_leads = AdvisorBids::where('advisor_id','=',$userDetails->id)
+            ->where('status', '=', 1)
+            ->where('advisor_status', '=', 1)
+            ->sum('cost_leads');
+
+        $accepted_leads_for_per = AdvisorBids::where('advisor_id','=',$userDetails->id)
+            ->where('status', '!=', 3)
+            ->where('advisor_status', '=', 1)
+            ->count();
+        $hired_leads_for_per = AdvisorBids::where('advisor_id','=',$userDetails->id)
+            ->where('status', '=', 1)
+            ->where('advisor_status', '=', 1)
+            ->count();
+        $conversion_rate = 0;
+        $conversion_rate = ($hired_leads_for_per / $accepted_leads_for_per) * 100;
         $live_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
             ->where('status', '=', 0)
             ->where('advisor_status', '=', 1)
@@ -1374,12 +1409,7 @@ class AdvisorController extends Controller
                     '70_off'=>'0',
                     'free'=>'0',
                 ),
-                'matched_card_three'=>array(
-                    'remortgage'=>$remortgage,
-                    'next_time_buyer'=>$next_time_buyer,
-                    'first_time_buyer'=>$first_time_buyer,
-                    'buy_to_let'=>$buy_to_let,
-                ),
+                'matched_card_three'=>$service,
                 'accepted_card_one'=>array(
                     'live_leads'=>$live_leads_months,
                     'hired'=>$hired_leads_months,
@@ -1396,9 +1426,9 @@ class AdvisorController extends Controller
                     'completed'=>$completed_leads_year,
                 ),
                 'performance'=>array(
-                    'conversion_rate'=>'',
-                    'cost_of_leads'=>'',
-                    'estimated_revenue'=>'',
+                    'conversion_rate'=>round($conversion_rate, 2),
+                    'cost_of_leads'=>round($accepted_leads, 2),
+                    'estimated_revenue'=>round($hired_leads, 2),
                 ),
                 'message_unread_count'=>$unread_count_total[0]->count_message,
                 'notification_unread_count'=>0
@@ -1425,25 +1455,50 @@ class AdvisorController extends Controller
     function updateAdvisorDefaultPreference(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
-        AdvisorPreferencesDefault::where('advisor_id', '=', $user->id)->update([
-            "remortgage" => $request->remortgage,
-            "first_buyer" => $request->first_buyer,
-            "next_buyer" => $request->next_buyer,
-            "but_let" => $request->but_let,
-            "equity_release" => $request->equity_release,
-            "overseas" => $request->overseas,
-            "self_build" => $request->self_build,
-            "mortgage_protection" => $request->mortgage_protection,
-            "secured_loan" => $request->secured_loan,
-            "bridging_loan" => $request->bridging_loan,
-            "commercial" => $request->commercial,
-            "something_else" => $request->something_else,
-        ]);
+        $post = $request->all();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
+        if(count($result)){
+            foreach($result as $row){
+                foreach($post as $key => $value){
+                    if($row->id==$key){
+                        $check = DefaultPercent::where('service_id',$row->id)->where('adviser_id',$user->id)->first();
+                        if(!$check){
+                            $default = array(
+                                'service_id'=>$row->id,
+                                'adviser_id'=>$user->id,
+                                'value_percent'=>$value,
+                                'status'=>1,
+                                'created_at'=>date('Y-m-d H:i:s'),
+                            );
+                            DefaultPercent::insertGetId($default);
+                        }else{
+                            DefaultPercent::where('id',$check->id)->update(['value_percent'=>$value,'updated_at'=>date('Y-m-d H:i:s')]);
+                        }
+                    }
+                }
+            }
+        }
+        // AdvisorPreferencesDefault::where('advisor_id', '=', $user->id)->update([
+        //     "remortgage" => $request->remortgage,
+        //     "first_buyer" => $request->first_buyer,
+        //     "next_buyer" => $request->next_buyer,
+        //     "but_let" => $request->but_let,
+        //     "equity_release" => $request->equity_release,
+        //     "overseas" => $request->overseas,
+        //     "self_build" => $request->self_build,
+        //     "mortgage_protection" => $request->mortgage_protection,
+        //     "secured_loan" => $request->secured_loan,
+        //     "bridging_loan" => $request->bridging_loan,
+        //     "commercial" => $request->commercial,
+        //     "something_else" => $request->something_else,
+        // ]);
         $notification = AdvisorPreferencesDefault::where('advisor_id', '=', $user->id)->first();
         return response()->json([
             'status' => true,
             'message' => 'success',
-            'data' => $notification
+            'data' => $notification,
+            'result'=>$result,
+            'post'=> $post
         ], Response::HTTP_OK);
     }
     // Function for invoice generate

@@ -4,7 +4,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">Need List{{$entry_count}}</h4>
+                    <h4 class="card-title">Need List</h4>
                     <h6 style="float: right;"> 
                         <?php if ($userDetails->firstItem() != null) {?> Showing {{ $userDetails->firstItem() }}-{{ $userDetails->lastItem() }} of {{ $userDetails->total() }} <?php }?>
                         <form>
@@ -44,16 +44,27 @@
                                 <td><a href="{{ route('admin/need/show',$users_data->id) }}">{{$users_data->id}}</a></td>
                                 <td>{{$users_data->name}}</td>
                                 <td>{{ $users_data->created_at != "" ? \Helpers::formatDateTime($users_data->created_at) : '--' }}</td>
-                                <td>{{ $users_data->service_type != "" ? ucfirst($users_data->service_type) : '--' }}</td>
+                                <td>@if(isset($users_data->service) && $users_data->service!='') {{ $users_data->service->name }} @else -- @endif</td>
                                 <td>{{ $users_data->size_want != "" ? \Helpers::currencyWithoutDecimal($users_data->size_want) : '--' }}</td>
                                 <td>{{$users_data->offer_count}}</td>
                                 <td>{{$users_data->active_count}}</td>
                                 <td>
-                                    @if(isset($users_data->offer_count) && $users_data->offer_count!=0)
+                                    @if(isset($users_data->area_status) && $users_data->area_status==0)
+                                        <span class="badge rounded-pill badge-light-info me-1" style="margin-bottom: 10px;">Matching</span>
+                                    @elseif(isset($users_data->area_status) && $users_data->area_status==1)
+                                        <span class="badge rounded-pill badge-light-warning me-1" style="margin-bottom: 10px;">Matched</span>
+                                    @elseif(isset($users_data->area_status) && $users_data->area_status==2)
+                                        <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Advisor Selected</span>
+                                    @elseif(isset($users_data->area_status) && $users_data->area_status==3)
+                                        <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Completed</span>
+                                    @elseif(isset($users_data->area_status) && $users_data->area_status==4)
+                                        <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Closed</span>
+                                    @endif
+                                    <!-- @if(isset($users_data->offer_count) && $users_data->offer_count!=0)
                                         <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Matched</span>
                                     @else
                                         <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Unmatched</span>
-                                    @endif
+                                    @endif -->
                                 </td>
                                 <td>@if(isset($users_data->selected_pro) && $users_data->selected_pro!=''){{\Helpers::checkNull($users_data->selected_pro->advisor_name)}}@else -- @endif</td>
                                 <td>N/A</td>

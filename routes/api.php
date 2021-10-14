@@ -116,8 +116,9 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('invoice', [AdvisorController::class, 'invoice']);
     Route::post('addReview',  [UserController::class, 'addReview']);
     Route::post('getNeedDetails',  [ApiController::class, 'getNeedDetails']);
-   
-    
+    Route::get('getAllServiceTypeWithAuth', [ApiController::class, 'getAllServiceTypeWithAuth']);    
+    Route::post('markProjectCompleted',  [ApiController::class, 'markProjectCompleted']);
+
 });
  Route::post('searchPostalCode', [ApiController::class, 'searchPostalCode']);
  Route::get('getAllServiceType', [ApiController::class, 'getAllServiceType']);  

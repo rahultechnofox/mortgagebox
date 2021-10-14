@@ -114,10 +114,10 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold">{{\Helpers::currency($invoice['unpaid_prevoius_invoice'])}}</span></td>
+													<td><span class="fw-bold">@if(isset($invoice['unpaid_prevoius_invoice']) && $invoice['unpaid_prevoius_invoice']!=''){{\Helpers::currency($invoice['unpaid_prevoius_invoice'])}}@else -- @endif</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold">{{\Helpers::currency($invoice['paid_prevoius_invoice'])}}</span></td>
+													<td><span class="fw-bold">@if(isset($invoice['paid_prevoius_invoice']) && $invoice['paid_prevoius_invoice']!=''){{\Helpers::currency($invoice['paid_prevoius_invoice'])}}@else -- @endif</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -136,10 +136,10 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['cost_of_lead']); ?></span></td>
+													<td><span class="fw-bold">@if(isset($invoice['cost_of_lead']) && $invoice['cost_of_lead']!='')<?php echo \Helpers::currency($invoice['cost_of_lead']); ?> @else -- @endif</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['subtotal']); ?></span></td>
+													<td><span class="fw-bold">@if(isset($invoice['subtotal']) && $invoice['subtotal']!='') <?php echo \Helpers::currency($invoice['subtotal']); ?> @else -- @endif</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -158,14 +158,16 @@
 										<table>
 											<tbody>
 											<tr>	
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['discount']); ?></span></td>
+													<td><span class="fw-bold">@if(isset($invoice['discount']) && $invoice['discount']!='') <?php echo \Helpers::currency($invoice['discount']); ?> @else -- @endif</span></td>
 												</tr>
                                                 <tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['free_introduction']); ?></span></td>
+													<td><span class="fw-bold"> @if(isset($invoice['free_introduction']) && $invoice['free_introduction']!='') <?php echo \Helpers::currency($invoice['free_introduction']); ?> @else -- @endif</span></td>
 												</tr>
                                                 <tr>
-													<?php $discount_subtotal = $invoice['discount'] + $invoice['free_introduction']; ?>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($discount_subtotal); ?></span></td>
+													@if(isset($invoice['discount']) && $invoice['discount']!='')
+														<?php $discount_subtotal = $invoice['discount'] + $invoice['free_introduction']; ?>
+													@endif
+													<td><span class="fw-bold">@if(isset($discount_subtotal) && $discount_subtotal!='') <?php echo \Helpers::currency($discount_subtotal); ?> @else -- @endif</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -181,7 +183,7 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['total_due']); ?></span></td>
+													<td><span class="fw-bold">@if(isset($invoice['total_due']) && $invoice['total_due']!='') <?php echo \Helpers::currency($invoice['total_due']); ?> @else -- @endif</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -200,13 +202,13 @@
 										<table>
 											<tbody>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['total_taxable_amount']); ?></span></td>
+													<td><span class="fw-bold">@if(isset($invoice['total_taxable_amount']) && $invoice['total_taxable_amount']!='') <?php echo \Helpers::currency($invoice['total_taxable_amount']); ?> @else -- @endif</span></td>
 												</tr>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['vat']); ?></span></td>
+													<td><span class="fw-bold">@if(isset($invoice['vat']) && $invoice['vat']!='') <?php echo \Helpers::currency($invoice['vat']); ?> @else -- @endif</span></td>
 												</tr>
 												<tr>
-													<td><span class="fw-bold"><?php echo \Helpers::currency($invoice['total_current_invoice']); ?></span></td>
+													<td><span class="fw-bold">@if(isset($invoice['total_current_invoice']) && $invoice['total_current_invoice']!='') <?php echo \Helpers::currency($invoice['total_current_invoice']); ?> @else -- @endif</span></td>
 												</tr>
 											</tbody>
 										</table>
@@ -244,11 +246,11 @@
                                             @endforeach
                                         @else
                                             <tr>
-                                                <td class="py-1"> <span class="fw-bold">Record not found</span> </td>
+                                                <td class="py-1" colspan="6"> <span class="fw-bold">Record not found</span> </td>
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: <?php echo \Helpers::currency($invoice['subtotal']); ?></span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">New Fees total: @if(isset($invoice['subtotal']) && $invoice['subtotal']!='')  <?php echo \Helpers::currency($invoice['subtotal']); ?> @else -- @endif</span> </td>
 										</tr>
 									</tbody>
 								</table>
@@ -280,11 +282,11 @@
                                             @endforeach
                                         @else
                                             <tr>
-                                                <td class="py-1"> <span class="fw-bold">Record not found</span> </td>
+                                                <td class="py-1" colspan="6"> <span class="fw-bold">Record not found</span> </td>
                                             </tr>
                                         @endif
                                         <tr>
-                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: <?php echo \Helpers::currency($invoice['discount']); ?></span> </td>
+                                            <td class="py-1" colspan="6" style="text-align:right;"> <span class="fw-bold">Credit total: @if(isset($invoice['discount']) && $invoice['discount']!='') <?php echo \Helpers::currency($invoice['discount']); ?> @else -- @endif</span> </td>
 										</tr>
 									</tbody>
 								</table>

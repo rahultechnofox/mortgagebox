@@ -1582,107 +1582,110 @@ class ApiController extends Controller
         $advisor_id = $request->advice_area;
         $search = $request->search;
         $lead_submitted = $request->lead_submitted;
-        // $message_arr = array(-1);
-        // if(isset($request->message) && $request->message!=''){
-        //     foreach($request->message as $messages){
-        //         $chat = ChatModel::where('to_user_id_seen',$messages)->get();
-        //         foreach($chat as $chat_data){
-        //             $channel = ChatChannel::where('id',$chat_data->channel_id)->first();
-        //             if($channel){
-        //                 array_push($message_arr,$channel->advicearea_id);
-        //             }
-        //         }
-        //     }
-        // }
-        // $status_arr = array(-1);
-        // if(isset($request->status) && $request->status!=''){
-        //     foreach($request->status as $status_data){
-        //         if($status_data=='accepted'){
-        //             $status_need = AdvisorBids::where('advisor_status',1)->get();
-        //             foreach($status_need as $status_need_data){
-        //                 array_push($status_arr,$status_need_data->area_id);
-        //             }
-        //         }
-        //         if($status_data=='sole_adviser'){
-        //             $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
-        //             foreach($status_need as $status_need_data){
-        //                 array_push($status_arr,$status_need_data->area_id);
-        //             }
-        //         }
-        //         if($status_data=='completed'){
-        //             $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
-        //             foreach($status_need as $status_need_data){
-        //                 array_push($status_arr,$status_need_data->area_id);
-        //             }
-        //         }
-        //         if($status_data=='lost'){
-        //             $status_need = AdvisorBids::where('advisor_status',2)->get();
-        //             foreach($status_need as $status_need_data){
-        //                 array_push($status_arr,$status_need_data->area_id);
-        //             }
-        //         }
-        //         // if($status_data=='no_response'){
-        //         //     $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
-        //         //     foreach($status_need as $status_need_data){
-        //         //         array_push($status_arr,$status_need_data->area_id);
-        //         //     }
-        //         // }
-        //     }
-        // }
-        // $adviser_arr = array(-1);
-        // if(isset($request->advisor_id) && $request->advisor_id!=''){
-        //     foreach($request->advisor_id as $advisor_ids){
-        //         $advisor_data = AdvisorBids::whereIn('advisor_id',$advisor_ids)->where('status',3)->where('advisor_status',2)->get();
-        //         foreach($advisor_data as $advisor_profile_data){
-        //             array_push($adviser_arr,$advisor_profile_data->area_id);
-        //         }
-        //     }
-        // }
+
+        $message_arr = false;
+        if(isset($request->message) && count($request->message)>0){
+            $message_arr = array(-1);
+            foreach($request->message as $messages){
+                if($messages=='unread'){
+                    $chat = ChatModel::where('to_user_id_seen',0)->get();
+                    foreach($chat as $chat_data){
+                        $channel = ChatChannel::where('id',$chat_data->channel_id)->first();
+                        if($channel){
+                            array_push($message_arr,$channel->advicearea_id);
+                        }
+                    }
+                }
+            }
+        }
+
+        $status_arr = false;
+        if(isset($request->status) && count($request->status)>0){
+            $status_arr = array(-1);
+            foreach($request->status as $status_data){
+                if($status_data=='accepted'){
+                    $status_need = AdvisorBids::where('advisor_status',1)->get();
+                    foreach($status_need as $status_need_data){
+                        array_push($status_arr,$status_need_data->area_id);
+                    }
+                }
+                if($status_data=='sole_adviser'){
+                    $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
+                    foreach($status_need as $status_need_data){
+                        array_push($status_arr,$status_need_data->area_id);
+                    }
+                }
+                if($status_data=='completed'){
+                    $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
+                    foreach($status_need as $status_need_data){
+                        array_push($status_arr,$status_need_data->area_id);
+                    }
+                }
+                if($status_data=='lost'){
+                    $status_need = AdvisorBids::where('advisor_status',2)->get();
+                    foreach($status_need as $status_need_data){
+                        array_push($status_arr,$status_need_data->area_id);
+                    }
+                }
+                if($status_data=='no_response'){
+                    $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
+                    foreach($status_need as $status_need_data){
+                        array_push($status_arr,$status_need_data->area_id);
+                    }
+                }
+            }
+        }
+
+        $adviser_arr = false;
+        if(isset($request->advice_area) && count($request->advice_area)>0){
+            $adviser_arr = array(-1);
+            foreach($request->advice_area as $advisor_ids){
+                $advisor_data = AdvisorBids::whereIn('advisor_id',$advisor_ids)->where('status',3)->where('advisor_status',2)->get();
+                foreach($advisor_data as $advisor_profile_data){
+                    array_push($adviser_arr,$advisor_profile_data->area_id);
+                }
+            }
+        }
+
         $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
         ->join('users', 'advice_areas.user_id', '=', 'users.id')
         ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
         ->where('advisor_bids.advisor_status', '=', 1)
-        // ->where(function($query) use ($search){
-        //     if($search != "") {
-        //         $query->orWhere('advice_areas.service_type', 'like', '%' . $search . '%');
-        //         $query->orWhere('advice_areas.description', 'like', '%' . $search . '%');
-        //         $query->orWhere('advice_areas.request_time', 'like', '%' . $search . '%');
-        //         $query->orWhere('advice_areas.advisor_preference_language', 'like', '%' . $search . '%');
-        //     }
-            
-        // })->where(function($query) use ($lead_submitted){
-        //     if(!empty($lead_submitted)) {
-        //         $query->where(function($q) use ($lead_submitted) {
-        //             foreach($lead_submitted as $item ){
-        //                 //lead_submitted: ["anytime", "yesterday", "last_hour", "less_3_days", "today", "less_3_week"]: ///
-        //                 if($item!="anytime"){
-        //                     if($item=="today"){
-        //                         $q->orWhereDate('advice_areas.created_at', Carbon::today());
-        //                     }else if($item=="yesterday") {
-        //                         $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
-        //                     }else if($item=="last_hour") {
-        //                         //TODO last hour query
-        //                         // $q->orWhereDate('created_at', Carbon::yesterday());
-        //                     }else if($item=="less_3_days") {
-        //                         $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
-        //                     }else if($item=="less_3_week") {
-        //                         $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
-        //                     }
-        //                 }
-                        
-        //             }
-        //         });
-        //     }
-        // })->
-        // where(function($query) use ($advisor_id, $adviser_arr){
-        //     if(!empty($advisor_id)) {
-        //         $query->where(function($q) use ($advisor_id, $adviser_arr) {
-        //             $q->orWhereIn('advice_areas.id', $adviser_arr);  
-        //         });
-        //     }
-        // })->
-        ->with('service')
-        ->paginate();
+        ->where(function($query) use ($search){
+            if($search != "") {
+                $query->orWhere('advice_areas.service_type', 'like', '%' . $search . '%');
+                $query->orWhere('advice_areas.description', 'like', '%' . $search . '%');
+                $query->orWhere('advice_areas.request_time', 'like', '%' . $search . '%');
+                $query->orWhere('advice_areas.advisor_preference_language', 'like', '%' . $search . '%');
+            }            
+        })
+        ->where(function($query) use ($lead_submitted){
+            if(!empty($lead_submitted)) {
+                $query->where(function($q) use ($lead_submitted) {
+                    foreach($lead_submitted as $item ){
+                        if($item!="anytime"){
+                            if($item=="today"){
+                                $q->orWhereDate('advice_areas.created_at', Carbon::today());
+                            }else if($item=="yesterday") {
+                                $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
+                            }else if($item=="last_hour") {
+                                $q->orWhereDate('created_at','>=' ,date("Y-m-d H:i:s",strtotime("-1 hours")));
+                            }else if($item=="less_3_days") {
+                                $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
+                            }else if($item=="less_3_week") {
+                                $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
+                            }
+                        }                        
+                    }
+                });
+            }
+        });
+
+        if($adviser_arr){
+            $advice_area = $advice_area->whereIn('advice_areas.id',$adviser_arr);
+        }
+
+        $advice_area =  $advice_area->->with('service')->paginate();
 
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
@@ -1848,363 +1851,8 @@ class ApiController extends Controller
             'total_on_current_page' => $advice_area->count(),
             'has_more_page' => $advice_area->hasMorePages(),
         ], Response::HTTP_OK);
-    //     $user = JWTAuth::parseToken()->authenticate();
-    //     $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
-    //     $ltv_max = $userPreferenceCustomer->ltv_max;
-    //     $lti_max = $userPreferenceCustomer->lti_max;
-    //     // TODO: Ltv max and Lti Max need to check for filter
-    //     $service_type = $request->advice_area;
-    //     // echo print_r($service_type);die;
-    //     $fees_preference = $request->fees_preference;
-    //     $promotion = $request->promotion;
-    //     $mortgage_value = $request->mortgage_value;
-    //     $lead_submitted = $request->lead_submitted;
-    //     $status = $request->status;
-    //     $search = $request->search;
-    //     $area_arr = array(-1);
-    //     if(isset($status) && count($status)){
-    //         foreach($status as $items){
-    //             if($items=='read' || $items=='unread'){
-    //                 $area = AdviceAreaRead::where('adviser_id',$user->id)->get();
-    //                 foreach($area as $area_data){
-    //                     array_push($area_arr,$area_data->area_id);
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     $advice_area =  Advice_area::select('advice_areas.*','users.name', 'users.email', 'users.address')
-    //         ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-    //         ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-    //         ->where(function($query) use ($service_type){
-    //             if(!empty($service_type)  && count($service_type) > 0) {
-    //                 $query->where(function($q) use ($service_type) {
-    //                     foreach($service_type as $item){
-    //                         $q->orWhere('advice_areas.service_type_id',$item);
-    //                     }
-    //                 });
-    //             }            
-    //     })->where(function($query) use ($search){
-    //         if($search != "") {
-    //             $query->orWhere('advice_areas.service_type', 'like', '%' . $search . '%');
-    //             $query->orWhere('advice_areas.description', 'like', '%' . $search . '%');
-    //             $query->orWhere('advice_areas.request_time', 'like', '%' . $search . '%');
-    //             $query->orWhere('advice_areas.advisor_preference_language', 'like', '%' . $search . '%');
-    //         }
-            
-    //     })->where(function($query) use ($fees_preference){
-    //         if(!empty($fees_preference) && count($fees_preference) > 0) {
-    //             $query->where(function($q) use ($fees_preference) {
-    //                 foreach($fees_preference as $item ){
-    //                     if($item=="no_fee") {
-    //                         $q->where('advice_areas.fees_preference',0);
-    //                     }
-    //                 }
-    //             });
-    //         }
-    //     })->where(function($query) use ($mortgage_value){
-    //         if(!empty($mortgage_value) && count($mortgage_value) > 0) {
-    //             $query->where(function($q) use ($mortgage_value) {
-    //                 $minMaxArr = array();
-    //                 foreach($mortgage_value as $item ){
-    //                     if($item != "") {
-    //                         if($item=="1m"){
-    //                             $minMaxArr[] = 1000000;
-    //                             $minMaxArr[] = 1000000*100000;
-    //                          }else{
-    //                             [$min,$max] = explode("_",$item);
-    //                             $minMaxArr[] = $min*1000;
-    //                             $minMaxArr[] = $max*1000;
-    //                          }
-    //                     }
-                         
-    //                 }
-    //                 if(count($minMaxArr) > 0) {
-    //                     $q->where('advice_areas.size_want','>=',min($minMaxArr));
-    //                     $q->where('advice_areas.size_want','>=',max($minMaxArr));
-    //                 }
-    //             });
-    //         }
-    //     })->where(function($query) use ($lead_submitted){
-
-    //         //
-    //         if(!empty($lead_submitted)) {
-    //             $query->where(function($q) use ($lead_submitted) {
-    //                 foreach($lead_submitted as $item ){
-    //                     //lead_submitted: ["anytime", "yesterday", "last_hour", "less_3_days", "today", "less_3_week"]: ///
-    //                     if($item!="anytime"){
-    //                         if($item=="today"){
-    //                             $q->orWhereDate('advice_areas.created_at', Carbon::today());
-    //                         }else if($item=="yesterday") {
-    //                             $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
-    //                         }else if($item=="last_hour") {
-    //                             //TODO last hour query
-    //                            // $q->orWhereDate('created_at', Carbon::yesterday());
-    //                         }else if($item=="less_3_days") {
-    //                          $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
-    //                         }else if($item=="less_3_week") {
-    //                             $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
-    //                         }
-    //                     }
-                        
-    //                 }
-    //             });
-    //         }
-    //     })->where(function($query) use ($status,$user,$area_arr){
-    //         $area_arr_data = array(-1);
-    //         if(!empty($status)) {
-    //             $query->where(function($q) use ($status,$user,$area_arr) {
-    //                 foreach($status as $item){
-    //                     // status: ["unread", "read", "not-interested"]: calculate from bid table: advisor_status column: 
-    //                     if($item == "read") {
-    //                         $q->whereIn('advice_areas.id',$area_arr);
-    //                     }else if($item == "unread") {
-    //                         $q->whereNotIn('advice_areas.id',$area_arr);
-    //                     }else if($item == "not-interested") {
-    //                         $q->orWhere('advisor_bids.advisor_status','=',2)->where('advisor_bids.advisor_id',$user->id);
-    //                     }
-    //                 }
-    //             });
-    //         }
-    //     })->where(function($query) use ($ltv_max){
-    //         if($ltv_max != "") {
-               
-    //             $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));
-    //             $query->where('advice_areas.ltv_max','>',0);
-    //         }
-    //     })->where(function($query) use ($lti_max){
-    //         if($lti_max != "") {
-    //             //  echo chop($ltv_max,"%");die;
-    //             $query->where('advice_areas.lti_max','<=',chop($lti_max,"x"));
-    //             $query->where('advice_areas.lti_max','>',0);
-    //         }
-    //     })->groupBy('advice_areas.'.'id')
-    //     ->groupBy('advice_areas.'.'user_id')
-    //     ->groupBy('advice_areas.'.'service_type')
-    //     ->groupBy('advice_areas.'.'request_time')
-    //     ->groupBy('advice_areas.'.'property')
-    //     ->groupBy('advice_areas.'.'property_want')
-    //     ->groupBy('advice_areas.'.'size_want')
-    //     ->groupBy('advice_areas.'.'combined_income')
-    //     ->groupBy('advice_areas.'.'description')
-    //     ->groupBy('advice_areas.'.'occupation')
-    //     ->groupBy('advice_areas.'.'contact_preference')
-    //     ->groupBy('advice_areas.'.'advisor_preference')
-    //     ->groupBy('advice_areas.'.'fees_preference')
-    //     ->groupBy('advice_areas.'.'self_employed')
-    //     ->groupBy('advice_areas.'.'non_uk_citizen')
-    //     ->groupBy('advice_areas.'.'adverse_credit')
-    //     ->groupBy('advice_areas.'.'contact_preference_face_to_face')
-    //     ->groupBy('advice_areas.'.'contact_preference_online')
-    //     ->groupBy('advice_areas.'.'contact_preference_telephone')
-    //     ->groupBy('advice_areas.'.'contact_preference_evening_weekend')
-    //     ->groupBy('advice_areas.'.'advisor_preference_local')
-    //     ->groupBy('advice_areas.'.'advisor_preference_gender')
-    //     ->groupBy('advice_areas.'.'status')
-    //     ->groupBy('advice_areas.'.'combined_income_currency')
-    //     ->groupBy('advice_areas.'.'property_currency')
-    //     ->groupBy('advice_areas.'.'size_want_currency')
-    //     ->groupBy('advice_areas.'.'advisor_id')
-    //     ->groupBy('advice_areas.'.'close_type')
-    //     ->groupBy('advice_areas.'.'need_reminder')
-    //     ->groupBy('advice_areas.'.'initial_term')
-    //     ->groupBy('advice_areas.'.'start_date')
-    //     ->groupBy('advice_areas.'.'created_at')
-    //     ->groupBy('advice_areas.'.'updated_at')
-    //     ->groupBy('advice_areas.'.'advisor_preference_language')
-    //     ->groupBy('users.'.'name')
-    //     ->groupBy('users.'.'email')
-    //     ->groupBy('users.'.'address')
-    //     ->groupBy('advice_areas.'.'ltv_max')
-    //     ->groupBy('advice_areas.'.'lti_max')
-    //     ->paginate();
-    //     $bidCountArr = array();
-    //     foreach($advice_area as $key=> $item) {
-    //         $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
-    //         foreach($adviceBid as $bid) {
-    //             $bidCountArr[] = ($bid->status == 3)? 0:1;
-    //         }
-    //         $advice_area[$key]->totalBids = $bidCountArr;
-
-    //         $costOfLead = ($item->size_want/100)*0.006;
-    //         $time1 = Date('Y-m-d H:i:s');
-    //         $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
-    //         $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
-    //         $costOfLeadsStr = "";
-    //         $costOfLeadsDropStr = "";
-    //         $amount = number_format((float)$costOfLead, 2, '.', '');
-    //         if($hourdiff < 24) {
-    //             $costOfLeadsStr = "".$item->size_want_currency.$amount;
-    //             $in = 24-$hourdiff;
-    //             $hrArr = explode(".",$in);
-    //             $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-    //         }
-    //         if($hourdiff > 24 && $hourdiff < 48) {
-    //             $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-    //             $in = 48-$hourdiff;
-    //             $newAmount = (75 / 100) * $amount;
-    //             $hrArr = explode(".",$in);
-    //             $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-    //         }
-    //         if($hourdiff > 48 && $hourdiff < 72) {
-    //             $newAmount = (75 / 100) * $amount;
-    //             $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-    //             $in = 72-$hourdiff;
-    //             $hrArr = explode(".",$in);
-    //             $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-    //         }
-    //         if($hourdiff > 72) {
-    //             $costOfLeadsStr = ""."Free";
-    //             $costOfLeadsDropStr = "";
-    //         }
-            
-    //         $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
-    //         $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
-    //         $area_owner_details = User::where('id',$item->user_id)->first();
-    //         $address = "";
-    //         if(!empty($area_owner_details)) {
-    //             $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
-    //             if(!empty($addressDetails)) {
-    //                 if($addressDetails->Country != ""){
-    //                     $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
-    //                     // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
-    //                     $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
-    //                     $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
-    //                 }
-                    
-    //             }
-    //         }
-    //         $lead_value = "";
-    //         $main_value = ($item->size_want/100);
-    //         $advisorDetaultValue = "";
-    //         if($item->service_type=="remortgage") {
-    //             $advisorDetaultValue = "remortgage";
-    //         }else if($item->service_type=="first time buyer") {
-    //             $advisorDetaultValue = "first_buyer";
-    //         }else if($item->service_type=="next time buyer") {
-    //             $advisorDetaultValue = "next_buyer";
-    //         }else if($item->service_type=="buy to let") {
-    //             $advisorDetaultValue = "but_let";
-    //         }else if($item->service_type=="equity release") {
-    //             $advisorDetaultValue = "equity_release";
-    //         }else if($item->service_type=="overseas") {
-    //             $advisorDetaultValue = "overseas";
-    //         }else if($item->service_type=="self build") {
-    //             $advisorDetaultValue = "self_build";
-    //         }else if($item->service_type=="mortgage protection") {
-    //             $advisorDetaultValue = "mortgage_protection";
-    //         }else if($item->service_type=="secured loan") {
-    //             $advisorDetaultValue = "secured_loan";
-    //         }else if($item->service_type=="bridging loan") {
-    //             $advisorDetaultValue = "bridging_loan";
-    //         }else if($item->service_type=="commercial") {
-    //             $advisorDetaultValue = "commercial";
-    //         }else if($item->service_type=="something else") {
-    //             $advisorDetaultValue = "something_else";
-    //         }   
-    //         $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-    //         $advice_area[$key]->lead_address = $address;
-    //         $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
-    //         $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
-    //     }
-    //     return response()->json([
-    //         'status' => true,
-    //         'data' => $advice_area->items(),
-    //         'current_page' => $advice_area->currentPage(),
-    //         'first_page_url' => $advice_area->url(1),
-    //         'last_page_url' => $advice_area->url($advice_area->lastPage()),
-    //         'per_page' => $advice_area->perPage(),
-    //         'next_page_url' => $advice_area->nextPageUrl(),
-    //         'prev_page_url' => $advice_area->previousPageUrl(),
-    //         'total' => $advice_area->total(),
-    //         'total_on_current_page' => $advice_area->count(),
-    //         'has_more_page' => $advice_area->hasMorePages(),
-    //     ], Response::HTTP_OK);
-         
-    // }
-
-    // function acceptRejectBid(Request $request)
-    // {
-    //     $user = JWTAuth::parseToken()->authenticate();
-    //     $bidCount = AdvisorBids::where('area_id','=',$request->area_id)->count();
-    //     $advisorCountBid = AdvisorBids::where('area_id','=',$request->area_id)->where('advisor_id','=',$user->id)->count();
-    //     if($advisorCountBid > 0) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'You already placed bid on this',
-    //         ], Response::HTTP_OK);
-    //     }else{
-    //         if($bidCount < 5) {
-    //             if ($request->advisor_status == 1) {
-    //                 $advisorAreaDetails = Advice_area::where('id',$request->area_id)->first();
-    //                 $costOfLead = ($advisorAreaDetails->size_want/100)*0.006;
-    //                 $time1 = Date('Y-m-d H:i:s');
-    //                 $time2 = Date('Y-m-d H:i:s',strtotime($advisorAreaDetails->created_at));
-    //                 $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
-    //                 $discounted_price = 0;
-    //                 $amount = number_format((float)$costOfLead, 2, '.', '');
-    //                 if($hourdiff < 24) {
-    //                     $discounted_price = 0;
-    //                 }
-    //                 if($hourdiff > 24 && $hourdiff < 48) {
-    //                     $discounted_price = number_format((float)($amount/2), 2, '.', '');;
-    //                 }
-    //                 if($hourdiff > 48 && $hourdiff < 72) {
-    //                     $newAmount = (75 / 100) * $amount;
-    //                     $discounted_price = number_format((float)($newAmount), 2, '.', '');;
-    //                 }
-    //                 if($hourdiff > 72) {
-    //                     $discounted_price = number_format((float)($costOfLead), 2, '.', '');;
-    //                 }
-                    
-    //                 $advice_area = AdvisorBids::create([
-    //                     'advisor_id' => $request->advisor_id,
-    //                     'area_id' => $request->area_id,
-    //                     'advisor_status' => $request->advisor_status,
-    //                     'cost_leads'=>$costOfLead,
-    //                     'cost_discounted'=>$discounted_price
-    //                 ]);
-                   
-    //                 $this->saveNotification(array(
-    //                     'type'=>'1', // 1:
-    //                     'message'=>'A new bid placed', // 1:
-    //                     'read_unread'=>'0', // 1:
-    //                     'user_id'=>$advisorAreaDetails->user_id,// 1:
-    //                     'advisor_id'=>$request->advisor_id, // 1:
-    //                     'area_id'=>$request->area_id,// 1:
-    //                     'notification_to'=>0
-    //                 ));
-    //                 return response()->json([
-    //                     'status' => true,
-    //                     'message' => 'Bid placed successfully',
-    //                 ], Response::HTTP_OK);
-    //             } else if ($request->advisor_status == 2) {
-    //                 $advice_area = AdvisorBids::create([
-    //                     'advisor_id' => $request->advisor_id,
-    //                     'area_id' => $request->area_id,
-    //                     'advisor_status' => $request->advisor_status,
-    //                 ]);
-    //                 $this->saveNotification(array(
-    //                     'type'=>'1', // 1:
-    //                     'message'=>'Not interest ', // 1:
-    //                     'read_unread'=>'0', // 1:
-    //                     'user_id'=>$user->id,// 1:
-    //                     'advisor_id'=>$request->advisor_id, // 1:
-    //                     'area_id'=>$request->area_id// 1:
-    //                 ));
-                    
-    //                 return response()->json([
-    //                     'status' => true,
-    //                     'message' => 'Mark as not intrested',
-    //                 ], Response::HTTP_OK);
-    //             }
-    //         }else{
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'message' => 'Maximum bids are placed.',
-    //             ], Response::HTTP_OK);
-    //         }
-    //     }
     }
+
     function acceptRejectBid(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();

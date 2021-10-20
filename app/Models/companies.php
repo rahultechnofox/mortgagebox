@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\AdvisorProfile;
 use App\Models\AdvisorBids;
-
+use DB;
 class companies extends Model
 {
     use HasFactory;
@@ -36,11 +36,30 @@ class companies extends Model
             if(isset($search['search']) && $search['search']!=''){
                 $query = $query->where('company_name', 'like', '%' .strtolower($search['search']). '%');
             }
+            $final_arr_m = array();
+            if(isset($search['search']) && $search['search']!=''){
+                // $companies = companies::where('company_name', 'like', '%' .strtolower($search['search']). '%')->get();
+                
+                $company_arr = array();
+                $company_admin = companies::where('status',1)->get();
+                
+                if(count($company_admin)){
+                    foreach($company_admin as $company_admin_data){
+                        array_push($company_arr,$company_admin_data->company_admin);
+                    }
+                }
+                $advisor = AdvisorProfile::whereIn('advisorId',$company_arr)->where('display_name', 'like', '%' .strtolower($search['search']). '%')->get();
+                if(count($advisor)){
+                    foreach($advisor as $advisor_data){
+                        array_push($final_arr_m,$advisor_data->advisorId);
+                    }
+                }
+            }
+            if(count($final_arr_m)){
+                $query = $query->whereIn('company_admin',$final_arr_m);
+            }
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('status',$search['status']);
-            }
-            if(isset($search['company_admin']) && $search['company_admin']!=''){
-                $query = $query->where('company_admin',$search['company_admin']);
             }
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
@@ -49,36 +68,92 @@ class companies extends Model
             foreach($data as $row){
                 $success_per = 0;
                 $team_arr = array();
-                if($row->company_admin!=0){
-                    $user = AdvisorProfile::where('advisorId',$row->company_admin)->first();
-                    if($user){
-                        $row->company_admin_name = $user->display_name;
+                $admin = CompanyTeamMembers::where('company_id',$row->id)->where('isCompanyAdmin',1)->first();
+                if($admin){
+                    $ad_user = AdvisorProfile::where('email',$admin->email)->first();
+                    if($ad_user){
+                        $row->company_admin_name = $ad_user->display_name;
                     }else{
                         $row->company_admin_name = "";
                     }
-                    array_push($team_arr,$row->company_admin);
-                }else{
-                    $row->company_admin_name = "";
                 }
+                // if($row->company_admin!=0){
+                //     $user = AdvisorProfile::where('advisorId',$row->company_admin)->first();
+                //     if($user){
+                //         $row->company_admin_name = $user->display_name;
+                //     }else{
+                //         $row->company_admin_name = "";
+                //     }
+                //     array_push($team_arr,$row->company_admin);
+                // }else{
+                //     $row->company_admin_name = "";
+                // }
                 $final_live_lead = 0;
-                $final_eastimated_lead = 0;
+                
                 $final_cost_of_lead = 0;
                 foreach($row->team_members as $team_members_data){
-                    $live_leads_data = User::getAdvisorLeadsData($team_members_data->advisor_id);
-                    $final_live_lead = $final_live_lead + $live_leads_data['total_leads'];
-                    $final_eastimated_lead = $final_eastimated_lead + $live_leads_data['eastimated_lead'];
-                    // $final_cost_of_lead = $final_cost_of_lead + $live_leads_data['cost_of_lead'];
-                    array_push($team_arr,$team_members_data->advisor_id);
+                    $final_eastimated_lead = 0;
+                    $cost_lead = 0;
+                    $lead_value = 0;
+                    $cost_lead_final = 0;
+                    $advisor_data_team = AdvisorProfile::where('email',$team_members_data->email)->first();
+                    if($advisor_data_team){
+                        $es_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
+                        $estimated = config('app.currency').number_format(0.00,0);
+                        $area_arr = array();
+                        if(count($es_val)){
+                            foreach($es_val as $es_val_data){
+                                array_push($area_arr,$es_val_data->area_id);
+                            }
+
+                            if(count($area_arr)){
+                                $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
+                                $main_value = ($value_data/100);
+                                $advisorDetaultPercent = 0;
+                                $services = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
+                                if($services){
+                                    $advisorDetaultPercent = $services->value;
+                                }
+                                $lead_value = ($main_value)*($advisorDetaultPercent);
+                                // $estimated = config('app.currency').number_format($lead_value,2);
+                            }
+                        }
+
+                        $final_eastimated_lead = $final_eastimated_lead + $lead_value;
+                        // echo json_encode($lead_value);exit;
+                        // $final_eastimated_lead = config('app.currency').number_format($lead_value,2);
+                        if($advisor_data_team->advisorId!=null){
+                            array_push($team_arr,$advisor_data_team->advisorId);
+                        }
+                        $cost_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->where('status', '=', 0)->where('advisor_status', '=', 1)->get();
+                        if(count($cost_val)){
+                            foreach($cost_val as $cost_val_data){
+                                if($cost_val_data->cost_discounted!=0){
+                                    $cost_lead = $cost_lead + $cost_val_data->cost_discounted;
+                                }
+                                if($cost_val_data->cost_discounted==0){
+                                    $cost_lead = $cost_lead + $cost_val_data->cost_leads;
+                                }
+                                // array_push($area_arr_cost,$cost_val_data->area_id);
+                            }
+                            $cost_lead_final = $cost_lead;
+                            
+                        }
+                        $final_cost_of_lead = $final_cost_of_lead + $cost_lead_final;
+                    }
+                    //  echo json_encode($advisor_data_team);
+
                 }
+                // exit;
                 $row->live_leads = $final_live_lead;
                 $row->eastimated_lead = $final_eastimated_lead;
-                $row->cost_of_lead = $final_cost_of_lead;
+                $row->cost_of_lead = config('app.currency').number_format($final_cost_of_lead,0);
 
                 $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->whereIn('advisor_id',$team_arr)
                 ->where('status', '!=', 2)->where('status', '!=', 3)->count();
 
                 $row->accepted_leads = $advice_areaCount;
-
+                // echo json_encode($team_arr);exit;
                 $hired_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
                 ->where('status', '=', 1)
                 ->where('advisor_status', '=', 1)
@@ -90,6 +165,14 @@ class companies extends Model
                 ->where('advisor_status', '=', 1)
                 ->count();
                 $row->completed_leads = $completed_leads;
+    
+                $lost_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
+                ->where('status', '=', 3)
+                ->where('advisor_status', '=', 1)
+                ->count();
+                $row->lost_leads = $lost_leads;
+
+
 
                 $value = AdvisorBids::whereIn('advisor_id',$team_arr)->sum('cost_leads');
                 $cost = AdvisorBids::whereIn('advisor_id',$team_arr)->sum('cost_discounted');
@@ -179,11 +262,63 @@ class companies extends Model
                     ->where('status', '!=', 2)->where('status', '!=', 3)->count();
 
                     $team_members_data->accepted_leads = $advice_areaCount;
-                    $live_leads_data = User::getAdvisorLeadsData($team_members_data->advisor_id);
-                    $team_members_data->live_leads = $live_leads_data['total_leads'];
-                    $team_members_data->eastimated_lead = $live_leads_data['eastimated_lead'];
-                    $team_members_data->cost_of_lead = $live_leads_data['cost_of_lead'];
+                    // $live_leads_data = User::getAdvisorLeadsData($team_members_data->advisor_id);
+                    // $team_members_data->live_leads = $live_leads_data['total_leads'];
+                    // $team_members_data->eastimated_lead = $live_leads_data['eastimated_lead'];
+                    // $team_members_data->cost_of_lead = $live_leads_data['cost_of_lead'];
+                    $final_eastimated_lead = 0;
+                    $cost_lead = 0;
+                    $final_cost_of_lead = 0;
+                    $cost_lead_final = 0;
 
+                    $advisor_data_team = AdvisorProfile::where('email',$team_members_data->email)->first();
+                    if($advisor_data_team){
+                        $es_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
+                        $estimated = config('app.currency').number_format(0.00,0);
+                        $area_arr = array();
+                        $lead_value = 0;    
+                        if(count($es_val)){
+                            foreach($es_val as $es_val_data){
+                                array_push($area_arr,$es_val_data->area_id);
+                            }
+
+                            if(count($area_arr)){
+                                $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
+                                $main_value = ($value_data/100);
+                                $advisorDetaultPercent = 0;
+                                $services = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
+                                if($services){
+                                    $advisorDetaultPercent = $services->value;
+                                }
+                                $lead_value = ($main_value)*($advisorDetaultPercent);
+                                // $estimated = config('app.currency').number_format($lead_value,2);
+                            }
+                        }
+
+                        $final_eastimated_lead = $final_eastimated_lead + $lead_value;
+                        // echo json_encode($lead_value);exit;
+                        // $final_eastimated_lead = config('app.currency').number_format($lead_value,2);
+                        if($advisor_data_team->advisorId!=null){
+                            array_push($team_arr,$advisor_data_team->advisorId);
+                        }
+                        $cost_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->where('status', '=', 0)->where('advisor_status', '=', 1)->get();
+                        if(count($cost_val)){
+                            foreach($cost_val as $cost_val_data){
+                                if($cost_val_data->cost_discounted!=0){
+                                    $cost_lead = $cost_lead + $cost_val_data->cost_discounted;
+                                }
+                                if($cost_val_data->cost_discounted==0){
+                                    $cost_lead = $cost_lead + $cost_val_data->cost_leads;
+                                }
+                                // array_push($area_arr_cost,$cost_val_data->area_id);
+                            }
+                            $cost_lead_final = $cost_lead;
+                            
+                        }
+                        $final_cost_of_lead = $final_cost_of_lead + $cost_lead_final;
+                    }
+                    $team_members_data->eastimated_lead = $final_eastimated_lead;
+                    $team_members_data->cost_of_lead = config('app.currency').number_format($final_cost_of_lead,0);
                     $hired_leads = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)
                     ->where('status', '=', 1)
                     ->where('advisor_status', '=', 1)

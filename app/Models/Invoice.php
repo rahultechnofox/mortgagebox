@@ -68,8 +68,42 @@ class Invoice extends Model
             }
             $data = $query->with('adviser')->first();
             if($data){
-                    $data->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
-                    $data->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
+                $data->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
+                $data->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data->month)->where('advisor_id',$data->advisor_id)->sum('total_due');
+                $data->new_fees_arr = AdvisorBids::where('advisor_id',$data->advisor_id)->where('is_discounted',0)->with('area')->with('adviser')->get();
+                if(count($data->new_fees_arr)){
+                    foreach($data->new_fees_arr as $new_bid){
+                        $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
+                        if($new_bid->status==0){
+                            $new_bid->status_type = "Live Lead";
+                        }else if($new_bid->status==1){
+                            $new_bid->status_type = "Hired";
+                        }else if($new_bid->status==2){
+                            $new_bid->status_type = "Completed";
+                        }else if($new_bid->status==3){
+                            $new_bid->status_type = "Lost";
+                        }else if($new_bid->advisor_status==2){
+                            $new_bid->status_type = "Not Proceeding";
+                        }
+                    }
+                }
+                $data->discount_credit_arr = AdvisorBids::where('advisor_id',$data->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                if(count($data->discount_credit_arr)){
+                    foreach($data->discount_credit_arr as $discount_bid){
+                        $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
+                        if($discount_bid->status==0){
+                            $discount_bid->status_type = "Live Lead";
+                        }else if($discount_bid->status==1){
+                            $discount_bid->status_type = "Hired";
+                        }else if($discount_bid->status==2){
+                            $discount_bid->status_type = "Completed";
+                        }else if($discount_bid->status==3){
+                            $discount_bid->status_type = "Lost";
+                        }else if($discount_bid->advisor_status==2){
+                            $discount_bid->status_type = "Not Proceeding";
+                        }
+                    }
+                }
             }
             return $data;
         }catch (\Exception $e) {
@@ -132,6 +166,7 @@ class Invoice extends Model
                 $unpaid_prevoius_invoice = 0;
                 $new_lead = array();
                 $discount_lead = array();
+                $adviser_arr = array();
                 foreach($data as $row){
                     $row->invoice_data = json_decode($row->invoice_data);
                     $cost_of_lead = $cost_of_lead + $row->cost_of_lead;
@@ -156,6 +191,41 @@ class Invoice extends Model
                     if(isset($row->invoice_data->discount_credit_data) && count($row->invoice_data->discount_credit_data)){
                         foreach($row->invoice_data->discount_credit_data as $discount_credits_data){
                             array_push($discount_lead,$discount_credits_data);
+                        }
+                    }
+                    array_push($adviser_arr,$row->advisor_id);
+                }
+                $data['new_fees_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted',0)->with('area')->with('adviser')->get();
+                if(count($data['new_fees_arr'])){
+                    foreach($data['new_fees_arr'] as $new_bid){
+                        $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
+                        if($new_bid->status==0){
+                            $new_bid->status_type = "Live Lead";
+                        }else if($new_bid->status==1){
+                            $new_bid->status_type = "Hired";
+                        }else if($new_bid->status==2){
+                            $new_bid->status_type = "Completed";
+                        }else if($new_bid->status==3){
+                            $new_bid->status_type = "Lost";
+                        }else if($new_bid->advisor_status==2){
+                            $new_bid->status_type = "Not Proceeding";
+                        }
+                    }
+                }
+                $data['discount_credit_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                if(count($data['discount_credit_arr'])){
+                    foreach($data['discount_credit_arr'] as $discount_bid){
+                        $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
+                        if($discount_bid->status==0){
+                            $discount_bid->status_type = "Live Lead";
+                        }else if($discount_bid->status==1){
+                            $discount_bid->status_type = "Hired";
+                        }else if($discount_bid->status==2){
+                            $discount_bid->status_type = "Completed";
+                        }else if($discount_bid->status==3){
+                            $discount_bid->status_type = "Lost";
+                        }else if($discount_bid->advisor_status==2){
+                            $discount_bid->status_type = "Not Proceeding";
                         }
                     }
                 }

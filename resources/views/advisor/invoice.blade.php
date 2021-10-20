@@ -235,15 +235,15 @@
 										</tr>
 									</thead>
 									<tbody>
-                                        @if(isset($invoice->invoice_data->new_fees_data) && count($invoice->invoice_data->new_fees_data)>0)
-                                            @foreach($invoice->invoice_data->new_fees_data as $new_fees_data)
+                                        @if(isset($invoice->new_fees_arr) && count($invoice->new_fees_arr)>0)
+                                            @foreach($invoice->new_fees_arr as $new_fees_data)
                                                 <tr>
                                                     <td class="py-1"> <span class="fw-bold">{{$new_fees_data->date}}</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$new_fees_data->customer}}</span> </td>
-													<td class="py-1"> <span class="fw-bold">{{$new_fees_data->mortgage}}</span> </td>
-													<td class="py-1"> <span class="fw-bold">{{$new_fees_data->status}}</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$new_fees_data->free_type}}</span> </td>
-													<td class="py-1"> <span class="fw-bold">{{\Helpers::currency($new_fees_data->amount)}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">{{$new_fees_data->area->user->name}}</span> </td>
+													<td class="py-1"> <span class="fw-bold">{{$new_fees_data->area->property}}</span> </td>
+													<td class="py-1"> <span class="fw-bold">{{$new_fees_data->status_type}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">{{$new_fees_data->area->service->name}}</span> </td>
+													<td class="py-1"> <span class="fw-bold">{{\Helpers::currency($new_fees_data->cost_leads)}}</span> </td>
                                                 </tr>
                                             @endforeach
                                         @else
@@ -272,14 +272,14 @@
 										</tr>
 									</thead>
 									<tbody>
-                                        @if(isset($invoice->invoice_data->discount_credit_data) && count($invoice->invoice_data->discount_credit_data)>0)
-                                            @foreach($invoice->invoice_data->discount_credit_data as $discount_credits_data)
+                                        @if(isset($invoice->discount_credit_arr) && count($invoice->discount_credit_arr)>0)
+                                            @foreach($invoice->discount_credit_arr as $discount_credits_data)
 												<tr>
                                                     <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->date}}</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->customer}}</span> </td>
-													<td class="py-1"> <span class="fw-bold">{{$discount_credits_data->mortgage}}</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->free_type}}</span> </td>
-													<td class="py-1"> <span class="fw-bold">{{\Helpers::currency($discount_credits_data->amount)}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->area->user->name}}</span> </td>
+													<td class="py-1"> <span class="fw-bold">{{$discount_credits_data->area->property}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->area->service->name}}</span> </td>
+													<td class="py-1"> <span class="fw-bold">{{\Helpers::currency($discount_credits_data->cost_leads)}}</span> </td>
                                                 </tr>
                                             @endforeach
                                         @else

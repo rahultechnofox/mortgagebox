@@ -50,7 +50,7 @@
                                         <div class="col-md-6">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Audience</label>
-                                                <input type="text" class="form-control" name="audience" placeholder="Audience" id="audience" value="{{$row->audience}}" required readonly/>
+                                                <input type="text" class="form-control" name="audience" placeholder="Audience" id="audience" value="{{ucfirst($row->audience)}}" required readonly/>
                                             </div>
                                         </div>
                                         <div class="col-md-12">

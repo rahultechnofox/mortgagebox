@@ -86,7 +86,7 @@
                     </div>
                     <input name="id" id="id" type="hidden">
                     <div class="modal-body flex-grow-1">
-                        <p>Do you want to refund the payment?</p>
+                        <p>Agree with review?</p>
                         <button type="button" class="btn btn-primary data-submit me-1" id="createBtn" onclick="takeDecision('{{$users_data->id}}');">Yes</button>
                         <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>
                     </div>

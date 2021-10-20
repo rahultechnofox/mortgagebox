@@ -23,6 +23,7 @@ Route::post('contact-us',  [ApiController::class, 'doSubmitContactUs']);
 
 Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('logout', [ApiController::class, 'logout']);
+    Route::get('get_user_profile', [ApiController::class, 'get_user_profile']);
     Route::get('get_user', [ApiController::class, 'get_user']);
     Route::get('products', [ProductController::class, 'index']);
     Route::get('products/{id}', [ProductController::class, 'show']);
@@ -113,10 +114,13 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('checkoutFromSavedCard', [ApiController::class, 'checkoutFromSavedCard']);
      Route::get('getNotification', [ApiController::class, 'getNotification']);
     Route::get('updateReadNotification', [ApiController::class, 'updateReadNotification']);
-    Route::post('invoice', [AdvisorController::class, 'invoice']);
+    Route::post('invoice/{team_id}', [AdvisorController::class, 'invoiceData']);
+    Route::post('invoice-display', [ApiController::class, 'invoiceDisplay']);
+
     Route::post('addReview',  [UserController::class, 'addReview']);
     Route::post('getNeedDetails',  [ApiController::class, 'getNeedDetails']);
     Route::get('getAllServiceTypeWithAuth', [ApiController::class, 'getAllServiceTypeWithAuth']);    
+    Route::get('getAllServiceTypeWithPreferences', [ApiController::class, 'getAllServiceTypeWithPreferences']);    
     Route::post('markProjectCompleted',  [ApiController::class, 'markProjectCompleted']);
 
 });

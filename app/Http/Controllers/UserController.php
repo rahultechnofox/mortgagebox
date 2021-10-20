@@ -164,8 +164,7 @@ class UserController extends Controller
             $request->reviewer_name = "";
             $userDetails = JWTAuth::parseToken()->authenticate();
         }
-        
-        $rating = ReviewRatings::create([
+        $review_arr = array(
             'user_id' => $userDetails->id,
             'advisor_id' => $request->advisor_id,
             'rating' => $request->rating,
@@ -176,8 +175,11 @@ class UserController extends Controller
             'reply_reason' =>$request->reply_reason,
             'spam_reason' => $request->spam_reason,
             'reviewer_name'=>$request->reviewer_name
-            
-        ])->id;
+        );
+        if(isset($request->area_id) && $request->area_id!=0){
+            $review_arr['area_id'] = $request->area_id;
+        }
+        $rating = ReviewRatings::create($review_arr)->id;
         $this->saveNotification(array(
             'type'=>'4', // 1:
             'message'=>'New review recieved from customer '.$userDetails->name, // 1:

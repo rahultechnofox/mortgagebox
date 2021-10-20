@@ -15,11 +15,12 @@ class AdvisorBids extends Model
     ];
 
     public function area(){
-        return $this->hasOne('App\Models\Advice_area',"id","area_id")->with('user');
+        return $this->hasOne('App\Models\Advice_area',"id","area_id")->with('user')->with('service');
     }
     public function adviser(){
         return $this->hasOne('App\Models\AdvisorProfile',"advisorId","advisor_id");
     }
+    
 
     public static function getInvoice($search){
         try {

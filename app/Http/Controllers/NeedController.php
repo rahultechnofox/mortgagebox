@@ -34,6 +34,7 @@ class NeedController extends Controller
         $post = $request->all();
         $advice_area = Advice_area::getNeedList($post);
         $data = $advice_area;   
+        $data['services'] = ServiceType::where('parent_id','!=',0)->where('status',1)->get();
         $data['entry_count'] = config('constants.paginate.num_per_page');
         // echo json_encode($data);exit;
         return view('need_list.index',$data);

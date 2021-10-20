@@ -52,8 +52,8 @@
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
                                 <td>{{$users_data->success_percent}}%</td>
-                                <td>{{\Helpers::currency($users_data->eastimated_lead)}}</td>
-                                <td>{{$users_data->cost_of_lead}}</td>
+                                <td>{{$users_data->estimated_lead_value}}</td>
+                                <td>{{$users_data->cost_of_leads_value}}</td>
                                 <td>
                                     @if($users_data->user_status==1)
                                         @if($users_data->email_verified_at!='' && $users_data->FCA_verified!='')

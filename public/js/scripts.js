@@ -402,16 +402,21 @@ function addUpdateService(formId){
 function getAudience(id){
     showLoader();
     var data = {};
-    data.id = id;
-    $.ajax({
-        type: 'post',
-        url: base_url +"/admin/get-audience",
-        data: data,
-        success: function (response) {
-            $('#audience').val(response.data.audience);
-            hideLoader();
-        }
-    });
+    if(id!=''){
+        data.id = id;
+        $.ajax({
+            type: 'post',
+            url: base_url +"/admin/get-audience",
+            data: data,
+            success: function (response) {
+                var audience = response.data.audience.charAt(0).toUpperCase() + response.data.audience.slice(1);
+                $('#audience').val(audience);
+                hideLoader();
+            }
+        });
+    }else{
+        $('#audience').val('');
+    }
 }
 
 function getServiceData(id){

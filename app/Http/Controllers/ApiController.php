@@ -28,6 +28,9 @@ use App\Models\UserNotes;
 use App\Models\CompanyTeamMembers;
 use App\Models\Faq;
 use App\Models\FaqCategory;
+use App\Models\AdviserProductPreferences;
+use App\Models\Invoice;
+
 use App\Models\Contactus;
 use DateTime;
 use Illuminate\Http\Request;
@@ -214,6 +217,15 @@ class ApiController extends Controller
             unset($advice_area->user_id);
         }
         $user->slug = $this->getEncryptedId($user->id);
+        return response()->json(['user' => $user]);
+    }
+
+    public function get_user_profile(Request $request)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user->user_role==1){
+            $user->userDetails = AdvisorProfile::where('advisorId',$user->id)->first();
+        }
         return response()->json(['user' => $user]);
     }
 
@@ -516,6 +528,8 @@ class ApiController extends Controller
         }
         if(isset($company_id) && $company_id!=0){
             $company_team = CompanyTeamMembers::where('email',$request->email)->first();
+            $company_team_name = companies::where('id',$company_id)->first();
+
             companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
             if($company_team){
                 $teamArr = array(
@@ -538,21 +552,23 @@ class ApiController extends Controller
                 );
                 CompanyTeamMembers::insertGetId($teamArr);
             }
-            $this->saveNotification(array(
-                'type'=>'1', // 1:
-                'message'=>'Your invitation is accepted by team member '.$request->name, // 1:
-                'read_unread'=>'0', // 1:
-                'user_id'=>$advisor_id,// 1:
-                'advisor_id'=>$user->id, // 1:
-                'area_id'=>0,// 1:
-                'notification_to'=>1
-            ));
-            $newArr1 = array(
-                'name'=>$user->name,
-                'email'=>$user->email,
-                'message_text' => 'Your invitation is accepted by team member '.$request->name
-            );
-            $c = \Helpers::sendEmail('emails.information',$newArr1 ,$user->email,$user->name,'MortgageBox Invitation Accept','','');
+            if(isset($teamArr['isCompanyAdmin']) && $teamArr['isCompanyAdmin']!=1){
+                $this->saveNotification(array(
+                    'type'=>'1', // 1:
+                    'message'=>'Now you are a team member of '.$company_team_name->companyname, // 1:
+                    'read_unread'=>'0', // 1:
+                    'user_id'=>$advisor_id,// 1:
+                    'advisor_id'=>$user->id, // 1:
+                    'area_id'=>0,// 1:
+                    'notification_to'=>1
+                ));
+                $newArr1 = array(
+                    'name'=>$user->name,
+                    'email'=>$user->email,
+                    'message_text' => 'Now you are a team member of '.$company_team_name->companyname
+                );
+                $c = \Helpers::sendEmail('emails.information',$newArr1 ,$user->email,$user->name,'MortgageBox Join Company','','');
+            }
         }
         // Set Defaul prefrances
         $notification = AdvisorPreferencesDefault::where('advisor_id', '=', $advisor_id)->first();
@@ -1022,44 +1038,12 @@ class ApiController extends Controller
         }
         
         // TODO: Ltv max and Lti Max need to check for filter
-        $userPreferenceProduct = AdvisorPreferencesProducts::where('advisor_id','=',$user->id)->first();
+        $userPreferenceProduct = AdviserProductPreferences::where('adviser_id','=',$user->id)->get();
+        // echo json_encode($userPreferenceProduct);exit;
         $service_type = array();
         if(!empty($userPreferenceProduct)) {
-            if($userPreferenceProduct->remortgage == 1) {
-                $service_type[] = "remortgage";
-            }
-            if($userPreferenceProduct->first_buyer == 1) {
-                $service_type[]= "first time buyer";
-            }
-            if($userPreferenceProduct->next_buyer == 1) {
-                $service_type[]= "next time buyer";
-            }
-            if($userPreferenceProduct->but_let == 1) {
-                $service_type[]= "buy to let";
-            }
-            if($userPreferenceProduct->equity_release == 1) {
-                $service_type[]= "equity release";
-            }
-            if($userPreferenceProduct->overseas == 1) {
-                $service_type[]= "overseas";
-            }
-            if($userPreferenceProduct->self_build == 1) {
-                $service_type[]= "self build";
-            }
-            if($userPreferenceProduct->mortgage_protection == 1) {
-                $service_type[]= "mortgage protection";
-            }
-            if($userPreferenceProduct->secured_loan == 1) {
-                $service_type[]= "secured loan";
-            }
-            if($userPreferenceProduct->bridging_loan == 1) {
-                $service_type[]= "bridging loan";
-            }
-            if($userPreferenceProduct->commercial == 1) {
-                $service_type[]= "commercial";
-            }
-            if($userPreferenceProduct->something_else == 1) {
-                $service_type[]= "something else";
+            foreach($userPreferenceProduct as $userPreferenceProduct_data){
+                array_push($service_type,$userPreferenceProduct_data->service_id);
             }
         }
         // DB::enableQueryLog();
@@ -1093,16 +1077,16 @@ class ApiController extends Controller
                     });
                 }
         })
-        // ->where(function($query) use ($service_type){
-        //         if(!empty($service_type)) {
-        //             $query->where(function($q) use ($service_type) {
-        //                 foreach($service_type as $sitem){
-        //                     $q->orWhere('advice_areas.service_type',$sitem);
-        //                 }
-        //             });
-        //         }
+        ->where(function($query) use ($service_type){
+                if(!empty($service_type)) {
+                    $query->where(function($q) use ($service_type) {
+                        foreach($service_type as $sitem){
+                            $q->orWhere('advice_areas.service_type_id',$sitem);
+                        }
+                    });
+                }
             
-        // })
+        })
         ->where(function($query) use ($ltv_max){
             if($ltv_max != "") {
                
@@ -1558,6 +1542,11 @@ class ApiController extends Controller
             $advice_area[$key]->lead_address = $address;
             // $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
             // $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            $advice_area[$key]->is_read = 0;
+            $read = AdviceAreaRead::where('area_id',$item->id)->where('adviser_id','=',$user->id)->first();
+            if($read){
+                $advice_area[$key]->is_read = 1;
+            }
         }
         return response()->json([
             'status' => true,
@@ -1604,33 +1593,33 @@ class ApiController extends Controller
             $status_arr = array(-1);
             foreach($request->status as $status_data){
                 if($status_data=='accepted'){
-                    $status_need = AdvisorBids::where('advisor_status',1)->get();
+                    $status_need = Advice_area::where('area_status',1)->get();
                     foreach($status_need as $status_need_data){
-                        array_push($status_arr,$status_need_data->area_id);
+                        array_push($status_arr,$status_need_data->id);
                     }
                 }
                 if($status_data=='sole_adviser'){
-                    $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
+                    $status_need = Advice_area::where('area_status',2)->get();
                     foreach($status_need as $status_need_data){
-                        array_push($status_arr,$status_need_data->area_id);
+                        array_push($status_arr,$status_need_data->id);
                     }
                 }
                 if($status_data=='completed'){
-                    $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
+                    $status_need = Advice_area::where('area_status',3)->get();
                     foreach($status_need as $status_need_data){
-                        array_push($status_arr,$status_need_data->area_id);
+                        array_push($status_arr,$status_need_data->id);
                     }
                 }
                 if($status_data=='lost'){
-                    $status_need = AdvisorBids::where('advisor_status',2)->get();
+                    $status_need = Advice_area::where('area_status',4)->get();
                     foreach($status_need as $status_need_data){
-                        array_push($status_arr,$status_need_data->area_id);
+                        array_push($status_arr,$status_need_data->id);
                     }
                 }
                 if($status_data=='no_response'){
-                    $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
+                    $status_need = Advice_area::where('area_status',0)->get();
                     foreach($status_need as $status_need_data){
-                        array_push($status_arr,$status_need_data->area_id);
+                        array_push($status_arr,$status_need_data->id);
                     }
                 }
             }
@@ -1640,7 +1629,7 @@ class ApiController extends Controller
         if(isset($request->advice_area) && count($request->advice_area)>0){
             $adviser_arr = array(-1);
             foreach($request->advice_area as $advisor_ids){
-                $advisor_data = AdvisorBids::whereIn('advisor_id',$advisor_ids)->where('status',3)->where('advisor_status',2)->get();
+                $advisor_data = AdvisorBids::where('advisor_id',$advisor_ids)->where('status',3)->where('advisor_status',2)->get();
                 foreach($advisor_data as $advisor_profile_data){
                     array_push($adviser_arr,$advisor_profile_data->area_id);
                 }
@@ -1679,13 +1668,34 @@ class ApiController extends Controller
                     }
                 });
             }
+        })->where(function($query) use ($status_arr){
+            if($status_arr) {
+                $query->where(function($q) use ($status_arr) {
+                    $q->whereIn('advice_areas.id',$status_arr);
+                });
+            }
+        })->where(function($query) use ($adviser_arr){
+            if($adviser_arr) {
+                $query->where(function($q) use ($adviser_arr) {
+                    $q->whereIn('advice_areas.id',$adviser_arr);
+                });
+            }
+        })->where(function($query) use ($message_arr){
+            if($message_arr) {
+                $query->where(function($q) use ($message_arr) {
+                    $q->whereIn('advice_areas.id',$message_arr);
+                });
+            }
         });
 
-        if($adviser_arr){
-            $advice_area = $advice_area->whereIn('advice_areas.id',$adviser_arr);
-        }
+        // if($adviser_arr){
+        //     $advice_area = $advice_area->whereIn('advice_areas.id',$adviser_arr);
+        // }
+        // if($status_arr){
+        //     $advice_area = $advice_area->whereIn('advice_areas.id',$status_arr);
+        // }
 
-        $advice_area =  $advice_area->->with('service')->paginate();
+        $advice_area =  $advice_area->with('service')->paginate();
 
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
@@ -1990,6 +2000,7 @@ class ApiController extends Controller
             ->get();
 
         if ($advice_area) {
+            $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
             foreach ($advice_area as $key => $item) {
                 $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
                
@@ -2014,6 +2025,16 @@ class ApiController extends Controller
                 $advice_area[$key]->rating = [
                     'total' => count($rating),
                 ];
+                if($advice_area[$key]->status==1){
+                    $advice_area[$key]->status_name = "Accepted";
+                }else{
+                    $advice_area[$key]->status_name = "Lost";
+                }
+                if($checkStatus!=0){
+                    $advice_area[$key]->is_bided = 1;
+                }else{
+                    $advice_area[$key]->is_bided = 0;
+                }
             }
             return response()->json([
                 'status' => true,
@@ -2139,6 +2160,8 @@ class ApiController extends Controller
         ->where('advisor_bids.advisor_status', '=', 1)
         ->where('advisor_bids.advisor_id', '=', $user->id)
         ->with('service')
+        ->orderBy('advice_areas.id','DESC')
+        ->with('total_bid_count')
         ->paginate();
 
         $bidCountArr = array();
@@ -2153,7 +2176,9 @@ class ApiController extends Controller
             }else{
                  $advice_area[$key]->bid_status = 0;
             }
+            // $total_bids_count = AdvisorBids::where('area_id',$item->id)->where('advisor_status',1)->where('status',0)->orWhere('status',1)->get();
             $advice_area[$key]->totalBids = $bidCountArr;
+            $advice_area[$key]->total_bids_count = count($item->total_bid_count);
             $advice_area[$key]->is_accepted = 1;
             $costOfLead = ($item->size_want/100)*0.006;
             $time1 = Date('Y-m-d H:i:s');
@@ -2242,24 +2267,32 @@ class ApiController extends Controller
             // }   
             // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
             
-            // $advice_area[$key]->lead_address = $address;
+            $advice_area[$key]->lead_address = $address;
             // 
             // $show_status = "Live Leads"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             $show_status = "Live Leads"; 
             if(!empty($bidDetailsStatus)) {
-
-                if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Not Proceeding"; 
-                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Completed"; 
-                }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Hired"; 
-                }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                $checkStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','!=',$user->id)->where('status',1)->where('advisor_status',1)->count();
+                if($checkStatus!=0){
                     $show_status = "Lost";
+                    $advice_area[$key]->is_bided = 1;
                 }else{
-                    $show_status = "Live Leads";    
+                    $advice_area[$key]->is_bided = 0;
+                    if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
+                        // $show_status = "Not Proceeding"; 
+                        $show_status = "Accepted";
+                    }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Completed"; 
+                    }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Hired"; 
+                    }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Lost";
+                    }else{
+                        $show_status = "Live Leads";    
+                    }
                 }
+                
             }
             $advice_area[$key]->show_status = $show_status;
             $channelIds = array(-1);
@@ -2329,10 +2362,11 @@ class ApiController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
   
-        $chatData = \DB::select("
-                SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id) FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id)
-            ");
-
+        // $chatData = \DB::select("
+        //         SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id) FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id)
+        //     ");
+            // ->orderBy('chat_models.id','DESC')
+        $chatData = ChatModel::where('to_user_id',$user->id)->with('from_user')->with('to_user')->orderBy('id','DESC')->get();
         return response()->json([
             'status' => true,
             'data' => $chatData
@@ -2823,11 +2857,11 @@ class ApiController extends Controller
         $notificationCount = 0;
         if($user->user_role == 1) {
             $notification = Notifications::where('advisor_id', '=', $user->id)->where('notification_to','=','1')
-            ->get();
+            ->orderBy('id','DESC')->get();
             $notificationCount = Notifications::where('advisor_id', '=', $user->id)->where('notification_to','=','1')->where('read_unread',0)
             ->count();
         }else{
-            $notification = Notifications::where('user_id', '=', $user->id)->where('notification_to','=','0')->get();
+            $notification = Notifications::where('user_id', '=', $user->id)->where('notification_to','=','0')->orderBy('id','DESC')->get();
             $notificationCount = Notifications::where('user_id', '=', $user->id)->where('notification_to','=','0')->where('read_unread',0)
             ->count();
         }
@@ -2894,7 +2928,7 @@ class ApiController extends Controller
     }
 
     public function getAllServiceType() {
-        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->orderBy('sequence','ASC')->get();
         if(!empty($result)) {
             foreach($result as $row){
 
@@ -2916,7 +2950,7 @@ class ApiController extends Controller
 
     public function getAllServiceTypeWithAuth() {
         $user = JWTAuth::parseToken()->authenticate();
-        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->orderBy('sequence','ASC')->get();
         if(!empty($result)) {
             foreach($result as $row){
                 $row->value = 0;
@@ -3259,5 +3293,129 @@ class ApiController extends Controller
                 'data'=> []
             ], Response::HTTP_OK);
         }
+    }
+
+    public function getAllServiceTypeWithPreferences() {
+        $user = JWTAuth::parseToken()->authenticate();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->orderBy('sequence','ASC')->get();
+        if(!empty($result)) {
+            foreach($result as $row){
+                $preferences = AdviserProductPreferences::where('service_id',$row->id)->where('adviser_id',$user->id)->first();
+                if($preferences){
+                    $row->preference_status = 1;
+                    $row->preference_updated_at = $preferences->updated_at;
+                }else{
+                    $row->preference_status = 0;
+                    $row->preference_updated_at = "";
+                }
+            }
+            $mortgage_max_size = 0;
+            $mortgage_min_size = 0;
+            $profile = AdvisorProfile::where('advisorId',$user->id)->first();
+            if($profile){
+                $mortgage_max_size = $profile->mortgage_max_size;
+                $mortgage_min_size = $profile->mortgage_min_size;
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data'=>$result,
+                'mortgage_min_size'=>$mortgage_min_size,
+                'mortgage_max_size'=>$mortgage_max_size
+            ], Response::HTTP_OK);  
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'No Service type available',
+                'data'=>$result
+            ], Response::HTTP_OK);  
+        }           
+    }
+
+    /**
+     * Show Invoice
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function invoiceDisplay(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $post = $request->all();
+            if(isset($post) && !empty($post)){
+                $data['adviser'] = User::getAdvisorDetail($user->id);
+                $data['site_address'] = DB::table('app_settings')->where('key','site_address')->first();
+                $data['site_name'] = DB::table('app_settings')->where('key','mail_from_name')->first();
+                $data['new_fees'] = array();
+                $data['discount_credits'] = array();
+                if($data['adviser']){
+                    $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->first();
+                    if($data['invoice']){
+                        $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
+                        $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->get(); 
+                        foreach($data['invoice']->month_data as $month_data){
+                            $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
+                        }
+                        $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted',0)->with('area')->with('adviser')->get();
+                        if(count($data['invoice']->new_fees_arr)){
+                            foreach($data['invoice']->new_fees_arr as $new_bid){
+                                $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
+                                if($new_bid->status==0){
+                                    $new_bid->status_type = "Live Lead";
+                                }else if($new_bid->status==1){
+                                    $new_bid->status_type = "Hired";
+                                }else if($new_bid->status==2){
+                                    $new_bid->status_type = "Completed";
+                                }else if($new_bid->status==3){
+                                    $new_bid->status_type = "Lost";
+                                }else if($new_bid->advisor_status==2){
+                                    $new_bid->status_type = "Not Proceeding";
+                                }
+                            }
+                        }
+                        $data['invoice']->discount_credit_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                        if(count($data['invoice']->new_fees_arr)){
+                            foreach($data['invoice']->discount_credit_arr as $discount_bid){
+                                $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
+                                if($discount_bid->status==0){
+                                    $discount_bid->status_type = "Live Lead";
+                                }else if($discount_bid->status==1){
+                                    $discount_bid->status_type = "Hired";
+                                }else if($discount_bid->status==2){
+                                    $discount_bid->status_type = "Completed";
+                                }else if($discount_bid->status==3){
+                                    $discount_bid->status_type = "Lost";
+                                }else if($discount_bid->advisor_status==2){
+                                    $discount_bid->status_type = "Not Proceeding";
+                                }
+                            }
+                        }
+                    }
+                }
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Invoice fetched successfully',
+                    'data'=> $data
+                ], Response::HTTP_OK);
+            }else{
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Something went wrong.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }           
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+        $user = JWTAuth::parseToken()->authenticate();
+        // $id = $user->id;
+        
+        // echo json_encode($data);exit;
+        return view('advisor.invoice',$data);
     }
 }

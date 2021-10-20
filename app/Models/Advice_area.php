@@ -18,6 +18,10 @@ class Advice_area extends Model
     public function service(){
         return $this->hasOne('App\Models\ServiceType',"id","service_type_id");
     }
+    public function total_bid_count(){
+        return $this->hasMany('App\Models\AdvisorBids',"area_id","id");
+    }
+    
     public static function getNeedList($search){
         try {
             $query = new Self;
@@ -34,9 +38,9 @@ class Advice_area extends Model
             if(count($userId)){
                 $query = $query->whereIn('advice_areas.user_id',$userId);
             }
-            // if(isset($search['email_status']) && $search['email_status']!=''){
-            //     $query = $query->where('users.email_status',$search['email_status']);
-            // }
+            if(isset($search['service_id']) && $search['service_id']!=''){
+                $query = $query->where('advice_areas.service_type_id',$search['service_id']);
+            }
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('advice_areas.status',$search['status']);
             }
@@ -53,6 +57,10 @@ class Advice_area extends Model
             foreach ($advice_area as $key => $item) {
                 // echo json_encode($item->id);
                 $advisers = AdvisorBids::where('area_id',$item->id)->get();
+                // $review = ReviewRatings::where('area_id',$item->id)->first();
+                // if($review){
+                //     $advice_area[$key]->offer_count = $review;
+                // }
                 // echo json_encode($advisers);
                 $date = date('Y-m-d H:i:s');
                 // echo json_encode($date);

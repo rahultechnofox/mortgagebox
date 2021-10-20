@@ -38,10 +38,11 @@
                             <input type="text" id="fp-default" value="<?php if(isset($_GET['created_at']) && $_GET['created_at']!=''){ echo date("Y-m-d",strtotime($_GET['created_at'])); } ?>" name="created_at" class="form-control flatpickr-basic" placeholder="Date" />
                         </div>
                         <div class="col-md-2 col-12">
-                            <select class="form-select" id="" name="email_status">
-                                <option value="">Email Verified</option>
-                                <option value="1" <?php if(isset($_GET['email_status']) && $_GET['email_status']!=''){ if($_GET['email_status']==1){ echo "selected"; } } ?>>Yes</option>
-                                <option value="0" <?php if(isset($_GET['email_status']) && $_GET['email_status']!=''){ if($_GET['email_status']==0){ echo "selected"; } } ?>>No</option>
+                            <select class="form-select" id="" name="service_id">
+                                <option value="">Service</option>
+                                @foreach($services as $services_data)
+                                <option value="{{$services_data->id}}" <?php if(isset($_GET['service_id']) && $_GET['service_id']!=''){ if($_GET['service_id']==$services_data->id){ echo "selected"; } } ?>>{{$services_data->name}}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-2 col-12">

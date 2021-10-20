@@ -189,7 +189,11 @@
                                         <h6 class="transaction-title">{{ __('Sex:') }}</h6>
                                         <small>
                                             @if(isset($profile->gender) && $profile->gender!='') 
-                                                {{$profile->gender}} 
+                                                @if($profile->gender!='null')
+                                                    {{$profile->gender}} 
+                                                @else   
+                                                    --
+                                                @endif
                                             @else
                                                 --                                            
                                             @endif
@@ -203,7 +207,11 @@
                                         <h6 class="transaction-title">{{ __('Langauge:') }}</h6>
                                         <small>
                                             @if(isset($profile->language) && $profile->language!='') 
-                                                {{$profile->language}} 
+                                                @if($profile->language!='null')
+                                                    {{$profile->language}} 
+                                                @else   
+                                                    --
+                                                @endif
                                             @else
                                                 --                                            
                                             @endif

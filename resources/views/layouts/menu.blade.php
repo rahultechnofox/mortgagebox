@@ -40,3 +40,6 @@
 <li class="{{ Request::is('admin/invoice*') ? 'active' : '' }} nav-item">
     <a class="d-flex align-items-center" href="{{ url('admin/invoice') }}"><i data-feather="file-text"></i><span class="menu-title text-truncate" data-i18n="Services">Invoice History</span></a>
 </li>
+<li class="{{ Request::is('admin/review-spam*') ? 'active' : '' }} nav-item">
+    <a class="d-flex align-items-center" href="{{ url('admin/review-spam') }}"><i data-feather="file-text"></i><span class="menu-title text-truncate" data-i18n="Review Spam">Review Spam</span></a>
+</li>

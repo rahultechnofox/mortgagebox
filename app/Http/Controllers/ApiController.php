@@ -1664,16 +1664,14 @@ class ApiController extends Controller
                 $query->where(function($q) use ($lead_submitted) {
                     foreach($lead_submitted as $item ){
                         if($item!="anytime"){
-                            if($item=="today"){
-                                $q->orWhereDate('advice_areas.created_at', Carbon::today());
-                            }else if($item=="yesterday") {
-                                $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
-                            }else if($item=="last_hour") {
-                                $q->orWhereDate('created_at','>=' ,date("Y-m-d H:i:s",strtotime("-1 hours")));
-                            }else if($item=="less_3_days") {
-                                $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
-                            }else if($item=="less_3_week") {
-                                $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
+                            if($item=="three_month"){
+                                //Query to be
+                            }else if($item=="six_month") {
+                                
+                            }else if($item=="last_year") {
+                                
+                            }else if($item=="two_years") {
+                                
                             }
                         }                        
                     }

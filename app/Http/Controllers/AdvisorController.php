@@ -407,7 +407,7 @@ class AdvisorController extends Controller
             ->leftJoin('users', 'review_ratings.user_id', '=', 'users.id')
             ->leftJoin('review_spam', 'review_ratings.id', '=', 'review_spam.review_id')
             ->where('review_ratings.advisor_id', '=', $id)
-            ->where('review_ratings.status', '=', 0)
+            ->where('review_ratings.status', '!=', 2)
             ->with('area')
             // ->where('review_spam.spam_status', '!=', 0)
             ->get();
@@ -434,7 +434,7 @@ class AdvisorController extends Controller
         ->Where('advisor_id','=',$id)
         ->count();
         
-        $averageRating = ReviewRatings::where('advisor_id', '=', $id)->avg('rating');
+        $averageRating = ReviewRatings::where('advisor_id', '=', $id)->where('review_ratings.status', '!=', 2)->avg('rating');
 
         if ($advisor_data) {
             $advisor_data->used_by  = $usedByMortage;

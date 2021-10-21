@@ -1588,7 +1588,7 @@ class ApiController extends Controller
             $message_arr = array(-1);
             foreach($request->message as $messages){
                 if($messages=='unread'){
-                    $chat = ChatModel::where('to_user_id_seen',0)->get();
+                    $chat = ChatModel::where('from_user_id',$user->id)->where('to_user_id_seen',0)->get();
                     foreach($chat as $chat_data){
                         $channel = ChatChannel::where('id',$chat_data->channel_id)->first();
                         if($channel){
@@ -1678,12 +1678,17 @@ class ApiController extends Controller
                 });
             }
         });
-
+        if($message_arr){
+            $advice_area = $advice_area->whereIn('advice_areas.id',$message_arr);
+        }
         if($adviser_arr){
             $advice_area = $advice_area->whereIn('advice_areas.id',$adviser_arr);
         }
+        if($status_arr){
+            $advice_area = $advice_area->whereIn('advice_areas.id',$status_arr);
+        }
 
-        $advice_area =  $advice_area->->with('service')->paginate();
+        $advice_area =  $advice_area->with('service')->paginate();
 
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {

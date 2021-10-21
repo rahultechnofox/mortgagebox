@@ -36,9 +36,9 @@ class CompanyController extends Controller
                 $row->display_name = $adviser_data->display_name;
             }
         }
-        // echo json_encode($companyDetails);exit;
         return view('company.index',['companyDetails'=>$companyDetails,'adviser'=>$adviser]);
     }
+
     /**
      * Update status the specified resource in storage.
      *

@@ -32,41 +32,43 @@ class companies extends Model
 
     public static function getCompanies($search){
         try {
-            $query = new Self;
+            $companyId = array();
+            
             if(isset($search['search']) && $search['search']!=''){
-                $query = $query->where('company_name', 'like', '%' .strtolower($search['search']). '%');
-            }
-            $final_arr_m = array();
-            if(isset($search['search']) && $search['search']!=''){
-                // $companies = companies::where('company_name', 'like', '%' .strtolower($search['search']). '%')->get();
-                $company_arr = array();
-                $company_admin = companies::where('status',1)->get();
-                
-                if(count($company_admin)){
-                    foreach($company_admin as $company_admin_data){
-                        array_push($company_arr,$company_admin_data->company_admin);
-                    }
-                }
-                $advisor = AdvisorProfile::whereIn('advisorId',$company_arr)->where('display_name', 'like', '%' .strtolower($search['search']). '%')->get();
+                $final_arr_m = array(-1);
+                $advisor = AdvisorProfile::select('advisorId')->where('display_name', 'like', '%' .strtolower($search['search']). '%')->get();
                 if(count($advisor)){
                     foreach($advisor as $advisor_data){
                         array_push($final_arr_m,$advisor_data->advisorId);
                     }
                 }
+                $companyId = array(-1);
+                $getData = companies::where('company_name', 'like', '%' .strtolower($search['search']). '%')->orWhereIn('company_admin',$final_arr_m)->get();
+                if(count($getData)){
+                    foreach($getData as $getRow){
+                        array_push($companyId,$getRow->company_admin);
+                    }
+                }
             }
-            if(count($final_arr_m)){
-                $query = $query->whereIn('company_admin',$final_arr_m);
+
+            $query = new Self;
+            if(count($companyId)>0){
+                $query = $query->whereIn('company_admin',$companyId);
             }
+
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('status',$search['status']);
             }
+
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
+
             $data = $query->with('adviser')->with('team_members')->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
+            
             foreach($data as $row){
                 $success_per = 0;
-                $team_arr = array();
+                $team_arr = array(-1);
                 $admin = CompanyTeamMembers::where('company_id',$row->id)->where('isCompanyAdmin',1)->first();
                 if($admin){
                     $ad_user = AdvisorProfile::where('email',$admin->email)->first();
@@ -76,53 +78,43 @@ class companies extends Model
                         $row->company_admin_name = "";
                     }
                 }
-                // if($row->company_admin!=0){
-                //     $user = AdvisorProfile::where('advisorId',$row->company_admin)->first();
-                //     if($user){
-                //         $row->company_admin_name = $user->display_name;
-                //     }else{
-                //         $row->company_admin_name = "";
-                //     }
-                //     array_push($team_arr,$row->company_admin);
-                // }else{
-                //     $row->company_admin_name = "";
-                // }
-                $final_live_lead = 0;
-                
+
+                $final_live_lead = 'NA';                
                 $final_cost_of_lead = 0;
                 $final_eastimated_lead = 0;
                 $cost_lead = 0;
-                $lead_value = 0;
                 $cost_lead_final = 0;
-                foreach($row->team_members as $team_members_data){
-                   
-                    $area_arr = array(-1);
+
+                $area_arr = array(-1);
+                foreach($row->team_members as $team_members_data)
+                {
                     $advisor_data_team = AdvisorProfile::where('email',$team_members_data->email)->first();
                     if($advisor_data_team){
-                        $es_val = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
+                        $es_val = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->where('status',2)->where('advisor_status',1)->get();
                         $estimated = config('app.currency').number_format(0.00,0);
                         
                         if(count($es_val)){
                             foreach($es_val as $es_val_data){
                                 array_push($area_arr,$es_val_data->area_id);
                             }
-
-                            if(count($area_arr)){
-                                $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
-                                $main_value = ($value_data/100);
-                                $advisorDetaultPercent = 0;
-                                $services = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
-                                if($services){
-                                    $advisorDetaultPercent = $services->value;
-                                }
-                                $lead_value = ($main_value)*($advisorDetaultPercent);
-                                $estimated = config('app.currency').number_format($lead_value,2);
-                            }
                         }
 
-                        $final_eastimated_lead = $final_eastimated_lead + $lead_value;
-                        // echo json_encode($lead_value);exit;
-                        // $final_eastimated_lead = config('app.currency').number_format($lead_value,2);
+                        if(count($area_arr)){
+                            $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
+                            $main_value = ($value_data/100);
+                            $advisorDetaultPercent = 0;
+                            $services = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
+                            if($services){
+                                $advisorDetaultPercent = $services->value;
+                            }
+                            $lead_value = ($main_value)*($advisorDetaultPercent);
+                            $final_eastimated_lead = $final_eastimated_lead + $lead_value;
+                        }
+                        else{
+                            $lead_value = 0;
+                            $final_eastimated_lead = $final_eastimated_lead + $lead_value;
+                        }
+                        
                         if($advisor_data_team->advisorId!=null){
                             array_push($team_arr,$advisor_data_team->advisorId);
                         }
@@ -135,56 +127,30 @@ class companies extends Model
                                 if($cost_val_data->cost_discounted==0){
                                     $cost_lead = $cost_lead + $cost_val_data->cost_leads;
                                 }
-                                // array_push($area_arr_cost,$cost_val_data->area_id);
                             }
                             $cost_lead_final = $cost_lead;
-                            
                         }
                         $final_cost_of_lead = $final_cost_of_lead + $cost_lead_final;
-                    }
-                    if(count($area_arr)){
-                        $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
-                        $main_value = ($value_data/100);
-                        $advisorDetaultPercent = 0;
-                        $services = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
-                        if($services){
-                            $advisorDetaultPercent = $services->value;
-                        }
-                        $lead_value = ($main_value)*($advisorDetaultPercent);
-                        $final_eastimated_lead = $final_eastimated_lead + $lead_value;
-                    }
-                    // echo json_encode($area_arr);
+                    }                    
                 }
+                
 
-                // exit;
                 $row->live_leads = $final_live_lead;
                 $row->eastimated_lead = $final_eastimated_lead;
                 $row->cost_of_lead = config('app.currency').number_format($final_cost_of_lead,0);
 
-                $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->whereIn('advisor_id',$team_arr)
-                ->where('status', '!=', 2)->where('status', '!=', 3)->count();
+                $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->whereIn('advisor_id',$team_arr)->where('status', '!=', 2)->where('status', '!=', 3)->count();
 
                 $row->accepted_leads = $advice_areaCount;
-                // echo json_encode($team_arr);exit;
-                $hired_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
-                ->where('status', '=', 1)
-                ->where('advisor_status', '=', 1)
-                ->count();
+
+                $hired_leads = AdvisorBids::whereIn('advisor_id',$team_arr)->where('status', '=', 1)->where('advisor_status', '=', 1)->count();
                 $row->hired_leads = $hired_leads;
 
-                $completed_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
-                ->where('status', '=', 2)
-                ->where('advisor_status', '=', 1)
-                ->count();
+                $completed_leads = AdvisorBids::whereIn('advisor_id',$team_arr)->where('status', '=', 2)->where('advisor_status', '=', 1)->count();
                 $row->completed_leads = $completed_leads;
     
-                $lost_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
-                ->where('status', '=', 3)
-                ->where('advisor_status', '=', 1)
-                ->count();
+                $lost_leads = AdvisorBids::whereIn('advisor_id',$team_arr)->where('status', '=', 3)->where('advisor_status', '=', 1)->count();
                 $row->lost_leads = $lost_leads;
-
-
 
                 $value = AdvisorBids::whereIn('advisor_id',$team_arr)->sum('cost_leads');
                 $cost = AdvisorBids::whereIn('advisor_id',$team_arr)->sum('cost_discounted');
@@ -196,27 +162,6 @@ class companies extends Model
                 }
                 $row->success_percent = $success_per;
                 $row->total_advisor = count($row->adviser);
-                // $row->accepted_leads = 0;
-                // $row->value = 0;
-                // $row->cost = 0;
-                // $row->live_leads = 0;
-                // $row->hired = 0;
-                // $row->completed = 0;
-                // $row->success_percent = 0;
-                // $success_per = 0;
-                // if(isset($row->adviser) && count($row->adviser)>0){
-                //     foreach($row->adviser as $adviser_data){
-                //         $row->accepted_leads = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->where('status',1)->count();
-                //         $row->value = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->sum('cost_leads');
-                //         $row->cost = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->sum('cost_discounted');
-                //         $row->completed = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->where('status',2)->count();
-                //         $total_bids = AdvisorBids::where('advisor_id',$adviser_data->advisorId)->where('advisor_status', '=', 1)->count();
-                //         if($total_bids!=0){
-                //             $success_per = ($row->accepted_leads / $total_bids) * 100;
-                //         }
-                //         $row->success_percent = $success_per;
-                //     }
-                // }
             }
             return $data;
         }catch (\Exception $e) {

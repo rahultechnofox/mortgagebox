@@ -69,9 +69,11 @@ Route::middleware('auth')->group(function(){
 
     /******************* Need Management **********************/
     Route::get('admin/need', '\App\Http\Controllers\NeedController@index')->name("admin/need");
+    Route::get('admin/spam-need', '\App\Http\Controllers\NeedController@need_spam')->name("admin/spam-need");
     Route::get('admin/need/show/{id}', '\App\Http\Controllers\NeedController@show')->name("admin/need/show");
     Route::get('admin/delete-need/{id}', '\App\Http\Controllers\NeedController@destroy')->name("admin/delete-need");
     Route::post('admin/update-need-status','\App\Http\Controllers\NeedController@updateNeedStatus');
+    Route::post('admin/refundPayment','\App\Http\Controllers\NeedController@refundPayment');
 
     /******************* Need Management **********************/
 

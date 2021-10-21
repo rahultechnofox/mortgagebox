@@ -15,7 +15,7 @@ class companies extends Model
     ];
 
     public function team_members(){
-        return $this->hasMany('App\Models\CompanyTeamMembers',"company_id","id")->with('team_data')->with('team_data_advisor_profile');
+        return $this->hasMany('App\Models\CompanyTeamMembers',"company_id","id")->where('is_joined',1)->with('team_data')->with('team_data_advisor_profile');
     }
 
     public function adviser(){
@@ -39,7 +39,6 @@ class companies extends Model
             $final_arr_m = array();
             if(isset($search['search']) && $search['search']!=''){
                 // $companies = companies::where('company_name', 'like', '%' .strtolower($search['search']). '%')->get();
-                
                 $company_arr = array();
                 $company_admin = companies::where('status',1)->get();
                 
@@ -91,16 +90,18 @@ class companies extends Model
                 $final_live_lead = 0;
                 
                 $final_cost_of_lead = 0;
+                $final_eastimated_lead = 0;
+                $cost_lead = 0;
+                $lead_value = 0;
+                $cost_lead_final = 0;
                 foreach($row->team_members as $team_members_data){
-                    $final_eastimated_lead = 0;
-                    $cost_lead = 0;
-                    $lead_value = 0;
-                    $cost_lead_final = 0;
+                   
+                    $area_arr = array(-1);
                     $advisor_data_team = AdvisorProfile::where('email',$team_members_data->email)->first();
                     if($advisor_data_team){
-                        $es_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
+                        $es_val = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
                         $estimated = config('app.currency').number_format(0.00,0);
-                        $area_arr = array();
+                        
                         if(count($es_val)){
                             foreach($es_val as $es_val_data){
                                 array_push($area_arr,$es_val_data->area_id);
@@ -115,7 +116,7 @@ class companies extends Model
                                     $advisorDetaultPercent = $services->value;
                                 }
                                 $lead_value = ($main_value)*($advisorDetaultPercent);
-                                // $estimated = config('app.currency').number_format($lead_value,2);
+                                $estimated = config('app.currency').number_format($lead_value,2);
                             }
                         }
 
@@ -141,9 +142,20 @@ class companies extends Model
                         }
                         $final_cost_of_lead = $final_cost_of_lead + $cost_lead_final;
                     }
-                    //  echo json_encode($advisor_data_team);
-
+                    if(count($area_arr)){
+                        $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
+                        $main_value = ($value_data/100);
+                        $advisorDetaultPercent = 0;
+                        $services = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
+                        if($services){
+                            $advisorDetaultPercent = $services->value;
+                        }
+                        $lead_value = ($main_value)*($advisorDetaultPercent);
+                        $final_eastimated_lead = $final_eastimated_lead + $lead_value;
+                    }
+                    // echo json_encode($area_arr);
                 }
+
                 // exit;
                 $row->live_leads = $final_live_lead;
                 $row->eastimated_lead = $final_eastimated_lead;

@@ -77,8 +77,8 @@
                                         <small>
                                             @if(isset($profile) && $profile->image!='')
                                             <?php $url = url('storage/advisor/'.$profile->image); ?>
-                                                @if(file_exists($url))
-                                                    <img src="{{$url}}" style="width: 80px;">
+                                                @if($url!='')
+                                                    <img src="{{$url}}" style="width: 80px;" onerror="this.onerror=null;this.src=`{{url('no-image.png')}}`">
                                                 @else
                                                     <img src="{{url('no-image.png')}}" style="width: 80px;">
                                                 @endif

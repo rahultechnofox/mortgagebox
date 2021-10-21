@@ -209,6 +209,87 @@ class User extends Authenticatable implements JWTSubject
                         $cost_lead_final = config('app.currency').number_format($cost_lead,0);
                         
                     }
+                    // $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
+                    
+                    $area_data = Advice_area::whereIn('id',$area_arr)->get();
+                    $cost_add = 0;
+                    foreach($area_data as $area_data_data){
+                        $adviceBid = AdvisorBids::where('area_id',$area_data_data->id)->orderBy('status','ASC')->get();                        
+                        $costOfLead = ($area_data_data->size_want/100)*0.006;
+                        $time1 = Date('Y-m-d H:i:s');
+                        $time2 = Date('Y-m-d H:i:s',strtotime($area_data_data->created_at));
+                        $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+                        $costOfLeadsStr = "";
+                        $costAmount = 0;
+                        $costOfLeadsDropStr = "";
+                        $amount = number_format((float)$costOfLead, 2, '.', '');
+                        if($hourdiff < 24) {
+                            $costOfLeadsStr = "".$area_data_data->size_want_currency.$amount;
+                            $in = 24-$hourdiff;
+                            $hrArr = explode(".",$in);
+                            $costOfLeadsDropStr = "Cost of lead drops to ".$area_data_data->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                            $costAmount = $amount;
+                        }
+                        if($hourdiff > 24 && $hourdiff < 48) {
+                            $costOfLeadsStr = "".$area_data_data->size_want_currency.($amount/2)." (Save 50%, was ".$area_data_data->size_want_currency.$amount.")";
+                            $in = 48-$hourdiff;
+                            $newAmount = (75 / 100) * $amount;
+                            $hrArr = explode(".",$in);
+                            $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                            $costAmount = $amount/2;
+                        }
+                        if($hourdiff > 48 && $hourdiff < 72) {
+                            $newAmount = (75 / 100) * $amount;
+                            $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$area_data_data->size_want_currency.$amount.")";
+                            $in = 72-$hourdiff;
+                            $hrArr = explode(".",$in);
+                            $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                            $costAmount = $amount-$newAmount;
+                        }
+                        if($hourdiff > 72) {
+                            $costOfLeadsStr = ""."Free";
+                            $costOfLeadsDropStr = "";
+                            $costAmount = 0;
+                        }
+                        $row->is_accepted = 0;
+                        $cost_add = $cost_add + $costAmount;
+                    }
+                    $row->cost_of_lead_final = $cost_add;
+                    // foreach($value_data){
+
+                    // }
+                    // $costOfLead = ($item->size_want/100)*0.006;
+                    // $costOfLeadsStr = "";
+                    // $costOfLeadsDropStr = "";
+                    // $amount = number_format((float)$costOfLead, 2, '.', '');
+                    // if($hourdiff < 24) {
+                    //     $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                    //     $in = 24-$hourdiff;
+                    //     $hrArr = explode(".",$in);
+                    //     $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                    // }
+                    // if($hourdiff > 24 && $hourdiff < 48) {
+                    //     $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                    //     $in = 48-$hourdiff;
+                    //     $newAmount = (75 / 100) * $amount;
+                    //     $hrArr = explode(".",$in);
+                    //     $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                    // }
+                    // if($hourdiff > 48 && $hourdiff < 72) {
+                    //     $newAmount = (75 / 100) * $amount;
+                    //     $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                    //     $in = 72-$hourdiff;
+                    //     $hrArr = explode(".",$in);
+                    //     $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                    // }
+                    // if($hourdiff > 72) {
+                    //     $costOfLeadsStr = ""."Free";
+                    //     $costOfLeadsDropStr = "";
+                    // }
+                    // $row->is_accepted = 0;
+                    
+                    // $row->cost_of_lead_final = $costOfLeadsStr;
+
                     $row->cost_of_leads_value = $cost_lead_final;
                     $total_bids = AdvisorBids::where('advisor_id',$row->advisorId)->where('advisor_status', '=', 1)->count();
                     if($total_bids!=0){

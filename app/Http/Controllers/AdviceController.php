@@ -71,7 +71,8 @@ class AdviceController extends Controller
         
         $user = Advice_area::create([
             'user_id' => $request->user_id,
-            'service_type' => $request->service_type,
+            // 'service_type' => $request->service_type,
+            'service_type_id' => (int)$request->service_type_id,
             'request_time' => $request->request_time,
             'property' => $request->property,
             'property_want' => $request->property_want,

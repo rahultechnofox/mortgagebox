@@ -21,4 +21,27 @@ class AdviceAreaSpam extends Model
      * @var array
     */
     protected $dates = ['deleted_at'];
+
+    public function area(){
+        return $this->hasOne('App\Models\Advice_area',"id","area_id")->with('user')->with('service');
+    }
+
+    public function user(){
+        return $this->hasOne('App\Models\User',"id","user_id");
+    }
+    public static function getSpamNeed($search){
+        try {
+            $query = new Self;
+            // if(isset($search['name']) && $search['name']!=''){
+            //     $query = $query->where('name', 'like', '%' .strtolower($search['name']). '%');
+            // }
+            // if(isset($search['status']) && $search['status']!=''){
+            //     $query = $query->where('status',$search['status']);
+            // }
+            $data = $query->with('area')->with('user')->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
+            return $data;
+        }catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
+        }
+    }
 }

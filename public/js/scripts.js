@@ -729,6 +729,27 @@ function takeDecision(id){
     });
 }
 
+function refundPayment(id,status){  
+    var data = {};
+    data.id = id;
+    data.spam_status = status;
+    showLoader();
+    $.ajax({
+        type: 'post',
+        url: base_url+"/admin/refundPayment",
+        data: data,
+        success: function (response) {
+            if(!response.status){
+                hideLoader();
+                myToastr(response.message,'error');
+            }else{
+                location.reload();                   
+                myToastr(response.message,'success');
+            }
+        }
+    });
+}
+
 function resetContactUsForm(){
     $("#servicesForm").closest('form').find("input[type=text], input[type=number], input[type=file], textarea").val("");
     $("#servicesForm").closest('form').find("input[type=checkbox]").removeAttr("checked");

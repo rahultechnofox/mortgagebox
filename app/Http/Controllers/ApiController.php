@@ -368,26 +368,12 @@ class ApiController extends Controller
             }
         }
         JWTAuth::parseToken()->authenticate();
-        // $user = Advice_area::create([
-        //     'user_id' => $request->user_id,
-        //     'service_type' => $request->service_type,
-        //     'request_time' => $request->request_time,
-        //     'property' => $request->property,
-        //     'property_want' => $request->property_want,
-        //     'size_want' => $request->size_want,
-        //     'combined_income' => $request->combined_income,
-        //     'description' => $request->description,
-        //     'occupation' => $request->occupation,
-        //     'contact_preference' => $request->contact_preference,
-        //     'advisor_preference' => $request->advisor_preference,
-        //     'fees_preference' => $request->fees_preference,
-        // ]);
-            $ltv_max  = ($request->property)/$request->size_want;
-            $lti_max  = ($request->property)/$request->combined_income;
-
-        Advice_area::create([
+        $ltv_max  = ($request->property)/$request->size_want;
+        $lti_max  = ($request->property)/$request->combined_income;
+        $advice_arr = array(
             'user_id' => $request->user_id,
-            'service_type' => $request->service_type,
+            'service_type_id' => (int)$request->service_type_id,
+            // 'service_type' => $request->service_type,
             'request_time' => $request->request_time,
             'property' => $request->property,
             'property_want' => $request->property_want,
@@ -413,8 +399,8 @@ class ApiController extends Controller
             'advisor_preference_gender' => $request->advisor_preference_gender,
             'ltv_max' => $ltv_max,
             'lti_max' => $lti_max
-
-        ]);
+        );
+        Advice_area::create($advice_arr);
         //User created, return success response
         return response()->json([
             'status' => true,
@@ -479,7 +465,7 @@ class ApiController extends Controller
             $invited_by_user = AdvisorProfile::where('advisorId',$user->invited_by)->first();
             if($invited_by_user){
                 $this->saveNotification(array(
-                    'type'=>'1', // 1:
+                    'type'=>'8', // 1:
                     'message'=>'You have got free introduction from refering advisor', // 1:
                     'read_unread'=>'0', // 1:
                     'user_id'=>$user->id,// 1:
@@ -554,7 +540,7 @@ class ApiController extends Controller
             }
             if(isset($teamArr['isCompanyAdmin']) && $teamArr['isCompanyAdmin']!=1){
                 $this->saveNotification(array(
-                    'type'=>'1', // 1:
+                    'type'=>'6', // 1:
                     'message'=>'Now you are a team member of '.$company_team_name->companyname, // 1:
                     'read_unread'=>'0', // 1:
                     'user_id'=>$advisor_id,// 1:
@@ -1021,6 +1007,17 @@ class ApiController extends Controller
     function matchLeads()
     {
         $user = JWTAuth::parseToken()->authenticate();
+        $advisor = AdvisorProfile::where('advisorId',$user->id)->first();
+        $mortgage_min_size = 0;
+        $mortgage_max_size = 0;
+        if($advisor){
+            if($advisor->mortgage_min_size!=0){
+                $mortgage_min_size = $advisor->mortgage_min_size;
+            }
+            if($advisor->mortgage_max_size!=0){
+                $mortgage_max_size = $advisor->mortgage_max_size;
+            }
+        }
         $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
         $requestTime = [];
         $ltv_max = $userPreferenceCustomer->ltv_max;
@@ -1086,6 +1083,15 @@ class ApiController extends Controller
                     });
                 }
             
+        })
+        ->where(function($query) use ($mortgage_min_size){
+            if($mortgage_min_size != 0) {               
+                $query->where('advice_areas.size_want','>',$mortgage_min_size);
+            }
+        })->where(function($query) use ($mortgage_max_size){
+            if($mortgage_max_size != 0) {               
+                $query->where('advice_areas.size_want','<=',$mortgage_max_size);
+            }
         })
         ->where(function($query) use ($ltv_max){
             if($ltv_max != "") {
@@ -1208,39 +1214,15 @@ class ApiController extends Controller
                 $services = DefaultPercent::where('adviser_id',$user->id)->where('service_id',$item->service_type_id)->first();
                 if($services){
                     $advisorDetaultPercent = $services->value_percent;
+                }else{
+                    $advisorDetaultPercent = 0.30;
                 }
+            }else{
+                $advisorDetaultPercent = 0.30;
             }
             $lead_value = ($main_value)*($advisorDetaultPercent);
             $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
-            // if($item->service_type=="remortgage") {
-            //     $advisorDetaultValue = "remortgage";
-            // }else if($item->service_type=="first time buyer") {
-            //     $advisorDetaultValue = "first_buyer";
-            // }else if($item->service_type=="next time buyer") {
-            //     $advisorDetaultValue = "next_buyer";
-            // }else if($item->service_type=="buy to let") {
-            //     $advisorDetaultValue = "but_let";
-            // }else if($item->service_type=="equity release") {
-            //     $advisorDetaultValue = "equity_release";
-            // }else if($item->service_type=="overseas") {
-            //     $advisorDetaultValue = "overseas";
-            // }else if($item->service_type=="self build") {
-            //     $advisorDetaultValue = "self_build";
-            // }else if($item->service_type=="mortgage protection") {
-            //     $advisorDetaultValue = "mortgage_protection";
-            // }else if($item->service_type=="secured loan") {
-            //     $advisorDetaultValue = "secured_loan";
-            // }else if($item->service_type=="bridging loan") {
-            //     $advisorDetaultValue = "bridging_loan";
-            // }else if($item->service_type=="commercial") {
-            //     $advisorDetaultValue = "commercial";
-            // }else if($item->service_type=="something else") {
-            //     $advisorDetaultValue = "something_else";
-            // }   
-            // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-            $advice_area[$key]->lead_address = $address;
-            // $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
-            // $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            $advice_area[$key]->lead_address = $address;    
             $advice_area[$key]->is_read = 0;
             $read = AdviceAreaRead::where('area_id',$item->id)->where('adviser_id','=',$user->id)->first();
             if($read){
@@ -1653,16 +1635,14 @@ class ApiController extends Controller
                 $query->where(function($q) use ($lead_submitted) {
                     foreach($lead_submitted as $item ){
                         if($item!="anytime"){
-                            if($item=="today"){
-                                $q->orWhereDate('advice_areas.created_at', Carbon::today());
-                            }else if($item=="yesterday") {
-                                $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
-                            }else if($item=="last_hour") {
-                                $q->orWhereDate('created_at','>=' ,date("Y-m-d H:i:s",strtotime("-1 hours")));
-                            }else if($item=="less_3_days") {
-                                $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
-                            }else if($item=="less_3_week") {
-                                $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
+                            if($item=="three_month"){
+                                //Query to be
+                            }else if($item=="six_month") {
+                                
+                            }else if($item=="last_year") {
+                                
+                            }else if($item=="two_years") {
+                                
                             }
                         }                        
                     }
@@ -1912,7 +1892,7 @@ class ApiController extends Controller
                     }
                    
                     $this->saveNotification(array(
-                        'type'=>'1', // 1:
+                        'type'=>'0', // 1:
                         'message'=>'A new bid placed', // 1:
                         'read_unread'=>'0', // 1:
                         'user_id'=>$advisorAreaDetails->user_id,// 1:
@@ -1931,7 +1911,7 @@ class ApiController extends Controller
                         'advisor_status' => $request->advisor_status,
                     ]);
                     $this->saveNotification(array(
-                        'type'=>'1', // 1:
+                        'type'=>'2', // 1:
                         'message'=>'Not interest ', // 1:
                         'read_unread'=>'0', // 1:
                         'user_id'=>$user->id,// 1:
@@ -2123,7 +2103,7 @@ class ApiController extends Controller
         
         $message = 'New message arrived from '.$user->name;
         $this->saveNotification(array(
-            'type'=>'1', // 1:
+            'type'=>'9', // 1:
             'message'=>'New message arrived from '.$user->name, // 1:
             'read_unread'=>'0', // 1:
             'user_id'=>$request->from_user_id,// 1:
@@ -2595,7 +2575,7 @@ class ApiController extends Controller
             Advice_area::where('id',$bidDetails->area_id)->update(['area_status'=>2,'advisor_id'=>$bidDetails->advisor_id]);
             $message = "Offer accepted";
             $this->saveNotification(array(
-                'type'=>'1', // 1:
+                'type'=>'0', // 1:
                 'message'=>'Your bid accepted by customer '.$user->name, // 1:
                 'read_unread'=>'0', // 1:
                 'user_id'=>$user->id,// 1:
@@ -3230,7 +3210,7 @@ class ApiController extends Controller
                         CompanyTeamMembers::where('id',$team_member_to_update->id)->update(['isCompanyAdmin'=>1]);
                         $advisor = AdvisorProfile::where('advisorId',$request->to_user_id)->first();
                         $this->saveNotification(array(
-                            'type'=>'1', // 1:
+                            'type'=>'7', // 1:
                             'message'=>'You are a company admin now', // 1:
                             'read_unread'=>'0', // 1:
                             'user_id'=>$user->id,// 1:

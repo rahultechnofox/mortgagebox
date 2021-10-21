@@ -16,9 +16,8 @@ use App\Models\StaticPage;
 use App\Models\ServiceType;
 use App\Models\UserNotes;
 use App\Models\AppSettings;
-
-
-
+use App\Models\AdviceAreaSpam;
+use App\Models\NeedSpam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -287,5 +286,69 @@ class NeedController extends Controller
         AdvisorBids::where('area_id', '=', $need_id)->delete();
         $data['message'] = 'Need deleted!';
         return redirect()->to('admin/need')->with('message', $data['message']);
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function need_spam(Request $request){
+        $post = $request->all();
+        $advice_area = AdviceAreaSpam::getSpamNeed($post);
+        // $data = $advice_area;   
+        $data['result'] = $advice_area;
+        $data['services'] = ServiceType::where('parent_id','!=',0)->where('status',1)->get();
+        $data['entry_count'] = config('constants.paginate.num_per_page');
+        // echo json_encode($data);exit;
+        return view('need_spam.index',$data);
+    }
+
+    /**
+     * Take decision status the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function refundPayment(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                $user = AdviceAreaSpam::where('id',$post['id'])->update(['spam_status'=>$post['spam_status']]);
+                if($post['spam_status']==1){
+                    if($user){
+                        $need = AdviceAreaSpam::where('id',$post['id'])->first();
+                        if($need){
+                            $need_bid = AdvisorBids::where('area_id',$need->area_id)->where('advisor_id',$need->user_id)->first();
+                            if($need_bid){
+                                $refund = array(
+                                    'area_id'=>$need->area_id,
+                                    'adviser_id'=>$need->user_id,
+                                    'bid_id'=>$need_bid->id,
+                                    'refund_status'=>1,
+                                    'created_at'=>date('Y-m-d H:i:s'),
+                                );
+                                NeedSpam::insertGetId($refund);
+                            }
+                        }
+                    }
+                }
+                if($user){
+                    return response(\Helpers::sendSuccessAjaxResponse('Status updated successfully.',$user));
+                }else{
+                    return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
     }
 }

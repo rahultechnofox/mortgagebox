@@ -43,3 +43,6 @@
 <li class="{{ Request::is('admin/review-spam*') ? 'active' : '' }} nav-item">
     <a class="d-flex align-items-center" href="{{ url('admin/review-spam') }}"><i data-feather="file-text"></i><span class="menu-title text-truncate" data-i18n="Review Spam">Review Spam</span></a>
 </li>
+<li class="{{ Request::is('admin/spam-need*') ? 'active' : '' }} nav-item">
+    <a class="d-flex align-items-center" href="{{ url('admin/spam-need') }}"><i data-feather="file-text"></i><span class="menu-title text-truncate" data-i18n="Need Spam">Need Spam</span></a>
+</li>

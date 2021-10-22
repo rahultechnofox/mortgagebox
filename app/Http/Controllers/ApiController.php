@@ -218,6 +218,29 @@ class ApiController extends Controller
         return response()->json(['user' => $user]);
     }
 
+
+    public function get_user_profile(Request $request)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user->user_role==1){
+            $user->userDetails = AdvisorProfile::where('advisorId',$user->id)->first();
+            if($user->userDetails){
+                $team_member = CompanyTeamMembers::where('email',$user->userDetails->email)->first();
+                // $userDetails->is_admin = $team_member;
+                if($team_member){
+                    if($team_member->isCompanyAdmin==1){
+                        $user->is_admin = 1;
+                    }else{
+                        $user->is_admin = 0;
+                    }
+                }else{
+                    $user->is_admin = 2;
+                }
+            }
+            $user->slug = $this->getEncryptedId($user->id);
+        }
+        return response()->json(['user' => $user]);
+    }
     public function updateAccount(Request $request)
     {
         $userDetails = JWTAuth::parseToken()->authenticate();
@@ -1023,7 +1046,7 @@ class ApiController extends Controller
         }
         
         // TODO: Ltv max and Lti Max need to check for filter
-        $userPreferenceProduct = AdviserProductPreferences::where('advisor_id','=',$user->id)->get();
+        $userPreferenceProduct = AdviserProductPreferences::where('adviser_id','=',$user->id)->get();
         $service_type = array();
         if(!empty($userPreferenceProduct)) {
             foreach($userPreferenceProduct as $userPreferenceProduct_data){
@@ -1178,30 +1201,30 @@ class ApiController extends Controller
             $costOfLeadsStr = "";
             $costOfLeadsDropStr = "";
             $amount = number_format((float)$costOfLead, 2, '.', '');
-            // if($hourdiff < 24) {
-            //     $costOfLeadsStr = "".$item->size_want_currency.$amount;
-            //     $in = 24-$hourdiff;
-            //     $hrArr = explode(".",$in);
-            //     $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            // }
-            // if($hourdiff > 24 && $hourdiff < 48) {
-            //     $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-            //     $in = 48-$hourdiff;
-            //     $newAmount = (75 / 100) * $amount;
-            //     $hrArr = explode(".",$in);
-            //     $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            // }
-            // if($hourdiff > 48 && $hourdiff < 72) {
-            //     $newAmount = (75 / 100) * $amount;
-            //     $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-            //     $in = 72-$hourdiff;
-            //     $hrArr = explode(".",$in);
-            //     $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            // }
-            // if($hourdiff > 72) {
-            //     $costOfLeadsStr = ""."Free";
-            //     $costOfLeadsDropStr = "";
-            // }
+            if($hourdiff < 24) {
+                $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                $in = 24-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 24 && $hourdiff < 48) {
+                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $in = 48-$hourdiff;
+                $newAmount = (75 / 100) * $amount;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 48 && $hourdiff < 72) {
+                $newAmount = (75 / 100) * $amount;
+                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $in = 72-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 72) {
+                $costOfLeadsStr = ""."Free";
+                $costOfLeadsDropStr = "";
+            }
             $advice_area[$key]->is_accepted = 0;
             
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
@@ -1877,34 +1900,40 @@ class ApiController extends Controller
                     $time2 = Date('Y-m-d H:i:s',strtotime($advisorAreaDetails->created_at));
                     $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
                     $discounted_price = 0;
+                    $is_discount = 0;
                     $discounted_cycle = "";
                     $amount = number_format((float)$costOfLead, 2, '.', '');
                     if($hourdiff < 24) {
                         $discounted_price = 0;
                         $discounted_cycle = "First cycle";
+                        $is_discount = 0;
                     }
                     if($hourdiff > 24 && $hourdiff < 48) {
                         $discounted_price = number_format((float)($amount/2), 2, '.', '');
                         $discounted_cycle = "Second cycle";
-
+                        $is_discount = 1;
                     }
                     if($hourdiff > 48 && $hourdiff < 72) {
                         $newAmount = (75 / 100) * $amount;
                         $discounted_price = number_format((float)($newAmount), 2, '.', '');
                         $discounted_cycle = "Third cycle";
-
+                        $is_discount = 1;
                     }
                     if($hourdiff > 72) {
                         $discounted_price = number_format((float)($costOfLead), 2, '.', '');
                         $discounted_cycle = "Fourth cycle";
+                        $is_discount = 1;
                     }
                     
                     $advice_area = AdvisorBids::create([
+                        'discount_cycle'=>$discounted_cycle,
+                        'is_discounted'=>$is_discount,
                         'advisor_id' => $request->advisor_id,
                         'area_id' => $request->area_id,
                         'advisor_status' => $request->advisor_status,
                         'cost_leads'=>$costOfLead,
-                        'cost_discounted'=>$discounted_price
+                        'cost_discounted'=>$discounted_price,
+                        
                     ]);
                     if($advice_area){
                         $area = Advice_area::where('id',$request->area_id)->first();
@@ -2002,6 +2031,7 @@ class ApiController extends Controller
             ->get();
 
         if ($advice_area) {
+            $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
             foreach ($advice_area as $key => $item) {
                 $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
                
@@ -2026,6 +2056,17 @@ class ApiController extends Controller
                 $advice_area[$key]->rating = [
                     'total' => count($rating),
                 ];
+
+                if($advice_area[$key]->status==1){
+                    $advice_area[$key]->status_name = "Accepted";
+                }else{
+                    $advice_area[$key]->status_name = "Lost";
+                }
+                if($checkStatus!=0){
+                    $advice_area[$key]->is_bided = 1;
+                }else{
+                    $advice_area[$key]->is_bided = 0;
+                }
             }
             return response()->json([
                 'status' => true,
@@ -2260,18 +2301,25 @@ class ApiController extends Controller
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             $show_status = "Live Leads"; 
             if(!empty($bidDetailsStatus)) {
-
-                if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Not Proceeding"; 
-                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Completed"; 
-                }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
-                    $show_status = "Hired"; 
-                }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                $checkStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','!=',$user->id)->where('status',1)->where('advisor_status',1)->count();
+                if($checkStatus!=0){
                     $show_status = "Lost";
+                    $advice_area[$key]->is_bided = 1;
                 }else{
-                    $show_status = "Live Leads";    
+                    $advice_area[$key]->is_bided = 0;
+                    if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Accepted";
+                    }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Completed"; 
+                    }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Hired"; 
+                    }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+                        $show_status = "Lost";
+                    }else{
+                        $show_status = "Live Leads";    
+                    }
                 }
+                
             }
             $advice_area[$key]->show_status = $show_status;
             $channelIds = array(-1);

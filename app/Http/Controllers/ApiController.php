@@ -3309,4 +3309,91 @@ class ApiController extends Controller
             ], Response::HTTP_OK);  
         }           
     }
+
+    /**
+     * Show Invoice
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function invoiceDisplay(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        if($user) {
+            $post = $request->all();
+            if(isset($post) && !empty($post)){
+                $data['adviser'] = User::getAdvisorDetail($user->id);
+                $data['site_address'] = DB::table('app_settings')->where('key','site_address')->first();
+                $data['site_name'] = DB::table('app_settings')->where('key','mail_from_name')->first();
+                $data['new_fees'] = array();
+                $data['discount_credits'] = array();
+                if($data['adviser']){
+                    $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->first();
+                    if($data['invoice']){
+                        $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
+                        $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->get(); 
+                        foreach($data['invoice']->month_data as $month_data){
+                            $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
+                        }
+                        $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted',0)->with('area')->with('adviser')->get();
+                        if(count($data['invoice']->new_fees_arr)){
+                            foreach($data['invoice']->new_fees_arr as $new_bid){
+                                $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
+                                if($new_bid->status==0){
+                                    $new_bid->status_type = "Live Lead";
+                                }else if($new_bid->status==1){
+                                    $new_bid->status_type = "Hired";
+                                }else if($new_bid->status==2){
+                                    $new_bid->status_type = "Completed";
+                                }else if($new_bid->status==3){
+                                    $new_bid->status_type = "Lost";
+                                }else if($new_bid->advisor_status==2){
+                                    $new_bid->status_type = "Not Proceeding";
+                                }
+                            }
+                        }
+                        $data['invoice']->discount_credit_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                        if(count($data['invoice']->new_fees_arr)){
+                            foreach($data['invoice']->discount_credit_arr as $discount_bid){
+                                $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
+                                if($discount_bid->status==0){
+                                    $discount_bid->status_type = "Live Lead";
+                                }else if($discount_bid->status==1){
+                                    $discount_bid->status_type = "Hired";
+                                }else if($discount_bid->status==2){
+                                    $discount_bid->status_type = "Completed";
+                                }else if($discount_bid->status==3){
+                                    $discount_bid->status_type = "Lost";
+                                }else if($discount_bid->advisor_status==2){
+                                    $discount_bid->status_type = "Not Proceeding";
+                                }
+                            }
+                        }
+                    }
+                }
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Invoice fetched successfully',
+                    'data'=> $data
+                ], Response::HTTP_OK);
+            }else{
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Something went wrong.',
+                    'data'=> []
+                ], Response::HTTP_OK);
+            }           
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+        $user = JWTAuth::parseToken()->authenticate();
+        // $id = $user->id;
+        
+        // echo json_encode($data);exit;
+        return view('advisor.invoice',$data);
+    }
 }

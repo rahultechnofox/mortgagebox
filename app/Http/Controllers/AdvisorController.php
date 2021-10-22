@@ -363,6 +363,7 @@ class AdvisorController extends Controller
         JWTAuth::parseToken()->authenticate();
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id)->first();
         if($advisor_data){
+            
             $company = companies::where('id',$advisor_data->company_id)->first();
             if($company){
                 $advisor_data->company_name = $company->company_name;
@@ -375,12 +376,33 @@ class AdvisorController extends Controller
                     }
                 }
             }
+            // if($advisor_data->image==''){
+            //     $adviser_company_admin = AdvisorProfile::where('advisorId',$advisor_data->adviso)->first();
+            //     if($adviser_company_admin){
+            //         if($adviser_company_admin->company_logo!=''){
+            //             $company_logo = $adviser_company_admin->company_logo;
+            //             $adviser_company_admin->company_logo = $company_logo;
+            //         }
+            //     }
+            // }
             $company_team = CompanyTeamMembers::where('email',$advisor_data->email)->first();
             if($company_team){
                 if($company_team->isCompanyAdmin==1){
                     $advisor_data->is_admin = 1;
                 }else{
                     $advisor_data->is_admin = 0;
+                    $adviser_company_admin = AdvisorProfile::where('advisorId',$company_team->advisor_id)->first();
+                    if($adviser_company_admin){
+                        if($adviser_company_admin->company_logo!=''){
+                            $company_logo = $adviser_company_admin->company_logo;
+                            $adviser_company_admin->company_logo = $company_logo;
+                            if($advisor_data->image==''){
+                                $advisor_data->image = $company_logo;
+                            }
+                            $advisor_data->company_logo = $company_logo;
+
+                        }
+                    }
                 }
             }else{
                 $advisor_data->is_admin = 2;
@@ -1956,6 +1978,7 @@ class AdvisorController extends Controller
 
     public function invoice(Request $request) {
         $users = User::where('user_role',1)->where('status',1)->get();
+        // echo json_encode($users);exit;
         foreach($users as $row){
             $advisor_data = AdvisorProfile::where('advisorId', '=', $row->id)->first();
             $locations = BillingAddress::where('advisor_id', '=', $row->id)->first();
@@ -2026,14 +2049,15 @@ class AdvisorController extends Controller
             ->get();
 
             $bidsId = AdvisorBids::where('advisor_id','=',$row->id)
-            ->where('status','>=',1)
+            // ->where('status','>=',0)
             ->whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
             ->where('is_paid_invoice','=',0)
             ->get();
             $bidArr = array();
             foreach($bidsId as $item) {
-                $bidArr[] = $item->id;
+                array_push($bidArr,$item->id);
+                // $bidArr[] = $item->id;
             }
             $newFeesArr = array();
             if(!empty($newFees)){
@@ -2110,8 +2134,11 @@ class AdvisorController extends Controller
                 $last_paid_date=$lastPayment['updated_at'];
                 $last_is_paid=$lastPayment['is_paid'];
             } 
-            if(empty($invoice_detais)) {
+            if(!$invoice_detais) {
+                // echo "111";echo "<br>";
                 if(!empty($bidArr)) {
+                // echo "222";echo "<br>";
+
                     $invoice_IID= Invoice::create([
                         'cost_of_lead'=>$total_this_month_cost_of_leads_subtotal,
                         'subtotal'=>$total_this_month_cost_of_leads_subtotal,
@@ -2162,8 +2189,10 @@ class AdvisorController extends Controller
                     //     'message' => 'success',
                     //     'data' => $total_data
                     // ], Response::HTTP_OK);
-                    return "Invoice generated successfully";
+                    // return "Invoice generated successfully";
                 }else{
+                    // echo "333";echo "<br>";
+
                     $lastPayment = Invoice::where('advisor_id','=',$row->id)->orderBy('id','DESC')->limit(1,1)->first();
                     $last_payment_invoice="";
                     $last_payment_date="";
@@ -2182,22 +2211,24 @@ class AdvisorController extends Controller
                         $last_paid_date=$lastPayment['updated_at'];
                         $last_is_paid=$lastPayment['is_paid'];
                     } 
-                    return response()->json([
-                        'status' => true,
-                        'message' => 'No invoice pending',
-                        'data' => [
-                            'last_payment_invoice'=>$last_payment_invoice,
-                            'last_payment_date'=>$last_payment_date,
-                            'last_transaction_id'=>$last_transaction_id,
-                            'seller_address'=>$seller_address,
-                            'bill_to_address'=>$bill_to_address,
-                            'last_invoice_amount'=>$last_invoice_amount,
-                            'last_paid_date'=>$last_paid_date,
-                            'last_is_paid'=>$last_is_paid
-                        ]
-                    ], Response::HTTP_OK);
+                    // return response()->json([
+                    //     'status' => true,
+                    //     'message' => 'No invoice pending',
+                    //     'data' => [
+                    //         'last_payment_invoice'=>$last_payment_invoice,
+                    //         'last_payment_date'=>$last_payment_date,
+                    //         'last_transaction_id'=>$last_transaction_id,
+                    //         'seller_address'=>$seller_address,
+                    //         'bill_to_address'=>$bill_to_address,
+                    //         'last_invoice_amount'=>$last_invoice_amount,
+                    //         'last_paid_date'=>$last_paid_date,
+                    //         'last_is_paid'=>$last_is_paid
+                    //     ]
+                    // ], Response::HTTP_OK);
                 }
             }else{
+                // echo "0000";echo "<br>";
+
                 if(isset($bill_to_address) && $bill_to_address!=''){
                     $bill_to_address = $bill_to_address;
                 }else{
@@ -2297,7 +2328,7 @@ class AdvisorController extends Controller
                 $total_data['last_invoice_amount']=$last_invoice_amount;
                 $total_data['last_paid_date']=$last_paid_date;
                 $total_data['last_is_paid']=$last_is_paid;
-                return "Invoice generated successfully";
+                
                 // return response()->json([
                 //     'status' => true,
                 //     'message' => 'success',
@@ -2305,6 +2336,8 @@ class AdvisorController extends Controller
                 // ], Response::HTTP_OK);
             }
         }
+        return "Invoice generated successfully";
+        exit;
     }
 
     public function saveNotification($data) {

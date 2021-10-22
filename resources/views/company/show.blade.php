@@ -48,8 +48,8 @@
 
                                             @if(isset($company_detail->adviser) && $company_detail->adviser->company_logo!='')
                                             <?php $url = url('storage/advisor/'.$company_detail->adviser->company_logo); ?>
-                                                @if(file_exists($url))
-                                                    <img src="{{$url}}" style="width: 80px;">
+                                                @if($company_detail->adviser->company_logo!='')
+                                                    <img src="{{$url}}" style="width: 80px;" onerror="this.onerror=null;this.src=`{{url('no-image.png')}}`">
                                                 @else
                                                     <img src="{{url('no-image.png')}}" style="width: 80px;">
                                                 @endif

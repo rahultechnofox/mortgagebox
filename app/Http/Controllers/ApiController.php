@@ -29,6 +29,7 @@ use App\Models\CompanyTeamMembers;
 use App\Models\Faq;
 use App\Models\FaqCategory;
 use App\Models\Contactus;
+use App\Models\AdviserProductPreferences;
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -1022,45 +1023,48 @@ class ApiController extends Controller
         }
         
         // TODO: Ltv max and Lti Max need to check for filter
-        $userPreferenceProduct = AdvisorPreferencesProducts::where('advisor_id','=',$user->id)->first();
+        $userPreferenceProduct = AdviserProductPreferences::where('advisor_id','=',$user->id)->get();
         $service_type = array();
         if(!empty($userPreferenceProduct)) {
-            if($userPreferenceProduct->remortgage == 1) {
-                $service_type[] = "remortgage";
+            foreach($userPreferenceProduct as $userPreferenceProduct_data){
+                array_push($service_type,$userPreferenceProduct_data->service_id);
             }
-            if($userPreferenceProduct->first_buyer == 1) {
-                $service_type[]= "first time buyer";
-            }
-            if($userPreferenceProduct->next_buyer == 1) {
-                $service_type[]= "next time buyer";
-            }
-            if($userPreferenceProduct->but_let == 1) {
-                $service_type[]= "buy to let";
-            }
-            if($userPreferenceProduct->equity_release == 1) {
-                $service_type[]= "equity release";
-            }
-            if($userPreferenceProduct->overseas == 1) {
-                $service_type[]= "overseas";
-            }
-            if($userPreferenceProduct->self_build == 1) {
-                $service_type[]= "self build";
-            }
-            if($userPreferenceProduct->mortgage_protection == 1) {
-                $service_type[]= "mortgage protection";
-            }
-            if($userPreferenceProduct->secured_loan == 1) {
-                $service_type[]= "secured loan";
-            }
-            if($userPreferenceProduct->bridging_loan == 1) {
-                $service_type[]= "bridging loan";
-            }
-            if($userPreferenceProduct->commercial == 1) {
-                $service_type[]= "commercial";
-            }
-            if($userPreferenceProduct->something_else == 1) {
-                $service_type[]= "something else";
-            }
+            // if($userPreferenceProduct->remortgage == 1) {
+            //     $service_type[] = "remortgage";
+            // }
+            // if($userPreferenceProduct->first_buyer == 1) {
+            //     $service_type[]= "first time buyer";
+            // }
+            // if($userPreferenceProduct->next_buyer == 1) {
+            //     $service_type[]= "next time buyer";
+            // }
+            // if($userPreferenceProduct->but_let == 1) {
+            //     $service_type[]= "buy to let";
+            // }
+            // if($userPreferenceProduct->equity_release == 1) {
+            //     $service_type[]= "equity release";
+            // }
+            // if($userPreferenceProduct->overseas == 1) {
+            //     $service_type[]= "overseas";
+            // }
+            // if($userPreferenceProduct->self_build == 1) {
+            //     $service_type[]= "self build";
+            // }
+            // if($userPreferenceProduct->mortgage_protection == 1) {
+            //     $service_type[]= "mortgage protection";
+            // }
+            // if($userPreferenceProduct->secured_loan == 1) {
+            //     $service_type[]= "secured loan";
+            // }
+            // if($userPreferenceProduct->bridging_loan == 1) {
+            //     $service_type[]= "bridging loan";
+            // }
+            // if($userPreferenceProduct->commercial == 1) {
+            //     $service_type[]= "commercial";
+            // }
+            // if($userPreferenceProduct->something_else == 1) {
+            //     $service_type[]= "something else";
+            // }
         }
         // DB::enableQueryLog();
         
@@ -1093,16 +1097,16 @@ class ApiController extends Controller
                     });
                 }
         })
-        // ->where(function($query) use ($service_type){
-        //         if(!empty($service_type)) {
-        //             $query->where(function($q) use ($service_type) {
-        //                 foreach($service_type as $sitem){
-        //                     $q->orWhere('advice_areas.service_type',$sitem);
-        //                 }
-        //             });
-        //         }
+        ->where(function($query) use ($service_type){
+                if(!empty($service_type)) {
+                    $query->where(function($q) use ($service_type) {
+                        foreach($service_type as $sitem){
+                            $q->orWhere('advice_areas.service_type_id',$sitem);
+                        }
+                    });
+                }
             
-        // })
+        })
         ->where(function($query) use ($ltv_max){
             if($ltv_max != "") {
                
@@ -1174,30 +1178,30 @@ class ApiController extends Controller
             $costOfLeadsStr = "";
             $costOfLeadsDropStr = "";
             $amount = number_format((float)$costOfLead, 2, '.', '');
-            if($hourdiff < 24) {
-                $costOfLeadsStr = "".$item->size_want_currency.$amount;
-                $in = 24-$hourdiff;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-                $in = 48-$hourdiff;
-                $newAmount = (75 / 100) * $amount;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 48 && $hourdiff < 72) {
-                $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-                $in = 72-$hourdiff;
-                $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-            }
-            if($hourdiff > 72) {
-                $costOfLeadsStr = ""."Free";
-                $costOfLeadsDropStr = "";
-            }
+            // if($hourdiff < 24) {
+            //     $costOfLeadsStr = "".$item->size_want_currency.$amount;
+            //     $in = 24-$hourdiff;
+            //     $hrArr = explode(".",$in);
+            //     $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            // }
+            // if($hourdiff > 24 && $hourdiff < 48) {
+            //     $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+            //     $in = 48-$hourdiff;
+            //     $newAmount = (75 / 100) * $amount;
+            //     $hrArr = explode(".",$in);
+            //     $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            // }
+            // if($hourdiff > 48 && $hourdiff < 72) {
+            //     $newAmount = (75 / 100) * $amount;
+            //     $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+            //     $in = 72-$hourdiff;
+            //     $hrArr = explode(".",$in);
+            //     $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            // }
+            // if($hourdiff > 72) {
+            //     $costOfLeadsStr = ""."Free";
+            //     $costOfLeadsDropStr = "";
+            // }
             $advice_area[$key]->is_accepted = 0;
             
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
@@ -1609,7 +1613,7 @@ class ApiController extends Controller
                         array_push($status_arr,$status_need_data->area_id);
                     }
                 }
-                if($status_data=='sole_adviser'){
+                if($status_data=='sole_adviser' || $status_data=='hired'){
                     $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
                     foreach($status_need as $status_need_data){
                         array_push($status_arr,$status_need_data->area_id);
@@ -1640,14 +1644,14 @@ class ApiController extends Controller
         if(isset($request->advice_area) && count($request->advice_area)>0){
             $adviser_arr = array(-1);
             foreach($request->advice_area as $advisor_ids){
-                $advisor_data = AdvisorBids::whereIn('advisor_id',$advisor_ids)->where('status',3)->where('advisor_status',2)->get();
+                $advisor_data = AdvisorBids::where('advisor_bids.advisor_id',$advisor_ids)->where('status',3)->where('advisor_status',2)->get();
                 foreach($advisor_data as $advisor_profile_data){
                     array_push($adviser_arr,$advisor_profile_data->area_id);
                 }
             }
         }
 
-        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
+        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advice_areas.advisor_id')
         ->join('users', 'advice_areas.user_id', '=', 'users.id')
         ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
         ->where('advisor_bids.advisor_status', '=', 1)
@@ -1663,17 +1667,15 @@ class ApiController extends Controller
             if(!empty($lead_submitted)) {
                 $query->where(function($q) use ($lead_submitted) {
                     foreach($lead_submitted as $item ){
-                        if($item!="anytime"){
-                            if($item=="three_month"){
-                                //Query to be
-                            }else if($item=="six_month") {
-                                
-                            }else if($item=="last_year") {
-                                
-                            }else if($item=="two_years") {
-                                
-                            }
-                        }                        
+                        if($item=="three_month"){
+                            $q->where('advisor_bids.created_at >=',date("Y-m-d",strtotime("- 3 month")));
+                        }else if($item=="six_month") {
+                            $q->where('advisor_bids.created_at >=',date("Y-m-d",strtotime("- 6 month")));
+                        }else if($item=="last_year") {
+                            $q->where('advisor_bids.created_at >=',date("Y-m-d",strtotime("- 12 month")));
+                        }else if($item=="two_years") {
+                            $q->where('advisor_bids.created_at >=',date("Y-m-d",strtotime("- 24 month")));
+                        }                      
                     }
                 });
             }
@@ -1688,7 +1690,7 @@ class ApiController extends Controller
             $advice_area = $advice_area->whereIn('advice_areas.id',$status_arr);
         }
 
-        $advice_area =  $advice_area->with('service')->paginate();
+        $advice_area =  $advice_area->groupBy('advice_areas.'.'id')->with('service')->paginate();
 
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
@@ -1875,19 +1877,26 @@ class ApiController extends Controller
                     $time2 = Date('Y-m-d H:i:s',strtotime($advisorAreaDetails->created_at));
                     $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
                     $discounted_price = 0;
+                    $discounted_cycle = "";
                     $amount = number_format((float)$costOfLead, 2, '.', '');
                     if($hourdiff < 24) {
                         $discounted_price = 0;
+                        $discounted_cycle = "First cycle";
                     }
                     if($hourdiff > 24 && $hourdiff < 48) {
-                        $discounted_price = number_format((float)($amount/2), 2, '.', '');;
+                        $discounted_price = number_format((float)($amount/2), 2, '.', '');
+                        $discounted_cycle = "Second cycle";
+
                     }
                     if($hourdiff > 48 && $hourdiff < 72) {
                         $newAmount = (75 / 100) * $amount;
-                        $discounted_price = number_format((float)($newAmount), 2, '.', '');;
+                        $discounted_price = number_format((float)($newAmount), 2, '.', '');
+                        $discounted_cycle = "Third cycle";
+
                     }
                     if($hourdiff > 72) {
-                        $discounted_price = number_format((float)($costOfLead), 2, '.', '');;
+                        $discounted_price = number_format((float)($costOfLead), 2, '.', '');
+                        $discounted_cycle = "Fourth cycle";
                     }
                     
                     $advice_area = AdvisorBids::create([
@@ -3262,5 +3271,42 @@ class ApiController extends Controller
                 'data'=> []
             ], Response::HTTP_OK);
         }
+    }
+
+    public function getAllServiceTypeWithPreferences() {
+        $user = JWTAuth::parseToken()->authenticate();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->orderBy('sequence','ASC')->get();
+        if(!empty($result)) {
+            foreach($result as $row){
+                $preferences = AdviserProductPreferences::where('service_id',$row->id)->where('adviser_id',$user->id)->first();
+                if($preferences){
+                    $row->preference_status = 1;
+                    $row->preference_updated_at = $preferences->updated_at;
+                }else{
+                    $row->preference_status = 0;
+                    $row->preference_updated_at = "";
+                }
+            }
+            $mortgage_max_size = 0;
+            $mortgage_min_size = 0;
+            $profile = AdvisorProfile::where('advisorId',$user->id)->first();
+            if($profile){
+                $mortgage_max_size = $profile->mortgage_max_size;
+                $mortgage_min_size = $profile->mortgage_min_size;
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data'=>$result,
+                'mortgage_min_size'=>$mortgage_min_size,
+                'mortgage_max_size'=>$mortgage_max_size
+            ], Response::HTTP_OK);  
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'No Service type available',
+                'data'=>$result
+            ], Response::HTTP_OK);  
+        }           
     }
 }

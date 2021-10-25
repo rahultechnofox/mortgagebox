@@ -1,10 +1,10 @@
 <?php 
 return [
     'urls' => [
-        'email_verification_url' => 'http://mbox2.technofox.co.in/backend/api/verifyEmail/',
-        'team_email_verification_url' => 'http://mbox2.technofox.co.in/backend/api/verifyTeamEmail/',
-        'team_signup_url' => 'http://mbox2.technofox.co.in/register/',
-        'host_url' => 'http://mbox2.technofox.co.in',
+        'email_verification_url' => 'https://mbox2.technofox.co.in/backend/api/verifyEmail/',
+        'team_email_verification_url' => 'https://mbox2.technofox.co.in/backend/api/verifyTeamEmail/',
+        'team_signup_url' => 'https://mbox2.technofox.co.in/register/',
+        'host_url' => 'https://mbox2.technofox.co.in',
         ],
     'stripe' => [
         'stripe_public_key' => 'pk_test_51J904DSD18gBSiDIrQHnLgYvLEk3oLudDnyzrEyRQcx4yVggFwabqWfqTfbnwJHyysbron76gzF7TocqOp2eSJVO00rSOg6D3g',

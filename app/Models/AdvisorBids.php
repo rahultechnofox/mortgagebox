@@ -11,7 +11,7 @@ class AdvisorBids extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'advisor_id','area_id','status','advisor_status','cost_leads','cost_discounted','free_introduction','accepted_date','is_paid_invoice'
+        'advisor_id','area_id','status','advisor_status','cost_leads','cost_discounted','free_introduction','accepted_date','is_paid_invoice','is_discounted','bid_created_date','discount_cycle'
     ];
 
     public function area(){
@@ -20,7 +20,9 @@ class AdvisorBids extends Model
     public function adviser(){
         return $this->hasOne('App\Models\AdvisorProfile',"advisorId","advisor_id");
     }
-    
+    public function total_bid_count(){
+        return $this->hasMany('App\Models\AdvisorBids',"area_id","id");
+    }
 
     public static function getInvoice($search){
         try {

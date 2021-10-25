@@ -11,7 +11,7 @@ class Invoice extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    protected $fillable = ['invoice_number', 'month', 'year','invoice_data','is_paid','advisor_id'];
+    protected $fillable = ['invoice_number', 'month', 'year','invoice_data','is_paid','advisor_id','cost_of_lead','subtotal','discount','free_introduction','discount_subtotal','total_taxable_amount','vat','total_current_invoice','total_due','txt_id'];
     /**
      * The attributes that should be mutated to dates.
      *

@@ -539,8 +539,10 @@ class ApiController extends Controller
             }
         }
         if(isset($company_id) && $company_id!=0){
+            $iscompany_admin = 0;
             $company_team = CompanyTeamMembers::where('email',$request->email)->first();
-            companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
+            $company_team_name = companies::where('id',$company_id)->first();
+            // companies::where('id',$company_id)->update(array('company_admin'=>$advisor_id));
             if($company_team){
                 $teamArr = array(
                     'name' => $request->name,
@@ -549,6 +551,7 @@ class ApiController extends Controller
                     'updated_at'=>date('Y-m-d H:i:s')
                 );
                 CompanyTeamMembers::where('id',$company_team->id)->update($teamArr);
+                $iscompany_admin = 0;
             }else{
                 $teamArr = array(
                     'company_id' => $company_id,
@@ -561,22 +564,44 @@ class ApiController extends Controller
                     'created_at'=>date('Y-m-d H:i:s')
                 );
                 CompanyTeamMembers::insertGetId($teamArr);
+                $iscompany_admin = 1;
             }
-            $this->saveNotification(array(
-                'type'=>'1', // 1:
-                'message'=>'Your invitation is accepted by team member '.$request->name, // 1:
-                'read_unread'=>'0', // 1:
-                'user_id'=>$advisor_id,// 1:
-                'advisor_id'=>$user->id, // 1:
-                'area_id'=>0,// 1:
-                'notification_to'=>1
-            ));
-            $newArr1 = array(
-                'name'=>$user->name,
-                'email'=>$user->email,
-                'message_text' => 'Your invitation is accepted by team member '.$request->name
-            );
-            $c = \Helpers::sendEmail('emails.information',$newArr1 ,$user->email,$user->name,'MortgageBox Invitation Accept','','');
+            if(isset($iscompany_admin) && $iscompany_admin!=1){
+                if(isset($user_data['invited_by']) && $user_data['invited_by']!=''){
+                    $invited_user_data = AdvisorProfile::where('advisorId',$user_data['invited_by'])->first();
+                    $this->saveNotification(array(
+                        'type'=>'6', // 1:
+                        'message'=> $request->name.' is now team member of your company', // 1:
+                        'read_unread'=>'0', // 1:
+                        'user_id'=>$user->id,// 1:
+                        'advisor_id'=>$user_data['invited_by'], // 1:
+                        'area_id'=>0,// 1:
+                        'notification_to'=>1
+                    ));
+                    $newArr1 = array(
+                        'name'=>$invited_user_data->name,
+                        'email'=>$invited_user_data->email,
+                        'message_text' => $request->name.' is now team member of your company ',
+                    );
+                    $c = \Helpers::sendEmail('emails.information',$newArr1 ,$invited_user_data->email,$invited_user_data->name,'MortgageBox Join Company','','');
+                }
+               
+            }
+            // $this->saveNotification(array(
+            //     'type'=>'1', // 1:
+            //     'message'=>'Your invitation is accepted by team member '.$request->name, // 1:
+            //     'read_unread'=>'0', // 1:
+            //     'user_id'=>$advisor_id,// 1:
+            //     'advisor_id'=>$user->id, // 1:
+            //     'area_id'=>0,// 1:
+            //     'notification_to'=>1
+            // ));
+            // $newArr1 = array(
+            //     'name'=>$user->name,
+            //     'email'=>$user->email,
+            //     'message_text' => 'Your invitation is accepted by team member '.$request->name
+            // );
+            // $c = \Helpers::sendEmail('emails.information',$newArr1 ,$user->email,$user->name,'MortgageBox Invitation Accept','','');
         }
         // Set Defaul prefrances
         $notification = AdvisorPreferencesDefault::where('advisor_id', '=', $advisor_id)->first();
@@ -1093,6 +1118,7 @@ class ApiController extends Controller
         
        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
+            ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
             ->where(function($query) use ($userPreferenceCustomer){
                 if(!empty($userPreferenceCustomer)) {
                     if($userPreferenceCustomer->self_employed == 1){
@@ -1144,7 +1170,7 @@ class ApiController extends Controller
             }
         })->whereNotIn('advice_areas.id',function($query) use ($user){
             $query->select('area_id')->from('advisor_bids')->where('advisor_id','=',$user->id);
-        })->orderBy('advice_areas.id','DESC')->groupBy('advice_areas.'.'id')
+        })->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
         ->groupBy('advice_areas.'.'user_id')
         ->groupBy('advice_areas.'.'service_type')
         ->groupBy('advice_areas.'.'request_time')
@@ -1182,7 +1208,8 @@ class ApiController extends Controller
         ->groupBy('users.'.'address')
         ->groupBy('advice_areas.'.'ltv_max')
         ->groupBy('advice_areas.'.'lti_max')
-        ->groupBy('advice_areas.'.'advisor_preference_language')->paginate();
+        ->groupBy('advice_areas.'.'advisor_preference_language')->orderBy('id','DESC')->paginate();
+        // ->where('advisor_bids.status',0)
         $bidCountArr = array();
         //$lastquery = DB::getQueryLog();
         //dd(end($lastquery));
@@ -1193,7 +1220,7 @@ class ApiController extends Controller
                 $bidCountArr[] = ($bid->status == 3)? 0:1;
             }
             $advice_area[$key]->totalBids = $bidCountArr;
-            
+            $advice_area[$key]->total_bids_count = count($item->total_bid_count);
             $costOfLead = ($item->size_want/100)*0.006;
             $time1 = Date('Y-m-d H:i:s');
             $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
@@ -1304,6 +1331,136 @@ class ApiController extends Controller
             'has_more_page' => $advice_area->hasMorePages(),
         ], Response::HTTP_OK);
     }
+
+    function getNeedDetails(Request $request)
+    {
+        $post = $request->all();
+        $user = JWTAuth::parseToken()->authenticate();
+        $advisor = AdvisorProfile::where('advisorId',$user->id)->first();
+        $bidCountArr = array();
+        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
+            ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')->where('advice_areas.id',$post['area_id'])->first();
+        if($advice_area){
+            $adviceBid = AdvisorBids::where('area_id',$advice_area->id)->orderBy('status','ASC')->get();
+            foreach($adviceBid as $bid) {
+                $bidCountArr[] = ($bid->status == 3)? 0:1;
+            }
+            $advice_area->totalBids = $bidCountArr;
+            
+            $costOfLead = ($advice_area->size_want/100)*0.006;
+            $time1 = Date('Y-m-d H:i:s');
+            $time2 = Date('Y-m-d H:i:s',strtotime($advice_area->created_at));
+            $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+            $costOfLeadsStr = "";
+            $costOfLeadsDropStr = "";
+            $amount = number_format((float)$costOfLead, 2, '.', '');
+            if($hourdiff < 24) {
+                $costOfLeadsStr = "".$advice_area->size_want_currency.$amount;
+                $in = 24-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".$advice_area->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 24 && $hourdiff < 48) {
+                $costOfLeadsStr = "".$advice_area->size_want_currency.($amount/2)." (Save 50%, was ".$advice_area->size_want_currency.$amount.")";
+                $in = 48-$hourdiff;
+                $newAmount = (75 / 100) * $amount;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 48 && $hourdiff < 72) {
+                $newAmount = (75 / 100) * $amount;
+                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$advice_area->size_want_currency.$amount.")";
+                $in = 72-$hourdiff;
+                $hrArr = explode(".",$in);
+                $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            }
+            if($hourdiff > 72) {
+                $costOfLeadsStr = ""."Free";
+                $costOfLeadsDropStr = "";
+            }
+            $advice_area->is_accepted = 0;
+            
+            $advice_area->cost_of_lead = $costOfLeadsStr;
+            $advice_area->cost_of_lead_drop = $costOfLeadsDropStr;
+            $area_owner_details = User::where('id',$advice_area->user_id)->first();
+            $address = "";
+            if(!empty($area_owner_details)) {
+                $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
+                if(!empty($addressDetails)) {
+                    if($addressDetails->Country != ""){
+                        $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                        // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
+                        $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                        $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                    }
+                    
+                }
+            }
+            $lead_value = "";
+            $main_value = ($advice_area->size_want/100);
+            $advisorDetaultValue = "";
+            $advisorDetaultPercent = 0;
+            if($advice_area->service_type_id!=0){
+                $services = DefaultPercent::where('adviser_id',$user->id)->where('service_id',$advice_area->service_type_id)->first();
+                if($services){
+                    $advisorDetaultPercent = $services->value_percent;
+                }else{
+                    $advisorDetaultPercent = 0.30;
+                }
+            }else{
+                $advisorDetaultPercent = 0.30;
+            }
+            $lead_value = ($main_value)*($advisorDetaultPercent);
+            $advice_area->lead_value = $advice_area->size_want_currency.$lead_value;
+            $advice_area->lead_address = $address;    
+            $advice_area->is_read = 0;
+            $read = AdviceAreaRead::where('area_id',$advice_area->id)->where('adviser_id','=',$user->id)->first();
+            if($read){
+                $advice_area->is_read = 1;
+            }
+
+            $channelIds = array(-1);
+            $channelID = ChatChannel::where('advicearea_id',$advice_area->id)->orderBy('id','DESC')->get();
+            foreach ($channelID as $chanalesR) {
+                array_push($channelIds, $chanalesR->id);
+            }
+            $advice_area->last_notes = UserNotes::where('advice_id', '=', $advice_area->id)->where('user_id',$user->id)->get();
+            $last_chat_data = ChatModel::whereIn('channel_id',$channelIds)->take(5)->orderBy('id','DESC')->with('from_user')->with('to_user')->get();
+            if(isset($last_chat_data) && count($last_chat_data)){
+                 foreach($last_chat_data as $chat){
+                    $chat->show_name = "";
+                    if($chat->from_user_id==$user->id){
+                        if(isset($chat->from_user) && $chat->from_user){
+                            $chat->show_name = "You";
+                        }else{
+                            $chat->show_name = $chat->from_user->name;
+                        }
+                    }else{
+                        $chat->show_name = $chat->from_user->name;
+                    }
+                    // if($chat->to_user_id==$user->id){
+                    //     if(isset($chat->to_user) && $chat->to_user){
+                    //         $chat->from_user->show_name = $chat->from_user->name;
+                    //     }
+                    // }
+                     if(date('Y-m-d')==date("Y-m-d",strtotime($chat->created_at))){
+                        $chat->date_time = date("H:i",strtotime($chat->created_at));
+                    }else{
+                        $chat->date_time = date("d M Y H:i",strtotime($chat->created_at));
+                    }
+                 }
+            }
+
+            $advice_area->spam_info = AdviceAreaSpam::where('area_id',$advice_area->id)->where('user_id','=',$user->id)->first();
+            
+            $advice_area->last_chat = $last_chat_data;
+        }
+        return response()->json([
+            'status' => true,
+            'data' => $advice_area,
+        ], Response::HTTP_OK);
+    }
+
 
     function searchMortgageNeeds(Request $request)
     {
@@ -1924,8 +2081,7 @@ class ApiController extends Controller
                         $discounted_cycle = "Fourth cycle";
                         $is_discount = 1;
                     }
-                    
-                    $advice_area = AdvisorBids::create([
+                    $bid_arr = array(
                         'discount_cycle'=>$discounted_cycle,
                         'is_discounted'=>$is_discount,
                         'advisor_id' => $request->advisor_id,
@@ -1933,8 +2089,9 @@ class ApiController extends Controller
                         'advisor_status' => $request->advisor_status,
                         'cost_leads'=>$costOfLead,
                         'cost_discounted'=>$discounted_price,
-                        
-                    ]);
+                        'bid_created_date'=>$advisorAreaDetails->created_at
+                    );
+                    $advice_area = AdvisorBids::create($bid_arr);
                     if($advice_area){
                         $area = Advice_area::where('id',$request->area_id)->first();
                         if($area && $area->status==0){
@@ -1954,6 +2111,7 @@ class ApiController extends Controller
                     return response()->json([
                         'status' => true,
                         'message' => 'Bid placed successfully',
+                        'data'=>$bid_arr
                     ], Response::HTTP_OK);
                 } else if ($request->advisor_status == 2) {
                     $advice_area = AdvisorBids::create([
@@ -2031,6 +2189,7 @@ class ApiController extends Controller
             ->get();
 
         if ($advice_area) {
+            
             $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
             foreach ($advice_area as $key => $item) {
                 $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
@@ -2067,6 +2226,8 @@ class ApiController extends Controller
                 }else{
                     $advice_area[$key]->is_bided = 0;
                 }
+                $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisor_id)->count();
+                $advice_area[$key]->total_completed_bids = $itemComplete;
             }
             return response()->json([
                 'status' => true,
@@ -2191,7 +2352,9 @@ class ApiController extends Controller
         ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
         ->where('advisor_bids.advisor_status', '=', 1)
         ->where('advisor_bids.advisor_id', '=', $user->id)
+        ->with('total_bid_count')
         ->with('service')
+        ->orderBy('id','DESC')
         ->paginate();
 
         $bidCountArr = array();
@@ -2207,6 +2370,7 @@ class ApiController extends Controller
                  $advice_area[$key]->bid_status = 0;
             }
             $advice_area[$key]->totalBids = $bidCountArr;
+            $advice_area[$key]->total_bids_count = count($item->total_bid_count);
             $advice_area[$key]->is_accepted = 1;
             $costOfLead = ($item->size_want/100)*0.006;
             $time1 = Date('Y-m-d H:i:s');
@@ -2295,7 +2459,7 @@ class ApiController extends Controller
             // }   
             // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
             
-            // $advice_area[$key]->lead_address = $address;
+            $advice_area[$key]->lead_address = $address;
             // 
             // $show_status = "Live Leads"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
@@ -2390,7 +2554,8 @@ class ApiController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
   
         $chatData = \DB::select("
-                SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id) FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id)
+                SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id)
+ FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id  order by chat_models.id DESC)
             ");
 
         return response()->json([
@@ -2883,11 +3048,11 @@ class ApiController extends Controller
         $notificationCount = 0;
         if($user->user_role == 1) {
             $notification = Notifications::where('advisor_id', '=', $user->id)->where('notification_to','=','1')
-            ->get();
+            ->orderBy('id','DESC')->get();
             $notificationCount = Notifications::where('advisor_id', '=', $user->id)->where('notification_to','=','1')->where('read_unread',0)
             ->count();
         }else{
-            $notification = Notifications::where('user_id', '=', $user->id)->where('notification_to','=','0')->get();
+            $notification = Notifications::where('user_id', '=', $user->id)->where('notification_to','=','0')->orderBy('id','DESC')->get();
             $notificationCount = Notifications::where('user_id', '=', $user->id)->where('notification_to','=','0')->where('read_unread',0)
             ->count();
         }

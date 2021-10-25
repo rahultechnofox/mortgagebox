@@ -11,8 +11,8 @@
 		</center>
 		<p>Hello {{$name}},</p>
 		<p>{{$invited_by}} invites you to join the company.</p>
-		<p>Please click the link below to create your account and join the team.</p>
-		<a href="{{$url}}"><p>Create Account</p></a>
+		<p>Please click the link below to join the team.</p>
+		<a href="{{$url}}"><p>Confirm</p></a>
 		<strong>Thank you :)</strong>
 	</body>
 </html>

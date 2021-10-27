@@ -15,6 +15,9 @@ class Advice_area extends Model
     public function user(){
         return $this->hasOne('App\Models\User',"id","user_id");
     }
+    public function advisor_profile(){
+        return $this->hasOne('App\Models\AdvisorProfile',"advisorId","user_id");
+    }
     public function service(){
         return $this->hasOne('App\Models\ServiceType',"id","service_type_id");
     }

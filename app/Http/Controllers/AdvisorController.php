@@ -1517,10 +1517,11 @@ class AdvisorController extends Controller
         // ->count();
         $promotion = 0;
         if($userDetails->invite_count!=0){
-            $app_settings = DB::table('app_settings')->where('key','no_of_free_leads_refer_friend')->first();
-            if($app_settings){
-                $promotion = $userDetails->invite_count * $app_settings->value;
-            }
+            $promotion = $userDetails->free_promotions;
+            // $app_settings = DB::table('app_settings')->where('key','no_of_free_leads_refer_friend')->first();
+            // if($app_settings){
+            //     $promotion = $userDetails->invite_count * $app_settings->value;
+            // }
         }
         
         return response()->json([
@@ -1657,16 +1658,17 @@ class AdvisorController extends Controller
             $invoice_detais = Invoice::where('advisor_id','=',$row->id)->where('month','=',$month)->where('year','=',$year)->where('is_paid','=','0')->first();
             $total_this_month_cost_of_leads_subtotal = AdvisorBids::where('advisor_id','=',$row->id)
             // ->where('status','>=',1)
-            ->whereMonth('created_at', $month)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%m'))"),$month)
+            // ->where('created_at', date('m',strtotime($month)))
             ->where('is_paid_invoice','=',0)
-            ->whereYear('created_at', $year)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%Y'))"),$year)
+            // ->where('created_at',date('Y',strtotime($year)))
             ->sum('cost_leads');
             $cost_leads_this_month = AdvisorBids::select('advisor_bids.cost_leads','advisor_bids.accepted_date','advisor_bids.cost_discounted','advisor_bids.free_introduction','advice_areas.service_type','advice_areas.size_want_currency','advice_areas.size_want')->where('advisor_bids.advisor_id','=',$row->id)
             ->leftJoin('advice_areas','advisor_bids.area_id','advice_areas.id')
-            // ->where('advisor_bids.status','>=',1)
             ->where('advisor_bids.is_paid_invoice','=',0)
-            ->whereMonth('advisor_bids.created_at', $month)
-            ->whereYear('advisor_bids.created_at', $year)
+            ->where(DB::raw("(DATE_FORMAT(advisor_bids.created_at,'%m'))"),$month)
+            ->where(DB::raw("(DATE_FORMAT(advisor_bids.created_at,'%Y'))"),$year)
             ->get();
             $cost_of_leads_of_the_monthArr = array();
             $discount_of_the_monthArr = array();
@@ -1678,38 +1680,59 @@ class AdvisorController extends Controller
             }
             $total_this_month_discount_subtotal = AdvisorBids::where('advisor_id','=',$row->id)
             // ->where('status','!=',0)
-            ->whereMonth('created_at', $month)
-            ->whereYear('created_at', $year)
+            // ->whereMonth('created_at', $month)
+            // ->whereYear('created_at', $year)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%m'))"),$month)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%Y'))"),$year)
             ->where('is_discounted','=',1)
+            ->where('free_introduction',0)
             ->where('is_paid_invoice','=',0)
             ->sum('cost_discounted');
             $total_this_month_free_intro = AdvisorBids::where('advisor_id','=',$row->id)
             // ->where('status','>=',1)
-            ->whereMonth('created_at', $month)
-            ->whereYear('created_at', $year)
-            ->where('is_paid_invoice','=',0)
-            ->where('free_introduction','=',1)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%m'))"),$month)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%Y'))"),$year)
+            // ->whereMonth('created_at', $month)
+            // ->whereYear('created_at', $year)
+            ->where('is_paid_invoice',0)
+            ->where('free_introduction',1)
             ->sum('cost_discounted');
             $subtotal_of_discount_and_credit = $total_this_month_discount_subtotal+$total_this_month_free_intro;
             $total_dues = $total_this_month_cost_of_leads_subtotal-$subtotal_of_discount_and_credit;
             $total_amount = 0;
-            $tax_on_this_invoice = (5/100)*$total_dues;
-            $vat_on_this_invoice = (20/100)*$total_dues;
-            $total_amount_final = $total_dues+$tax_on_this_invoice+$vat_on_this_invoice;
+            // $tax_on_this_invoice = (5/100)*$total_dues;
+            // $vat_on_this_invoice = (20/100)*$total_dues;
+
+            // $taxableAmount =  (1 + ($data['result']->tax_percent/100));
+            // $withoutTaxamount =  $data['result']->amount / $taxableAmount;
+            // $finalTaxAmount = $data['result']->amount - $withoutTaxamount;
+
+            $taxableAmount =  (1 + (20/100));
+            $withoutTaxamount =  $total_dues / $taxableAmount;
+            $tax_on_this_invoice = $total_dues - $withoutTaxamount;
+
+            $total_amount_final = $total_dues - $tax_on_this_invoice;
+            $vat_on_this_invoice = $tax_on_this_invoice;
+
+            // $total_amount_final = $total_dues+$tax_on_this_invoice+$vat_on_this_invoice;
             $total_amount_final = number_format((float)($total_amount_final),2,'.','');
             $newFees = AdvisorBids::select('advisor_bids.*','users.name','advice_areas.property','advice_areas.service_type')->where('advisor_bids.advisor_id','=',$row->id)
             ->leftJoin('advice_areas','advisor_bids.area_id','advice_areas.id')
             ->leftJoin('users','advice_areas.user_id','users.id')
             // ->where('advisor_bids.status','>=',1)
-            ->whereMonth('advisor_bids.created_at', $month)
+            // ->whereMonth('advisor_bids.created_at', $month)
+            ->where(DB::raw("(DATE_FORMAT(advisor_bids.created_at,'%m'))"),$month)
+            ->where(DB::raw("(DATE_FORMAT(advisor_bids.created_at,'%Y'))"),$year)
             ->where('advisor_bids.is_paid_invoice','=',0)
             ->whereYear('advisor_bids.created_at', $year)
             ->get();
 
             $bidsId = AdvisorBids::where('advisor_id','=',$row->id)
             // ->where('status','>=',0)
-            ->whereMonth('created_at', $month)
-            ->whereYear('created_at', $year)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%m'))"),$month)
+            ->where(DB::raw("(DATE_FORMAT(created_at,'%Y'))"),$year)
+            // ->whereMonth('created_at', $month)
+            // ->whereYear('created_at', $year)
             ->where('is_paid_invoice','=',0)
             ->get();
             $bidArr = array();
@@ -1798,11 +1821,11 @@ class AdvisorController extends Controller
                         'cost_of_lead'=>$total_this_month_cost_of_leads_subtotal,
                         'subtotal'=>$total_this_month_cost_of_leads_subtotal,
                         'discount'=>$total_this_month_discount_subtotal,
-                        'free_introduction'=>0,
+                        'free_introduction'=>$total_this_month_free_intro,
                         'discount_subtotal'=>$subtotal_of_discount_and_credit,
-                        'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
+                        'total_taxable_amount'=>$total_amount_final,
                         'vat'=>number_format((float)($vat_on_this_invoice),2,'.',''),
-                        'total_current_invoice'=>$total_amount_final,
+                        'total_current_invoice'=>number_format((float)($total_dues),2,'.',''),
                         'total_due'=>$total_dues,
                         'invoice_number'=>$invoice_number,
                         'month'=>$month,
@@ -1816,9 +1839,9 @@ class AdvisorController extends Controller
                             'free_introduction_subtotal'=>$total_this_month_free_intro,
                             'subtotal'=>$subtotal_of_discount_and_credit),
                             'total_dues'=>$total_dues,
-                            'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
+                            'total_current_invoice_amount'=>number_format((float)($total_dues),2,'.',''),
                             'vat_on_invoice'=>number_format((float)($vat_on_this_invoice),2,'.',''),
-                            'total_current_invoice_amount'=>$total_amount_final,
+                            'total_taxable_amount'=>$total_amount_final,
                             'new_fees_data'=>$newFeesArr,
                             'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
                             'discount_credit_data'=>$discountAndCreditArr,
@@ -1890,14 +1913,14 @@ class AdvisorController extends Controller
                     $bill_to_address = '';
                 }
                 Invoice::where('id','=',$invoice_detais->id)->update([
-                    'cost_of_lead'=>$cost_of_lead,
+                    'cost_of_lead'=>$total_this_month_cost_of_leads_subtotal,
                     'subtotal'=>$total_this_month_cost_of_leads_subtotal,
                     'discount'=>$total_this_month_discount_subtotal,
-                    'free_introduction'=>0,
+                    'free_introduction'=>$total_this_month_free_intro,
                     'discount_subtotal'=>$subtotal_of_discount_and_credit,
-                    'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
+                    'total_current_invoice'=>number_format((float)($total_dues),2,'.',''),
                     'vat'=>number_format((float)($vat_on_this_invoice),2,'.',''),
-                    'total_current_invoice'=>$total_amount_final,
+                    'total_taxable_amount'=>$total_amount_final,
                     'total_due'=>$total_dues,
                     'month'=>$month,
                     'year'=>$year,
@@ -1910,9 +1933,9 @@ class AdvisorController extends Controller
                     'free_introduction_subtotal'=>$total_this_month_free_intro,
                     'subtotal'=>$subtotal_of_discount_and_credit),
                     'total_dues'=>$total_dues,
-                    'total_taxable_amount'=>number_format((float)($total_dues+$tax_on_this_invoice),2,'.',''),
+                    'total_current_invoice_amount'=>number_format((float)($total_dues),2,'.',''),
                     'vat_on_invoice'=>number_format((float)($vat_on_this_invoice),2,'.',''),
-                    'total_current_invoice_amount'=>$total_amount_final,
+                    'total_taxable_amount'=>$total_amount_final,
                     'new_fees_data'=>$newFeesArr,
                     'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
                     'discount_credit_data'=>$discountAndCreditArr,
@@ -1966,6 +1989,7 @@ class AdvisorController extends Controller
                             }else if($discount_bid->advisor_status==2){
                                 $discount_bid->status_type = "Not Proceeding";
                             }
+                            
                         }
                     }
                 }

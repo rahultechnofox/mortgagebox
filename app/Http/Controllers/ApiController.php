@@ -487,7 +487,12 @@ class ApiController extends Controller
         $user = User::create($user_data);
         if(isset($user->invited_by) && $user->invited_by!=''){
             $invited_count = User::where('invited_by',$user->invited_by)->count();
-            User::where('id',$user->invited_by)->update(['invite_count'=>$invited_count]);
+            $free_promotions = 0;
+            $check_promotion = DB::table('app_settings')->where('key','no_of_free_leads_refer_friend')->first();
+            if($check_promotion){
+                $free_promotions = $invited_count * $check_promotion->value;
+            }
+            User::where('id',$user->invited_by)->update(['invite_count'=>$invited_count,'free_promotions'=>$free_promotions]);
             $invited_by_user = AdvisorProfile::where('advisorId',$user->invited_by)->first();
             if($invited_by_user){
                 $this->saveNotification(array(
@@ -2081,6 +2086,19 @@ class ApiController extends Controller
                         $discounted_cycle = "Fourth cycle";
                         $is_discount = 1;
                     }
+                    $free_into = 0;
+                    if(isset($request->advisor_id) && $request->advisor_id){
+                        $userData = User::where('id',$request->advisor_id)->first();
+                        if($userData){
+                            if($userData->free_promotions!=0){
+                                $free_into = 1;
+                                $discounted_cycle = "Free Introduction";
+                                $is_discount = 1;
+                                $userData->free_promotions = $userData->free_promotions-1;
+                                User::where('id',$request->advisor_id)->update(['free_promotions'=>$userData->free_promotions]);
+                            }
+                        }
+                    }   
                     $bid_arr = array(
                         'discount_cycle'=>$discounted_cycle,
                         'is_discounted'=>$is_discount,
@@ -2089,6 +2107,7 @@ class ApiController extends Controller
                         'advisor_status' => $request->advisor_status,
                         'cost_leads'=>$costOfLead,
                         'cost_discounted'=>$discounted_price,
+                        'free_introduction'=>$free_into,
                         'bid_created_date'=>$advisorAreaDetails->created_at
                     );
                     $advice_area = AdvisorBids::create($bid_arr);
@@ -3548,9 +3567,16 @@ class ApiController extends Controller
                         foreach($data['invoice']->month_data as $month_data){
                             $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
                         }
-                        $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted',0)->with('area')->with('adviser')->get();
+                        $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->with('area')->with('adviser')->get();
+                        // ->where('is_discounted',0)
                         if(count($data['invoice']->new_fees_arr)){
                             foreach($data['invoice']->new_fees_arr as $new_bid){
+                                if(isset($new_bid->area) && $new_bid->area){
+                                    $new_bid->area->user->advisor_profile = null;
+                                    if(isset($new_bid->area->user) && $new_bid->area->user){
+                                        $new_bid->area->user->advisor_profile = AdvisorProfile::where('advisorId',$new_bid->area->user->id)->first();
+                                    }
+                                }
                                 $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
                                 if($new_bid->status==0){
                                     $new_bid->status_type = "Live Lead";
@@ -3566,8 +3592,29 @@ class ApiController extends Controller
                             }
                         }
                         $data['invoice']->discount_credit_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
-                        if(count($data['invoice']->new_fees_arr)){
+                        if(count($data['invoice']->discount_credit_arr)){
                             foreach($data['invoice']->discount_credit_arr as $discount_bid){
+                                $address = "";
+                                if($discount_bid->area){
+                                    if(!empty($discount_bid->area->user)) {
+                                        $addressDetails = PostalCodes::where('Postcode',$discount_bid->area->user->post_code)->first();
+                                        if(!empty($addressDetails)) {
+                                            if($addressDetails->Country != ""){
+                                                $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                                                $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                                                $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                                            }
+                                            
+                                        }
+                                    }
+                                }
+                                $discount_bid->area->address = $address;
+                                // if(isset($discount_bid->area) && $discount_bid->area){
+                                //     $discount_bid->area->user->advisor_profile = null;
+                                //     if(isset($discount_bid->area->user) && $discount_bid->area->user){
+                                //         $discount_bid->area->user->advisor_profile = AdvisorProfile::where('advisorId',$discount_bid->area->user->id)->first();
+                                //     }
+                                // }
                                 $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
                                 if($discount_bid->status==0){
                                     $discount_bid->status_type = "Live Lead";

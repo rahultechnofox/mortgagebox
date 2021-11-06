@@ -31,9 +31,11 @@
                                 <td>{{\Helpers::checkNull($users_data->reason)}}</td>
                                 <td>
                                     @if($users_data->spam_status == -1)
-                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" data-bs-toggle="modal" data-bs-target="#modals-slide-in_{{$users_data->id}}">No</a>
+                                        <a class="btn btn-warning btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" data-bs-toggle="modal" data-bs-target="#modals-slide-in_{{$users_data->id}}">Pending</a>
+                                    @elseif($users_data->spam_status == 1)
+                                        <a class="btn btn-success btn-sm btn-add-new waves-effect waves-float waves-light">Yes</a>
                                     @else
-                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light">Yes</a>
+                                        <a class="btn btn-danger btn-sm btn-add-new waves-effect waves-float waves-light">No</a>
                                     @endif
                                 </td>
                                 

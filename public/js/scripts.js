@@ -709,9 +709,10 @@ function replyContactus(formId){
     }
 }
 
-function takeDecision(id){  
+function takeDecision(id,status){  
     var data = {};
     data.id = id;
+    data.spam_status = status;
     showLoader();
     $.ajax({
         type: 'post',

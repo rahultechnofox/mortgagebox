@@ -87,8 +87,8 @@
                     <input name="id" id="id" type="hidden">
                     <div class="modal-body flex-grow-1">
                         <p>Agree with review?</p>
-                        <button type="button" class="btn btn-primary data-submit me-1" id="createBtn" onclick="takeDecision('{{$users_data->id}}');">Yes</button>
-                        <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>
+                        <button type="button" class="btn btn-primary data-submit me-1" id="createBtn" onclick="takeDecision('{{$users_data->id}}','1');">Yes</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="takeDecision('{{$users_data->id}}','0');">No</button>
                     </div>
                 </form>
             </div>

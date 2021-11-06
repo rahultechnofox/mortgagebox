@@ -38,12 +38,13 @@ class ReviewSpamController extends Controller
                 return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
             }else{
                 unset($post['_token']);
-                $post['spam_status'] = 0;
-
+                // $post['spam_status'] = 0;
                 $user = ReviewSpam::where('id',$post['id'])->update($post);
-                $review = ReviewSpam::where('id',$post['id'])->first();
-                if($review){
-                    Invoice::where('month',date('m'))->where('advisor_id',$review->user_id)->delete();
+                if($post['spam_status']==1){
+                    $review = ReviewSpam::where('id',$post['id'])->first();
+                    if($review){
+                        Invoice::where('month',date('m'))->where('advisor_id',$review->user_id)->delete();
+                    }
                 }
                 if($user){
                     return response(\Helpers::sendSuccessAjaxResponse('Status updated successfully.',$user));

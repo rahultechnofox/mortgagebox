@@ -363,7 +363,7 @@ class AdvisorController extends Controller
         JWTAuth::parseToken()->authenticate();
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id)->first();
         if($advisor_data){
-            
+            $advisor_data->completed_bid = AdvisorBids::where('advisor_id',$id)->where('status',2)->where('advisor_status',1)->count();
             $company = companies::where('id',$advisor_data->company_id)->first();
             if($company){
                 $advisor_data->company_name = $company->company_name;
@@ -429,12 +429,20 @@ class AdvisorController extends Controller
             ->leftJoin('users', 'review_ratings.user_id', '=', 'users.id')
             ->leftJoin('review_spam', 'review_ratings.id', '=', 'review_spam.review_id')
             ->where('review_ratings.advisor_id', '=', $id)
-            ->where('review_ratings.status', '!=', 2)
+            ->where('review_ratings.status',0)
             ->with('area')
             // ->where('review_spam.spam_status', '!=', 0)
             ->get();
         if(count($rating)){
             foreach($rating as $rating_data){
+                $rating_reply = ReviewRatings::where('status',1)->where('parent_review_id',$rating_data->id)->first();
+                if($rating_reply){
+                    $rating_data->reply = $rating_reply->reply_reason;
+                    $rating_data->is_replied = 1;
+                }else{
+                    $rating_data->reply = "";
+                    $rating_data->is_replied = 0;
+                }
                 $spam = ReviewSpam::where('review_id',$rating_data->id)->first();
                 $rating_data->reason = "";
                 $rating_data->spam_status = 2;
@@ -686,13 +694,11 @@ class AdvisorController extends Controller
     public function updateAdvisorAboutUs(Request $request)
     {
         $id = JWTAuth::parseToken()->authenticate();
-        // $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update(
-        //     [
-        //         'short_description' => $request->short_description,
-        //         'description' => $request->description,
-        //         'description_updated' => Date('Y-m-d H:i:s'),
-        //     ]
-        // );
+        $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update(
+            [
+                'short_description' => $request->short_description,
+            ]
+        );
         
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         // Update Compnay info for all advisers
@@ -1043,6 +1049,9 @@ class AdvisorController extends Controller
             ]);
         }
         $locations = BillingAddress::where('advisor_id', '=', $user->id)->first();
+        if($locations){
+            $locations->post_code = strtoupper($locations->post_code);
+        }
         return response()->json([
             'status' => true,
             'message' => 'success',
@@ -1064,6 +1073,9 @@ class AdvisorController extends Controller
 
         ]);
         $locations = BillingAddress::where('advisor_id', '=', $user->id)->first();
+        if($locations){
+            $locations->post_code = strtoupper($locations->post_code);
+        }
         return response()->json([
             'status' => true,
             'message' => 'success',
@@ -1287,7 +1299,7 @@ class AdvisorController extends Controller
 
             $advice_area = Advice_area::create([
                 'user_id' => $user->id,
-                'service_type' => $request->need_advice,
+                'service_type_id' => $request->need_advice,
                 'request_time' => $request->how_soon,
                 'property' => $request->prop_value,
                 'size_want' => $request->mortgage_required,
@@ -1297,8 +1309,10 @@ class AdvisorController extends Controller
                 'inquiry_adviser_id'=>$request->advisor_id,
                 'inquiry_match_me'=>$request->match_me,
                 'inquiry_description'=>$request->anything_else,
-                'description'=>$request->anything_else
-
+                'description'=>$request->anything_else,
+                'combined_income_currency'=>'£',
+                'property_currency'=>'£',
+                'size_want_currency'=>'£'
             ]);
 
             $this->saveNotification(array(

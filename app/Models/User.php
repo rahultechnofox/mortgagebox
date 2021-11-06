@@ -143,15 +143,32 @@ class User extends Authenticatable implements JWTSubject
                     // ->count();
                     // // $row->live_leads = $advice_areaCount;
                     // $row->accepted_leads = $advice_areaCount;
-                    
-                    $accepted_leads = AdvisorBids::where('advisor_id','=',$row->advisorId)
+                    $live_leads = AdvisorBids::where('advisor_id','=',$row->advisorId)
                     ->where('status', '=', 0)
                     ->where('advisor_status', '=', 1)
+                    ->get();
+                    $live_arr = array();
+                    $not_responded = 0;
+                    foreach($live_leads as $live_leads_data){
+                        // array_push($live_arr,$live_leads_data->area_id);
+                        $bids = AdvisorBids::where('area_id',$live_leads_data->area_id)->orWhere('status','!=',0)->get();
+                        array_push($live_arr,$bids);
+                        if(count($bids)){
+                            $not_responded = $not_responded + 1;
+                        }
+                    }
+
+                    $count = AdvisorBids::whereIn('area_id',$live_arr)->orWhere('status','!=',1)->orWhere('status','!=',2)->orWhere('status','!=',3)->get();
+                    // $row->live_leads = json_encode($live_arr);
+                    
+                    $row->live_leads = $not_responded;
+                    
+                    $accepted_leads = AdvisorBids::where('advisor_id','=',$row->advisorId)
                     ->count();
                     $row->accepted_leads = $accepted_leads;
     
                     $live_leads_data = User::getAdvisorLeadsData($row->advisorId);
-                    $row->live_leads = $live_leads_data['total_leads'];
+                    // $row->live_leads = $live_leads_data['total_leads'];
                     $row->eastimated_lead = $live_leads_data['eastimated_lead'];
                     $row->cost_of_lead = $live_leads_data['cost_of_lead'];
     
@@ -374,16 +391,34 @@ class User extends Authenticatable implements JWTSubject
                 ->where('advisor_bids.advisor_id', '=', $data['userDetails']->id)
                 ->count();
                 // $row->live_leads = $advice_areaCount;
-                $data['userDetails']->accepted_leads = $advice_areaCount;
+                // $data['userDetails']->accepted_leads = $advice_areaCount;
                 
                 // $live_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
                 // ->where('status', '=', 0)
                 // ->where('advisor_status', '=', 1)
                 // ->count();
-                // $data['userDetails']->live_leads = $live_leads;
+
+                $live_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
+                ->where('status', '=', 0)
+                ->where('advisor_status', '=', 1)
+                ->get();
+                $live_arr = array();
+                $not_responded = 0;
+                foreach($live_leads as $live_leads_data){
+                    $bids = AdvisorBids::where('area_id',$live_leads_data->area_id)->orWhere('status','!=',0)->get();
+                    array_push($live_arr,$bids);
+                    if(count($bids)){
+                        $not_responded = $not_responded + 1;
+                    }
+                }
+                $data['userDetails']->live_leads = $not_responded;
+                
+                $accepted_leads = AdvisorBids::where('advisor_id','=',$data['userDetails']->id)
+                ->count();
+                $data['userDetails']->accepted_leads = $accepted_leads;
 
                 $live_leads_data = User::getAdvisorLeadsData($data['userDetails']->id);
-                $data['userDetails']->live_leads = $live_leads_data['total_leads'];
+                // $data['userDetails']->live_leads = $live_leads_data['total_leads'];
                 $data['userDetails']->eastimated_lead = $live_leads_data['eastimated_lead'];
                 $data['userDetails']->cost_of_lead = $live_leads_data['cost_of_lead'];
 

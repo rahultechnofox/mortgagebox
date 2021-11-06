@@ -528,7 +528,9 @@ class ApiController extends Controller
             'company_id' => $company_id_for_ad,
             'email' => $request->email,
             'postcode' => $request->post_code,
-            'description' => $description
+            'description' => $description,
+            'mortgage_min_size'=>1,
+            'mortgage_max_size'=>1000000
         ]);
         $serviceType = ServiceType::where('parent_id','!=',0)->where('status',1)->get();
         if(count($serviceType)){
@@ -541,6 +543,12 @@ class ApiController extends Controller
                     'created_at'=>date('Y-m-d H:i:s'),
                 );
                 DefaultPercent::insertGetId($default_arr);
+                $productPrefernce = array(
+                    'service_id'=>$serviceType_data->id,
+                    'adviser_id'=>$advisor_id,
+                    'created_at'=>date('Y-m-d H:i:s'),
+                );
+                AdviserProductPreferences::insertGetId($productPrefernce);
             }
         }
         if(isset($company_id) && $company_id!=0){
@@ -2094,6 +2102,7 @@ class ApiController extends Controller
                                 $free_into = 1;
                                 $discounted_cycle = "Free Introduction";
                                 $is_discount = 1;
+                                $discounted_price = number_format((float)($costOfLead), 2, '.', '');
                                 $userData->free_promotions = $userData->free_promotions-1;
                                 User::where('id',$request->advisor_id)->update(['free_promotions'=>$userData->free_promotions]);
                             }
@@ -2334,15 +2343,15 @@ class ApiController extends Controller
         }
         
         $message = 'New message arrived from '.$user->name;
-        $this->saveNotification(array(
-            'type'=>'1', // 1:
-            'message'=>'New message arrived from '.$user->name, // 1:
-            'read_unread'=>'0', // 1:
-            'user_id'=>$request->from_user_id,// 1:
-            'advisor_id'=>$request->to_user_id, // 1:
-            'area_id'=>$area_id,// 1:
-            'notification_to'=>1
-        ));
+        // $this->saveNotification(array(
+        //     'type'=>'1', // 1:
+        //     'message'=>'New message arrived from '.$user->name, // 1:
+        //     'read_unread'=>'0', // 1:
+        //     'user_id'=>$request->from_user_id,// 1:
+        //     'advisor_id'=>$request->to_user_id, // 1:
+        //     'area_id'=>$area_id,// 1:
+        //     'notification_to'=>1
+        // ));
         $display_name = "";
         if($advisor){
             $display_name = $advisor->display_name;
@@ -2571,12 +2580,11 @@ class ApiController extends Controller
     function getRecentMessages()
     {
         $user = JWTAuth::parseToken()->authenticate();
-  
-        $chatData = \DB::select("
-                SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id)
- FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id  order by chat_models.id DESC)
-            ");
-
+        //         $chatData = \DB::select("
+        //                 SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id)
+        //  FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id  order by chat_models.id DESC)
+        //             ");
+        $chatData = ChatModel::where('to_user_id',$user->id)->with('from_user')->with('to_user')->orderBy('id','DESC')->get();
         return response()->json([
             'status' => true,
             'data' => $chatData

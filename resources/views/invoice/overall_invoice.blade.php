@@ -240,7 +240,7 @@
                                                     <td class="py-1"> <span class="fw-bold">{{$new_fees_data->area->user->name}}</span> </td>
 													<td class="py-1"> <span class="fw-bold">{{$new_fees_data->area->property}}</span> </td>
 													<td class="py-1"> <span class="fw-bold">{{$new_fees_data->status_type}}</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$new_fees_data->area->service->name}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">{{$new_fees_data->area->service['name']}}</span> </td>
 													<td class="py-1"> <span class="fw-bold">{{\Helpers::currency($new_fees_data->cost_leads)}}</span> </td>
                                                 </tr>
                                             @endforeach

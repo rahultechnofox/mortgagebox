@@ -135,13 +135,32 @@ class companies extends Model
                 }
                 
 
-                $row->live_leads = $final_live_lead;
+                // $row->live_leads = $final_live_lead;
                 $row->eastimated_lead = $final_eastimated_lead;
                 $row->cost_of_lead = config('app.currency').number_format($final_cost_of_lead,0);
 
-                $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->whereIn('advisor_id',$team_arr)->where('status', '!=', 2)->where('status', '!=', 3)->count();
+                // $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->whereIn('advisor_id',$team_arr)->where('status', '!=', 2)->where('status', '!=', 3)->count();
 
-                $row->accepted_leads = $advice_areaCount;
+                // $row->accepted_leads = $advice_areaCount;
+
+                $live_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
+                ->where('status', '=', 0)
+                ->where('advisor_status', '=', 1)
+                ->get();
+                $live_arr = array();
+                $not_responded = 0;
+                foreach($live_leads as $live_leads_data){
+                    $bids = AdvisorBids::where('area_id',$live_leads_data->area_id)->orWhere('status','!=',0)->get();
+                    array_push($live_arr,$bids);
+                    if(count($bids)){
+                        $not_responded = $not_responded + 1;
+                    }
+                }
+                $row->live_leads = $not_responded;
+
+                $accepted_leads = AdvisorBids::whereIn('advisor_id',$team_arr)
+                ->count();
+                $row->accepted_leads = $accepted_leads;
 
                 $hired_leads = AdvisorBids::whereIn('advisor_id',$team_arr)->where('status', '=', 1)->where('advisor_status', '=', 1)->count();
                 $row->hired_leads = $hired_leads;
@@ -218,7 +237,7 @@ class companies extends Model
                     $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->where('advisor_id',$team_members_data->advisor_id)
                     ->where('status', '!=', 2)->where('status', '!=', 3)->count();
 
-                    $team_members_data->accepted_leads = $advice_areaCount;
+                    // $team_members_data->accepted_leads = $advice_areaCount;
                     // $live_leads_data = User::getAdvisorLeadsData($team_members_data->advisor_id);
                     // $team_members_data->live_leads = $live_leads_data['total_leads'];
                     // $team_members_data->eastimated_lead = $live_leads_data['eastimated_lead'];
@@ -276,23 +295,43 @@ class companies extends Model
                     }
                     $team_members_data->eastimated_lead = $final_eastimated_lead;
                     $team_members_data->cost_of_lead = config('app.currency').number_format($final_cost_of_lead,0);
-                    $hired_leads = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)
+
+                    $live_leads = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)
+                    ->where('status', '=', 0)
+                    ->where('advisor_status', '=', 1)
+                    ->get();
+                    $live_arr = array();
+                    $not_responded = 0;
+                    foreach($live_leads as $live_leads_data){
+                        $bids = AdvisorBids::where('area_id',$live_leads_data->area_id)->orWhere('status','!=',0)->get();
+                        array_push($live_arr,$bids);
+                        if(count($bids)){
+                            $not_responded = $not_responded + 1;
+                        }
+                    }
+                    $team_members_data->live_leads = $not_responded;
+
+                    $accepted_leads = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)
+                    ->count();
+                    $team_members_data->accepted_leads = $accepted_leads;
+
+                    $hired_leads = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)
                     ->where('status', '=', 1)
                     ->where('advisor_status', '=', 1)
                     ->count();
                     $team_members_data->hired = $hired_leads;
 
-                    $completed_leads = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)
+                    $completed_leads = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)
                     ->where('status', '=', 2)
                     ->where('advisor_status', '=', 1)
                     ->count();
                     $team_members_data->completed = $completed_leads;
 
-                    $value = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->sum('cost_leads');
-                    $cost = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->sum('cost_discounted');
+                    $value = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->sum('cost_leads');
+                    $cost = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->sum('cost_discounted');
                     $team_members_data->value = $value;
                     $team_members_data->cost = $cost;
-                    $total_bids = AdvisorBids::where('advisor_id',$team_members_data->advisor_id)->where('advisor_status', '=', 1)->count();
+                    $total_bids = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->where('advisor_status', '=', 1)->count();
                     if($total_bids!=0){
                         $success_per = ($team_members_data->accepted_leads / $total_bids) * 100;
                     }

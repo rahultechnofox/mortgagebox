@@ -32,6 +32,7 @@ class companies extends Model
 
     public static function getCompanies($search){
         try {
+            $query = new Self;
             $companyId = array();
             
             if(isset($search['search']) && $search['search']!=''){
@@ -51,7 +52,7 @@ class companies extends Model
                 }
             }
 
-            $query = new Self;
+            
             if(count($companyId)>0){
                 $query = $query->whereIn('company_admin',$companyId);
             }
@@ -121,12 +122,12 @@ class companies extends Model
                         $cost_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->where('status', '=', 0)->where('advisor_status', '=', 1)->get();
                         if(count($cost_val)){
                             foreach($cost_val as $cost_val_data){
-                                if($cost_val_data->cost_discounted!=0){
-                                    $cost_lead = $cost_lead + $cost_val_data->cost_discounted;
-                                }
-                                if($cost_val_data->cost_discounted==0){
-                                    $cost_lead = $cost_lead + $cost_val_data->cost_leads;
-                                }
+                                // if($cost_val_data->cost_discounted!=0){
+                                //     $cost_lead = $cost_lead + $cost_val_data->cost_discounted;
+                                // }
+                                // if($cost_val_data->cost_discounted==0){
+                                // }
+                                $cost_lead = $cost_lead + $cost_val_data->cost_leads;
                             }
                             $cost_lead_final = $cost_lead;
                         }

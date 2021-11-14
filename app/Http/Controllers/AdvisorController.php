@@ -1180,6 +1180,16 @@ class AdvisorController extends Controller
             AdvisorProfile::where('email','=',$teamDetails->email)->update([
                 'company_id' => $teamDetails->company_id
             ]);
+            $advisor = AdvisorProfile::where('email','=',$teamDetails->email)->first();
+            $this->saveNotification(array(
+                'type'=>'6', // 1:
+                'message'=>'Invitation accepted by '.$advisor->display_name, // 1:
+                'read_unread'=>'0', // 1:
+                'user_id'=>$advisor->advisorId,// 1:
+                'advisor_id'=>$teamDetails->advisor_id, // 1:
+                'area_id'=>0,// 1:
+                'notification_to'=>1
+            ));
         }
         return redirect()->away(config('constants.urls.host_url'));
     }

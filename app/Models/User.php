@@ -213,19 +213,19 @@ class User extends Authenticatable implements JWTSubject
                     }
                     // $row->value = json_encode($es_val);
                     $row->estimated_lead_value = $estimated;
-                    $cost_val = AdvisorBids::where('advisor_id','=',$row->advisorId)->where('status', '=', 0)->where('advisor_status', '=', 1)->get();
+                    $cost_val = AdvisorBids::where('advisor_id','=',$row->advisorId)->get();
                     $cost_lead_final = config('app.currency').number_format(0.00,0);
                     $cost_lead = 0;
                     $area_arr_cost = array();
                     if(count($cost_val)){
                         foreach($cost_val as $cost_val_data){
-                            if($cost_val_data->cost_discounted!=0){
-                                $cost_lead = $cost_lead + $cost_val_data->cost_discounted;
-                            }
-                            if($cost_val_data->cost_discounted==0){
-                                $cost_lead = $cost_lead + $cost_val_data->cost_leads;
-                            }
+                            // if($cost_val_data->cost_discounted!=0){
+                            //     $cost_lead = $cost_lead + $cost_val_data->cost_discounted;
+                            // }
+                            // if($cost_val_data->cost_discounted==0){
+                            // }
                             // array_push($area_arr_cost,$cost_val_data->area_id);
+                            $cost_lead = $cost_lead + $cost_val_data->cost_leads;
                         }
                         $cost_lead_final = config('app.currency').number_format($cost_lead,0);
                         
@@ -275,7 +275,7 @@ class User extends Authenticatable implements JWTSubject
                         $row->is_accepted = 0;
                         $cost_add = $cost_add + $costAmount;
                     }
-                    $row->cost_of_lead_final = $cost_add;
+                    $row->cost_of_lead_final = $cost_lead;
                     // foreach($value_data){
 
                     // }

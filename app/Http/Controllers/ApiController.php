@@ -2584,7 +2584,7 @@ class ApiController extends Controller
         //                 SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id)
         //  FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id  order by chat_models.id DESC)
         //             ");
-        $chatData = ChatModel::where('to_user_id',$user->id)->with('from_user')->with('to_user')->orderBy('id','DESC')->get();
+        $chatData = ChatModel::where('to_user_id',$user->id)->with('from_user')->with('to_user')->orderBy('id','DESC')->groupBy('channel_id')->get();
         return response()->json([
             'status' => true,
             'data' => $chatData

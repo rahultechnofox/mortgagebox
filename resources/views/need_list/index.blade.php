@@ -63,4 +63,29 @@
         @include('need_list.table')
     </div>
 </div>
+@if(count($userDetails) > 0)
+    @foreach($userDetails as $users_data)
+        <div class="modal modal-slide-in fade" id="modals-slide-in_{{$users_data->id}}"">
+            <div class="modal-dialog sidebar-sm">
+                <form class="add-new-record modal-content pt-0" id="servicesForm" method="post">
+                    @csrf
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                    <div class="modal-header mb-1">
+                        <h5 class="modal-title" >Reviews</h5>
+                    </div>
+                    <input name="id" id="id" type="hidden">
+                    <div class="modal-body flex-grow-1">
+                        <div class="mb-1">
+                            <p>Title :</p>
+                            <p>@if(isset($users_data->rating) && $users_data->rating!=''){{$users_data->rating->review_title}}@endif</p>
+                            <p>Review :</p>
+                            <p>@if(isset($users_data->rating) && $users_data->rating!=''){{$users_data->rating->reviews}}@endif</p>
+                        </div>
+                        <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endforeach
+@endif
 @endsection

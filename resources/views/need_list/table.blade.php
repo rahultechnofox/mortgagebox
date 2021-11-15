@@ -67,7 +67,7 @@
                                     @endif -->
                                 </td>
                                 <td>@if(isset($users_data->selected_pro) && $users_data->selected_pro!=''){{\Helpers::checkNull($users_data->selected_pro->advisor_name)}}@else -- @endif</td>
-                                <td>N/A</td>
+                                <td><?php if(isset($users_data->rating) && $users_data->rating){ ?> <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#modals-slide-in_{{$users_data->id}}">{{$users_data->avarageRating}}</a> <?php }else{ echo "--"; } ?></td>
                                 <td>@if(isset($users_data->close_type) && $users_data->close_type!=''){{\Helpers::checkNull($users_data->close_type)}}@else -- @endif</td>
                                 <td>
                                     <div class="dropdown">

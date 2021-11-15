@@ -109,7 +109,11 @@ class Advice_area extends Model
                 }else{
                     $advice_area[$key]->close_type="--";
                 }
-                
+                $rating =  ReviewRatings::select('review_ratings.*')->where('review_ratings.area_id',$item->id)->where('review_ratings.status',0)->first();
+                $averageRating = ReviewRatings::where('review_ratings.area_id',$item->id)->where('review_ratings.status', '=', 0)->avg('rating');
+
+                $advice_area[$key]->avarageRating = number_format((float)$averageRating, 2, '.', '');
+                $advice_area[$key]->rating = $rating;
             }
             // exit;
             $data['userDetails'] = $advice_area;

@@ -219,17 +219,13 @@ class User extends Authenticatable implements JWTSubject
                     $area_arr_cost = array();
                     if(count($cost_val)){
                         foreach($cost_val as $cost_val_data){
-                            // if($cost_val_data->cost_discounted!=0){
-                            //     $cost_lead = $cost_lead + $cost_val_data->cost_discounted;
-                            // }
-                            // if($cost_val_data->cost_discounted==0){
-                            // }
-                            // array_push($area_arr_cost,$cost_val_data->area_id);
                             $cost_lead = $cost_lead + $cost_val_data->cost_leads;
                         }
                         $cost_lead_final = config('app.currency').number_format($cost_lead,0);
                         
                     }
+                    $row->cost_of_lead_final = $cost_lead_final;
+
                     // $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
                     
                     $area_data = Advice_area::whereIn('id',$area_arr)->get();
@@ -275,7 +271,6 @@ class User extends Authenticatable implements JWTSubject
                         $row->is_accepted = 0;
                         $cost_add = $cost_add + $costAmount;
                     }
-                    $row->cost_of_lead_final = $cost_lead;
                     // foreach($value_data){
 
                     // }

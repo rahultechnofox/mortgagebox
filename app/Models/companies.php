@@ -119,7 +119,7 @@ class companies extends Model
                         if($advisor_data_team->advisorId!=null){
                             array_push($team_arr,$advisor_data_team->advisorId);
                         }
-                        $cost_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->where('status', '=', 0)->where('advisor_status', '=', 1)->get();
+                        $cost_val = AdvisorBids::where('advisor_id','=',$advisor_data_team->advisorId)->get();
                         if(count($cost_val)){
                             foreach($cost_val as $cost_val_data){
                                 // if($cost_val_data->cost_discounted!=0){
@@ -131,14 +131,16 @@ class companies extends Model
                             }
                             $cost_lead_final = $cost_lead;
                         }
-                        $final_cost_of_lead = $final_cost_of_lead + $cost_lead_final;
+                        $final_cost_of_lead = $cost_lead_final;
+                        // $final_cost_of_lead = $final_cost_of_lead + $cost_lead_final;
+
                     }                    
                 }
                 
 
                 // $row->live_leads = $final_live_lead;
                 $row->eastimated_lead = $final_eastimated_lead;
-                $row->cost_of_lead = config('app.currency').number_format($final_cost_of_lead,0);
+                $row->cost_of_lead = config('app.currency').number_format($final_cost_of_lead,2);
 
                 // $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->whereIn('advisor_id',$team_arr)->where('status', '!=', 2)->where('status', '!=', 3)->count();
 

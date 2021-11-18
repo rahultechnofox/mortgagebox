@@ -376,15 +376,6 @@ class AdvisorController extends Controller
                     }
                 }
             }
-            // if($advisor_data->image==''){
-            //     $adviser_company_admin = AdvisorProfile::where('advisorId',$advisor_data->adviso)->first();
-            //     if($adviser_company_admin){
-            //         if($adviser_company_admin->company_logo!=''){
-            //             $company_logo = $adviser_company_admin->company_logo;
-            //             $adviser_company_admin->company_logo = $company_logo;
-            //         }
-            //     }
-            // }
             $company_team = CompanyTeamMembers::where('email',$advisor_data->email)->first();
             if($company_team){
                 if($company_team->isCompanyAdmin==1){
@@ -424,7 +415,7 @@ class AdvisorController extends Controller
         
         $last_activity = User::select('users.last_active')->where('id', '=', $id)->first();
         $offer_data = AdvisorOffers::where('advisor_id', '=', $id)->get();
-
+        $countofCOunt = 0;
         $rating =  ReviewRatings::select('review_ratings.*', 'users.name', 'users.email', 'users.address')
             ->leftJoin('users', 'review_ratings.user_id', '=', 'users.id')
             ->leftJoin('review_spam', 'review_ratings.id', '=', 'review_spam.review_id')
@@ -451,7 +442,11 @@ class AdvisorController extends Controller
                     $rating_data->reason = $spam->reason;
                     $rating_data->spam_status = $spam->spam_status;
                     $rating_data->is_spam = 1;
+                    if($spam->spam_status!=1){
+                		$countofCOunt = $countofCOunt + 1;
+                    }
                 }else{
+                	$countofCOunt = $countofCOunt + 1;
                     $rating_data->reason = "";
                     $rating_data->spam_status = 2;
                     $rating_data->is_spam = 0;
@@ -466,6 +461,7 @@ class AdvisorController extends Controller
         
         $averageRating = ReviewRatings::where('advisor_id', '=', $id)->where('review_ratings.status', '!=', 2)->avg('rating');
 
+
         if ($advisor_data) {
             $advisor_data->used_by  = $usedByMortage;
             $advisor_data->last_activity  = $last_activity->last_active;
@@ -476,7 +472,7 @@ class AdvisorController extends Controller
                 'offers' => $offer_data,
                 'review_rating' => $rating,
                 'avarageRating' => number_format((float)$averageRating, 1, '.', ''),
-                'total' => count($rating),
+                'total' => $countofCOunt,
 
             ], Response::HTTP_OK);
         } else {

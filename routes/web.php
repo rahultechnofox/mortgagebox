@@ -91,6 +91,7 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/pages/edit/{id}', '\App\Http\Controllers\PagesController@edit')->name("admin/pages/edit");
     Route::post('admin/update-page','\App\Http\Controllers\PagesController@update');
     Route::post('admin/update-page-status','\App\Http\Controllers\PagesController@updateStatus');
+    Route::post('admin/importExcelPostcode','\App\Http\Controllers\PagesController@importExcelPostcode');
     /******************* Pages Management **********************/
 
     /******************* Services Management **********************/

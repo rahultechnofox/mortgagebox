@@ -47,6 +47,13 @@
                         </div>
                     </div>
                 </form>
+                <!-- <form method="post" action="{{url('admin/importExcelPostcode')}}" enctype="multipart/form-data">
+                    @csrf
+                    <label>Select Excel File</label>
+                    <input type="file" name="excel" />
+                    <br />
+                    <input type="submit" name="import" class="btn btn-info" value="Import" />
+                </form> -->
             </div>
         </div>
         @include('pages.table')

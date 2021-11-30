@@ -34,27 +34,37 @@ class companies extends Model
         try {
             $query = new Self;
             $companyId = array();
-            
+            $companyadminId = array();
             if(isset($search['search']) && $search['search']!=''){
-                $final_arr_m = array(-1);
-                $advisor = AdvisorProfile::select('advisorId')->where('display_name', 'like', '%' .strtolower($search['search']). '%')->get();
-                if(count($advisor)){
-                    foreach($advisor as $advisor_data){
-                        array_push($final_arr_m,$advisor_data->advisorId);
-                    }
-                }
-                $companyId = array(-1);
-                $getData = companies::where('company_name', 'like', '%' .strtolower($search['search']). '%')->orWhereIn('company_admin',$final_arr_m)->get();
+                $getData = companies::where('company_name', 'like', '%' .strtolower($search['search']). '%')->get();
                 if(count($getData)){
                     foreach($getData as $getRow){
                         array_push($companyId,$getRow->company_admin);
                     }
                 }
             }
-
+            if(isset($search['admin']) && $search['admin']!=''){
+                $final_arr_m = array(-1);
+                $advisor = AdvisorProfile::select('advisorId')->where(DB::raw('LOWER(display_name)'), 'like', '%'.strtolower($search['admin']). '%')->get();
+                if(count($advisor)){
+                    foreach($advisor as $advisor_data){
+                        array_push($final_arr_m,$advisor_data->advisorId);
+                    }
+                }
+                $companyadminId = array(-1);
+                $getDataadmin = CompanyTeamMembers::whereIn('advisor_id', $final_arr_m)->where('isCompanyAdmin',1)->get();
+                if(count($getDataadmin)){
+                    foreach($getDataadmin as $getRowdata){
+                        array_push($companyadminId,$getRowdata->company_id);
+                    }
+                }
+            }
             
             if(count($companyId)>0){
                 $query = $query->whereIn('company_admin',$companyId);
+            }
+            if(count($companyadminId)>0){
+                $query = $query->whereIn('id',$companyadminId);
             }
 
             if(isset($search['status']) && $search['status']!=''){
@@ -197,7 +207,6 @@ class companies extends Model
             $data = $query->where('id',$id)->with('adviser')->with('team_members')->with('notes')->first();
             // with('team_members')->
             $teamadmin = 0;
-            $success_per = 0;
             $team_member = array();
             if($data){
                 $data->adviser = $data->adviser[0];
@@ -208,11 +217,12 @@ class companies extends Model
                 // $live_leads = 0;
                 // $hired = 0;
                 // $completed = 0;
-                $success_per = 0;
+                
                 $team_arr = array();
                 
                 if($data->company_admin!=0){
                     $user = AdvisorProfile::where('advisorId',$data->company_admin)->first();
+                    
                     $user_data = User::where('id',$data->company_admin)->first();
                     if($user){
                         $data->company_admin_name = $user->display_name;
@@ -236,10 +246,10 @@ class companies extends Model
                 }else{
                     $data->company_admin_name = "";
                 }
+                $success_per = 0;
                 foreach($data->team_members as $team_members_data){
                     $advice_areaCount =  AdvisorBids::where('advisor_status', 1)->where('advisor_id',$team_members_data->advisor_id)
                     ->where('status', '!=', 2)->where('status', '!=', 3)->count();
-
                     // $team_members_data->accepted_leads = $advice_areaCount;
                     // $live_leads_data = User::getAdvisorLeadsData($team_members_data->advisor_id);
                     // $team_members_data->live_leads = $live_leads_data['total_leads'];
@@ -334,12 +344,23 @@ class companies extends Model
                     $cost = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->sum('cost_discounted');
                     $team_members_data->value = $value;
                     $team_members_data->cost = $cost;
+                    
+                   
                     $total_bids = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->where('advisor_status', '=', 1)->count();
                     if($total_bids!=0){
-                        $success_per = ($team_members_data->accepted_leads / $total_bids) * 100;
+                        $success_per = ($team_members_data->completed / $total_bids) * 100;
+
+                    }else{
+                        $success_per = 0;
                     }
-                    $team_members_data->success_percent = $success_per;
+                    if($success_per!=0){
+                        $team_members_data->success_percent = number_format($success_per,2);
+                    }else{
+                        $team_members_data->success_percent = 0;
+                    }   
                 }
+                $company_admin_data = AdvisorProfile::where('advisorId',$data->team_members[0]->advisor_id)->first();
+                $data->company_data = $company_admin_data;
             }   
             return $data;
         }catch (\Exception $e) {

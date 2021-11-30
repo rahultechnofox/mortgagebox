@@ -46,9 +46,9 @@
                                     <div class="transaction-percentage">
                                         <small>
 
-                                            @if(isset($company_detail->adviser) && $company_detail->adviser->company_logo!='')
-                                            <?php $url = url('storage/advisor/'.$company_detail->adviser->company_logo); ?>
-                                                @if($company_detail->adviser->company_logo!='')
+                                            @if(isset($company_detail->company_data) && $company_detail->company_data->company_logo!='')
+                                            <?php $url = url('storage/advisor/'.$company_detail->company_data->company_logo); ?>
+                                                @if($company_detail->company_data->company_logo!='')
                                                     <img src="{{$url}}" style="width: 80px;" onerror="this.onerror=null;this.src=`{{url('no-image.png')}}`">
                                                 @else
                                                     <img src="{{url('no-image.png')}}" style="width: 80px;">

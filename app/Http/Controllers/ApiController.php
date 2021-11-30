@@ -29,6 +29,7 @@ use App\Models\CompanyTeamMembers;
 use App\Models\Faq;
 use App\Models\FaqCategory;
 use App\Models\Contactus;
+use App\Models\NeedSpam;
 use App\Models\AdviserProductPreferences;
 use DateTime;
 use Illuminate\Http\Request;
@@ -438,6 +439,8 @@ class ApiController extends Controller
     public function advisorRegister(Request $request)
     {
         //Validate data
+        $post = $request->all();
+        // echo json_encode($post);exit;
         $data = $request->only('name', 'email', 'password');
         // $post = $request->all();
         // echo json_encode($post);exit;
@@ -485,7 +488,7 @@ class ApiController extends Controller
             $user_data['invited_by'] = $this->getDecryptedId($request->invitedBy);
         }
         $user = User::create($user_data);
-        if(isset($user->invited_by) && $user->invited_by!=''){
+        if(isset($user->invited_by) && $user->invited_by!='' && $request->type!='invite_team'){
             $invited_count = User::where('invited_by',$user->invited_by)->count();
             $free_promotions = 0;
             $check_promotion = DB::table('app_settings')->where('key','no_of_free_leads_refer_friend')->first();
@@ -2583,7 +2586,39 @@ class ApiController extends Controller
         // $chatData = DB::select("SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id) FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id  order by chat_models.id DESC)");
                 // $chatData = \DB::select("SELECT chat_models.*,users.name, advisor_profiles.display_name, advisor_profiles.company_name FROM `chat_models` LEFT JOIN `advisor_profiles` ON chat_models.from_user_id = advisor_profiles.advisorId LEFT JOIN `users` ON chat_models.from_user_id = users.id WHERE chat_models.id IN (SELECT MAX(id) FROM chat_models WHERE chat_models.to_user_id = $user->id AND chat_models.to_user_id_seen = 0 GROUP BY chat_models.channel_id  order by chat_models.id DESC)");
         // $chatChannel = ChatChannel::orWhere('from_user_id',$user->id)->where('to_user_id',$user->id)->get();
-        $chatData = ChatModel::where('from_user_id',$user->id)->orwhere('to_user_id',$user->id)->with('from_user')->with('to_user')->orderBy('id','DESC')->groupBy('channel_id')->get();
+        $showChats = array();
+        $channel_id  = 0;
+        $chatData = ChatModel::where('from_user_id',$user->id)->orWhere('to_user_id',$user->id)->with('from_user')->with('to_user')->orderBy('id','DESC')->groupBy('channel_id')->get();
+        
+        foreach($chatData as $chatData_data){
+            // $channelDetails =  ChatChannel::where('from_user_id', '=', $chatData_data->from_user_id)->where('to_user_id', '=', $chatData_data->to_user_id)->first();
+            // $channelExist =  ChatChannel::where('from_user_id', '=', $chatData_data->from_user_id)->where('to_user_id', '=', $chatData_data->to_user_id)->first();
+            // if (!empty($channelDetails) && !empty($channelExist)) {
+            //     if (!empty($channelDetails)) {
+            //         $channel_id = $channelDetails->id;
+            //         $channel_name = $channelDetails->channel_name;
+            //     } else if (!empty($channelExist)) {
+            //         $channel_id = $channelExist->id;
+            //         $channel_name = $channelExist->channel_name;
+            //     }
+            // }
+            $chatData_data->showChats = ChatModel::where('channel_id', '=', $chatData_data->channel_id)->orderBy('id', 'DESC')->first();
+            if($chatData_data->showChats!=''){
+                $chatData_data->lastMessage = $chatData_data->showChats->text;
+            }else{
+                $chatData_data->lastMessage = "";
+            }
+            // $last_message = "";
+            // $last_message = ChatModel::where('from_user_id',$chatData_data->from_user_id)->where('to_user_id',$chatData_data->to_user_id)->orWhere('from_user_id',$chatData_data->to_user_id)->orWhere('to_user_id',$chatData_data->from_user_id)->with('from_user')->with('to_user')->orderBy('id','DESC')->first();
+
+            // $chatData_data->last_message_check = ChatModel::where('from_user_id',$chatData_data->from_user_id)->where('to_user_id',$chatData_data->to_user_id)->orWhere('from_user_id',$chatData_data->to_user_id)->orWhere('to_user_id',$chatData_data->from_user_id)->with('from_user')->with('to_user')->orderBy('id','DESC')->where('channel_id',$chatData_data->channel_id)->get();
+            // if($last_message){
+            //     $chatData_data->lastMessage = $last_message->text;
+            // }else{
+            //     $chatData_data->lastMessage = "";
+            // }
+            
+        }
         return response()->json([
             'status' => true,
             'data' => $chatData
@@ -3564,6 +3599,8 @@ class ApiController extends Controller
                 $data['site_name'] = DB::table('app_settings')->where('key','mail_from_name')->first();
                 $data['new_fees'] = array();
                 $data['discount_credits'] = array();
+                // $data['invoice']->discount_credit_arr = array();
+                $spam_total = 0;
                 if($data['adviser']){
                     $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->first();
                     if($data['invoice']){
@@ -3598,9 +3635,10 @@ class ApiController extends Controller
                                 }
                             }
                         }
-                        $data['invoice']->discount_credit_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
-                        if(count($data['invoice']->discount_credit_arr)){
-                            foreach($data['invoice']->discount_credit_arr as $discount_bid){
+                        
+                        $discount_cre = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                        if(count($discount_cre)){
+                            foreach($discount_cre as $discount_bid){
                                 $address = "";
                                 if($discount_bid->area){
                                     if(!empty($discount_bid->area->user)) {
@@ -3634,8 +3672,46 @@ class ApiController extends Controller
                                 }else if($discount_bid->advisor_status==2){
                                     $discount_bid->status_type = "Not Proceeding";
                                 }
+                                array_push($data['discount_credits'],$discount_bid);
                             }
                         }
+
+                        $spam_refund = AdviceAreaSpam::where('user_id',$data['invoice']->advisor_id)->where('spam_status',1)->with('area')->get();
+                        foreach($spam_refund as $spam_refund_data){
+                            $spam_refund_need = NeedSpam::where('adviser_id',$spam_refund_data->user_id)->where('area_id',$spam_refund_data->area_id)->first();
+                            if($spam_refund_need){
+                                $spam_bid = AdvisorBids::where('id',$spam_refund_need->bid_id)->with('area')->first();
+                                if($spam_bid){
+                                    $baddress = "";
+                                    if($spam_bid->area){
+                                        if(!empty($spam_bid->area->user)) {
+                                            $addressDetails = PostalCodes::where('Postcode',$spam_bid->area->user->post_code)->first();
+                                            if(!empty($addressDetails)) {
+                                                if($addressDetails->Country != ""){
+                                                    $baddress = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                                                    $baddress .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                                                    $baddress .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                                                }
+                                                
+                                            }
+                                        }
+                                    }
+                                    $spam_bid->area->address = $baddress;
+                                    $spam_bid->status_type = "Lost";
+                                    $spam_bid->discount_cycle = "Refund";
+                                    // array_push($data['discount_credits'],$spam_bid);
+                                    $spam_bid->date = date("d-M-Y H:i",strtotime($spam_bid->created_at));
+                                    array_push($data['discount_credits'],$spam_bid);
+                                    if($spam_refund_need->cost_of_lead_discounted!=0){
+                                        $spam_total = $spam_total + $spam_refund_need->cost_of_lead_discounted;
+                                    }else{
+                                        $spam_total = $spam_total + $spam_refund_need->cost_of_lead;
+                                    }
+                                }
+                            }
+                        }
+                        $data['invoice']->discount_subtotal = $data['invoice']->discount_subtotal + $spam_total;
+                        $data['invoice']->discount_credit_arr = $data['discount_credits'];
                     }
                 }
                 return response()->json([

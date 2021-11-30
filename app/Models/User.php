@@ -311,7 +311,7 @@ class User extends Authenticatable implements JWTSubject
                     if($total_bids!=0){
                         $success_per = ($row->completed_leads / $total_bids) * 100;
                     }
-                    $row->success_percent = $success_per; 
+                    $row->success_percent = number_format($success_per,2); 
                     $company_admin = companies::where('company_admin',$row->advisorId)->first();
                     if(isset($company_admin) && $company_admin){
                         $row->role = "Admin";

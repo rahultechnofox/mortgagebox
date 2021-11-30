@@ -333,6 +333,9 @@ class NeedController extends Controller
                                     'area_id'=>$need->area_id,
                                     'adviser_id'=>$need->user_id,
                                     'bid_id'=>$need_bid->id,
+                                    'month'=>date('m',strtotime($need_bid->created_at)),
+                                    'cost_of_lead'=>$need_bid->cost_leads,
+                                    'cost_of_lead_discounted'=>$need_bid->cost_discounted,
                                     'refund_status'=>1,
                                     'created_at'=>date('Y-m-d H:i:s'),
                                 );

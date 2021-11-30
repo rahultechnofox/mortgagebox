@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 use App\Models\ReviewSpam;
+use App\Models\ReviewRatings;
+
 use App\Models\Invoice;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
@@ -39,6 +41,10 @@ class ReviewSpamController extends Controller
             }else{
                 unset($post['_token']);
                 // $post['spam_status'] = 0;
+                $spam = ReviewSpam::where('id',$post['id'])->first();
+                if($spam){
+                    ReviewRatings::where('id',$spam->review_id)->update(['status'=>2]);
+                }
                 $user = ReviewSpam::where('id',$post['id'])->update($post);
                 if($post['spam_status']==1){
                     $review = ReviewSpam::where('id',$post['id'])->first();

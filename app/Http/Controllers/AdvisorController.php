@@ -459,7 +459,7 @@ class AdvisorController extends Controller
         ->Where('advisor_id','=',$id)
         ->count();
         
-        $averageRating = ReviewRatings::where('advisor_id', '=', $id)->where('review_ratings.status', '!=', 2)->avg('rating');
+        $averageRating = ReviewRatings::where('advisor_id', '=', $id)->where('status', '!=', 2)->avg('rating');
 
 
         if ($advisor_data) {

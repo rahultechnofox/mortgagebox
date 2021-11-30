@@ -92,13 +92,12 @@ class companies extends Model
 
                 $final_live_lead = 'NA';                
                 $final_cost_of_lead = 0;
-                $final_eastimated_lead = 0;
-                $cost_lead = 0;
                 $cost_lead_final = 0;
-
                 $area_arr = array(-1);
-                foreach($row->team_members as $team_members_data)
-                {
+                foreach($row->team_members as $team_members_data){
+                    $final_eastimated_lead = 0;
+                    $cost_lead = 0;
+                    $lead_value = 0;
                     $advisor_data_team = AdvisorProfile::where('email',$team_members_data->email)->first();
                     if($advisor_data_team){
                         $es_val = AdvisorBids::where('advisor_id',$advisor_data_team->advisorId)->where('status',2)->where('advisor_status',1)->get();
@@ -109,7 +108,7 @@ class companies extends Model
                                 array_push($area_arr,$es_val_data->area_id);
                             }
                         }
-
+                        
                         if(count($area_arr)){
                             $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
                             $main_value = ($value_data/100);
@@ -121,10 +120,10 @@ class companies extends Model
                             $lead_value = ($main_value)*($advisorDetaultPercent);
                             $final_eastimated_lead = $final_eastimated_lead + $lead_value;
                         }
-                        else{
-                            $lead_value = 0;
-                            $final_eastimated_lead = $final_eastimated_lead + $lead_value;
-                        }
+                        // else{
+                        //     $lead_value = 0;
+                        //     $final_eastimated_lead = $final_eastimated_lead + $lead_value;
+                        // }
                         
                         if($advisor_data_team->advisorId!=null){
                             array_push($team_arr,$advisor_data_team->advisorId);

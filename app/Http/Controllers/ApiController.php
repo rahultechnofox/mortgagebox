@@ -2835,6 +2835,21 @@ class ApiController extends Controller
         ], Response::HTTP_OK);
     }
 
+    public function setRecentMessagesOfAllChatToRead(Request $request)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        ChatModel::where('to_user_id', '=', $user->id)->where('to_user_id_seen', '=', 0)->update(
+            [
+                'to_user_id_seen' => 1
+            ]
+        );
+
+        return response()->json([
+            'status' => true,
+            'data' => []
+        ], Response::HTTP_OK);
+    }
+
     public function selectOrDeclineOffer($id,$status) {
         //1:accepted, 3: rejected
         $user = JWTAuth::parseToken()->authenticate();
@@ -3697,8 +3712,20 @@ class ApiController extends Controller
                                         }
                                     }
                                     $spam_bid->area->address = $baddress;
-                                    $spam_bid->status_type = "Lost";
+                                    if($spam_bid->status==0){
+                                        $spam_bid->status_type = "Live Lead";
+                                    }else if($spam_bid->status==1){
+                                        $spam_bid->status_type = "Hired";
+                                    }else if($spam_bid->status==2){
+                                        $spam_bid->status_type = "Completed";
+                                    }else if($spam_bid->status==3){
+                                        $spam_bid->status_type = "Lost";
+                                    }else if($spam_bid->advisor_status==2){
+                                        $spam_bid->status_type = "Not Proceeding";
+                                    }
                                     $spam_bid->discount_cycle = "Refund";
+                                    $spam_bid->cost_leads = number_format($spam_bid->cost_leads,2);
+                                    $spam_bid->cost_discounted = number_format($spam_bid->cost_discounted,2);
                                     // array_push($data['discount_credits'],$spam_bid);
                                     $spam_bid->date = date("d-M-Y H:i",strtotime($spam_bid->created_at));
                                     array_push($data['discount_credits'],$spam_bid);

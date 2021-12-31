@@ -73,4 +73,161 @@ class AdvisorProfile extends Model
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
         }
     }
+
+    public static function getSearchedAdvisor($search){
+        try {
+            $query = new Self;
+            $advisorArr = array();
+            $AdviceAreaIds = array();
+            $mortgageValueIds = array();
+            if(isset($search['advice_area']) && count($search['advice_area'])){
+                $AdviceAreaIds = array(-1);
+                $default = DefaultPercent::whereIn('service_id',$search['advice_area'])->where('status',1)->get();
+                if(count($default)){
+                    foreach($default as $default_data){
+                        if(!in_array($default_data->adviser_id,$AdviceAreaIds)){
+                            array_push($AdviceAreaIds,$default_data->adviser_id);
+                        }
+                    }
+                }
+            }
+
+            if(isset($search['post_code']) && $search['post_code']!=''){
+                $query = $query->where('postcode',$search['post_code']);
+            }
+
+            if(isset($search['gender']) && $search['gender']!=''){
+                $query = $query->where('gender',$search['gender']);
+            }
+
+            if(isset($search['language']) && $search['language']!=''){
+                $query = $query->where('language',$search['language']);
+            }
+
+            if(isset($search['how_soon']) && count($search['how_soon'])){
+                $advisorArr = array(-1);
+                for($i=0;$i<count($search['how_soon']);$i++){
+                    if($search['how_soon'][$i]=='more_3_month'){
+                        $ad_customer = AdvisorPreferencesCustomer::where('more_3_month',1)->get();
+                        if(count($ad_customer)){
+                            foreach($ad_customer as $ad_customer_data){
+                                if(!in_array($ad_customer_data->advisor_id,$advisorArr)){
+                                    array_push($advisorArr,$ad_customer_data->advisor_id);
+                                }
+                            }
+                        }
+                    }
+                    if($search['how_soon'][$i]=='next_3_month'){
+                        $ad_customer_next = AdvisorPreferencesCustomer::where('next_3_month',1)->get();
+                        if(count($ad_customer_next)){
+                            foreach($ad_customer_next as $ad_customer_next_data){
+                                if(!in_array($ad_customer_next_data->advisor_id,$advisorArr)){
+                                    array_push($advisorArr,$ad_customer_next_data->advisor_id);
+                                }
+                            }
+                        }
+                    }
+                    if($search['how_soon'][$i]=='asap'){
+                        $ad_customer_asap = AdvisorPreferencesCustomer::where('asap',1)->get();
+                        if(count($ad_customer_asap)){
+                            foreach($ad_customer_asap as $ad_customer_asap_data){
+                                if(!in_array($ad_customer_asap_data->advisor_id,$advisorArr)){
+                                    array_push($advisorArr,$ad_customer_asap_data->advisor_id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if(isset($search['mortgage_value']) && count($search['mortgage_value'])){
+                $mortgageValueIds = array(-1);
+                for($i=0;$i<count($search['mortgage_value']);$i++){
+                    $explode = explode("_",$search['mortgage_value'][$i]);
+                    if($explode[0]>0){
+                        $explode[0] = $explode[0]."000";
+                    }
+                    if($explode[1]>0){
+                        $explode[1] = $explode[1]."000";
+                    }
+                    $ad = AdvisorProfile::where('mortgage_min_size','>',$explode[0])->where('mortgage_max_size','<=',$explode[1])->get();
+                    if(count($ad)){
+                        foreach($ad as $ad_data){
+                            if(!in_array($ad_data->id,$mortgageValueIds)){
+                                array_push($mortgageValueIds,$ad_data->id);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(count($advisorArr) && count($AdviceAreaIds) && count($mortgageValueIds)){
+                $advisorArr = array_intersect($advisorArr, $AdviceAreaIds, $mortgageValueIds);
+            }else if(count($advisorArr) && count($AdviceAreaIds)){
+                $advisorArr = array_intersect($advisorArr, $AdviceAreaIds);
+            }else if(count($advisorArr) && count($mortgageValueIds)){
+                $advisorArr = array_intersect($advisorArr, $mortgageValueIds);
+            }else if(!count($advisorArr) && count($mortgageValueIds)){
+                $advisorArr = $mortgageValueIds;
+            }else if(!count($advisorArr) && count($AdviceAreaIds)){
+                $advisorArr = $AdviceAreaIds;
+            }else if(!count($mortgageValueIds) && count($AdviceAreaIds)){
+                $advisorArr = array_intersect($AdviceAreaIds, $mortgageValueIds);
+            }
+
+            if(count($advisorArr)){
+                $query = $query->whereIn('id',$advisorArr);
+            }
+            $data = $query->orderBy('id','DESC')->groupBy('id')->get();
+            $getCustomerPostalDetails = PostalCodes::where('Postcode', '=', $search['post_code'])->first();
+            $dataArray = array();
+            if (count($data)) {
+                foreach ($data as $key => $item) {
+                    $rating =  ReviewRatings::select('review_ratings.*')
+                        ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                        ->where('review_ratings.status', '=', 0)
+                        ->get();
+
+                    $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisorId)->where('review_ratings.status', '=', 0)->avg('rating');
+
+                    $ratingGreat =  ReviewRatings::where('review_ratings.rating', '<=', '4')
+                        ->where('review_ratings.rating', '>', '3')
+                        ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                        ->count();
+
+                    $ratingAverage =  ReviewRatings::where('review_ratings.rating', '<=', '3')
+                        ->where('review_ratings.rating', '>', '2')
+                        ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                        ->count();
+
+                    $ratingPoor =  ReviewRatings::where('review_ratings.rating', '<=', '2')
+                        ->where('review_ratings.rating', '>', '1')
+                        ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                        ->count();
+                    $ratingBad =  ReviewRatings::where('review_ratings.rating', '<=', '1')
+                        ->where('review_ratings.rating', '>', '0')
+                        ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                        ->count();
+
+                    $ratingBad =  ReviewRatings::where('review_ratings.rating', '<=', '1')
+                        ->where('review_ratings.rating', '>', '0')
+                        ->where('review_ratings.advisor_id', '=', $item->advisorId)
+                        ->count();
+
+                    $item->avarageRating = number_format((float)$averageRating, 2, '.', '');
+                    $item->rating = [
+                        'total' => count($rating),
+                    ];
+                    $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
+                    ->Where('advisor_status','=',1)
+                    ->Where('advisor_id','=',$item->advisorId)
+                    ->count();
+                    $item->used_by  = $usedByMortage;
+                    $dataArray[] = $item;
+                }
+            }
+            return $dataArray;
+        }catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
+        }
+    }
 }

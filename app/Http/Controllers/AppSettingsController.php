@@ -28,22 +28,19 @@ class AppSettingsController extends Controller{
         $post = $request->all();
         if(!empty($post)){
             unset($post['_token']);
+            // echo json_encode($post);exit;
             if(isset($post['new_adviser_status'])){
-                if($post['new_adviser_status']=='on'){
-                    $post['new_adviser_status'] = 1;
-                }else{
-                    $post['new_adviser_status'] = 0;
-                }
+                $post['new_adviser_status'] = 1;
+            }else{
+                $post['new_adviser_status'] = 0;
             }
             if(isset($post['friend_active'])){
-                if($post['friend_active']=='on'){
-                    $post['friend_active'] = 1;
-                }else{
-                    $post['friend_active'] = 0;
-                }
+                $post['friend_active'] = 1;
+            }else{
+                $post['friend_active'] = 0;
             }
         	foreach ($post as $key => $value) {
-    			$exist = AppSettings::where('key',$key)->first();
+                $exist = AppSettings::where('key',$key)->first();
     			if ($exist) {
     				$id = AppSettings::where('id',$exist->id)->update(array('value'=>$value));
     			}else{

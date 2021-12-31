@@ -34,7 +34,7 @@ Route::get("/account",function ()
 Route::get('login/{provider}', 'Auth\LoginController@redirectToProvider');
 Route::get('login/{provider}/callback', 'Auth\LoginController@handleProviderCallback');
 Route::get('/generateInvoiceCron', '\App\Http\Controllers\AdvisorController@invoice');
-
+Route::get('/matchLeadsSummaryCron', '\App\Http\Controllers\AdvisorController@matchLeadsSummaryCron');
 Route::get("/verify-success",function(){
     return "your account has been verified!";
 });
@@ -133,6 +133,8 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/invoice-list/{month}', '\App\Http\Controllers\InvoiceController@list');
     Route::get('admin/invoice-detail/{invoice_id}', '\App\Http\Controllers\InvoiceController@show');
     Route::get('admin/final-invoice', '\App\Http\Controllers\InvoiceController@invoice');
+    Route::get('admin/postcode-autocomplete', '\App\Http\Controllers\InvoiceController@postCodeAutocomplete');
+    Route::post('admin/postcode-autocomplete', '\App\Http\Controllers\InvoiceController@postCodeAutocomplete');
 
     /******************* Invoice Management **********************/
 

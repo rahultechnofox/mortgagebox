@@ -34,6 +34,8 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('changePassword/', [ApiController::class, 'changePassword']);
     Route::post('updateAdvisorProfile/',  [ApiController::class, 'updateAdvisorProfile']);
     Route::get('getAdvisorProfile/', [ApiController::class, 'getAdvisorProfile']);
+    Route::get('getAdvisorProfileById/{id}', [AdvisorController::class, 'getAdvisorProfileById']);
+    
     // Users routes
     Route::post('addNewAdviceArea/',  [ApiController::class, 'addNewAdviceArea']);
     Route::get('getUsersAdviceArea/',  [ApiController::class, 'getUsersAdviceArea']);

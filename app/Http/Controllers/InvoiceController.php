@@ -100,4 +100,19 @@ class InvoiceController extends Controller
         // echo json_encode($data);exit;
         return view('invoice.overall_invoice',$data);
     }
+
+    /**
+     * Get postcodes for autocomplete.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function postCodeAutocomplete(Request $request)
+    {
+        $post = $request->all();
+        $data = PostalCodes::select("Postcode")
+                ->where("Postcode","LIKE","%{$request['query']}%")
+                ->get();
+   
+        return response($data);
+    }
 }

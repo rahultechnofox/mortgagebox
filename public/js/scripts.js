@@ -757,23 +757,38 @@ function resetContactUsForm(){
     $('#id').val('');
 }
 
-$("#for_all_users").on('change', function () {
-    var el = $(this);
-    $(".user_group").addClass('hide');
-    if (el.val() === "university")
-    {
-        $(".for_university").removeClass('hide');
-    }
-    else if (el.val() === "school")
-    {
-        $(".for_school").removeClass('hide');
-    }
-    else if(el.val() === "ellib")
-    {
-        $(".for_ellib").removeClass('hide');
-
-    }else if (el.val() === "specific_users")
-    {
-        $(".for_specific_users").removeClass('hide');
-    }
-});
+var importerobjects = [];
+function getPostCodesAutocomplete(){
+    $("#post_code").typeahead({
+        autoSelect: true,
+        delay: 400,
+        source: function(query, process) {
+            if ($("#post_code").val() != "") {
+                var path = base_url + "/admin/postcode-autocomplete";
+                var map = {};
+                $.ajaxSetup({
+                    headers: {
+                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+                    }
+                });
+                $.post(path, {
+                    term: query
+                }, function(data) {
+                    importerobjects = [];
+                    $.each(data, function(i, object) {
+                        map[object.Postcode] = object;
+                        importerobjects.push(object.Postcode);
+                    });
+                    process(importerobjects);
+                });
+            }
+        },
+        updater: function(item) {
+            console.log(item);
+            setTimeout(function() {
+                $("#post_code").val(item);
+                // post_code_check(item);
+            }, 300);
+        },
+    })
+}

@@ -43,12 +43,8 @@
                             </select>
                         </div>
                         <div class="col-md-2 col-12" style="margin-top: 15px;">
-                            <select class="form-select" id="" name="post_code">
-                                <option value="">Region</option>
-								@foreach($post_code as $post_code_data)
-                                <option value="{{$post_code_data->Postcode}}" <?php if(isset($_GET['post_code']) && $_GET['post_code']!=''){ if($_GET['post_code']==$post_code_data->Postcode){ echo "selected"; } } ?>>{{$post_code_data->Postcode}}</option>
-								@endforeach
-                            </select>
+							<input type="text" class="form-select typeahead" name="post_code" id="post_code" onkeypress="getPostCodesAutocomplete();" autocomplete="off"/>
+                           
                         </div>
 						<div class="col-md-4 col-12" style="margin-top: 15px;">
 							<input type="text" id="fp-range" class="form-control flatpickr-range" name="date" placeholder="YYYY-MM-DD to YYYY-MM-DD" value="<?php if(isset($_GET['date']) && $_GET['date']!=''){ echo $_GET['date']; } ?>"/>

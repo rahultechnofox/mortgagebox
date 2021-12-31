@@ -159,6 +159,16 @@ class AdvisorController extends Controller
                     $postData['FCA_verified'] = date("Y-m-d H:i:s");
                 }else{
                     $postData['FCA_verified'] = null;
+                    $advisor = AdvisorProfile::where('id',$post['id'])->first();
+                    Notifications::create(array(
+                        'type'=>'10', // 1:
+                        'message'=>'Update your FCA Number', // 1:
+                        'read_unread'=>'0', // 1:
+                        'user_id'=>1,// 1:
+                        'advisor_id'=>$advisor->advisorId, // 1:
+                        'area_id'=>0,// 1:
+                        'notification_to'=>1
+                    ));
                 }
                 $user = AdvisorProfile::where('id',$post['id'])->update($postData);
                 if($user){
@@ -483,209 +493,52 @@ class AdvisorController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
-    public function searchAdvisor(Request $request)
+    public function getAdvisorProfileById($id)
     {
-        $id = JWTAuth::parseToken()->authenticate();
-        $post_code = "";
-        $advice_area = "";
-        $mortgage_value = "";
-        $how_soon = "";
-        $mortgage_value = "";
-        $local_advisor = "";
-        $gender = "";
-        $language = "";
-        if (isset($request->post_code)) {
-            $post_code = $request->post_code;
-        }
-        if (isset($request->advice_area)) {
-            $advice_area = $request->advice_area;
-        }
-        if (isset($request->how_soon)) {
-            $how_soon = $request->how_soon;
-        }
-        if (isset($request->mortgage_value)) {
-            $mortgage_value = $request->mortgage_value;
-        }
-        if (isset($request->local_advisor)) {
-            $local_advisor = $request->local_advisor;
-        }
-        if (isset($request->gender)) {
-            $gender = $request->genders;
-        }
-        if (isset($request->language)) {
-            $language = $request->language;
-        }
-        
-        $advisor_data = array();
-
-        $sql = "SELECT  ap.* from advisor_profiles as ap left join advisor_preferences_customers as apc  on ap.advisorId = apc.advisor_id";
-        $sql .= " left join advisor_preferences_products as app on ap.advisorId = app.advisor_id";
-        // $sql .= " left join review_ratings as rr on ap.advisorId = rr.user_id";
-        $sql .= " where ";
-       
-        if (!empty($request->how_soon)) {
-            foreach ($request->how_soon as $key => $column_name) {
-                if ($key === array_key_first($request->how_soon)) {
-                    $sql .= " apc." . $column_name . " = 1 ";
-                } else {
-                    $sql .= " OR apc." . $column_name . " = 1 ";
-                }
-            }
-        }
-        if (!empty($request->advice_area)) {
-            foreach ($request->advice_area as $key => $column_name) {
-                if ($key === array_key_first($request->advice_area)) {
-                    if (!empty($request->how_soon)) {
-                        $sql .= "OR app." . $column_name . " = 1 ";
-                    } else {
-                        $sql .= " app." . $column_name . " = 1 ";
+        $user = User::where('id',$id)->first();
+        // echo json_encode($user);exit;
+        if($user){
+            if($user->user_role == 1) {
+                $userDetails =  AdvisorProfile::where('advisorId', '=', $user->id)->first(); 
+                if($userDetails){
+                    $team_member = CompanyTeamMembers::where('email',$userDetails->email)->first();
+                    // $userDetails->is_admin = $team_member;
+                    if($team_member){
+                        if($team_member->isCompanyAdmin==1){
+                            $user->is_admin = 1;
+                        }else{
+                            $user->is_admin = 0;
+                        }
+                    }else{
+                        $user->is_admin = 2;
                     }
-                } else {
-                    $sql .= " OR app." . $column_name . " = 1 ";
                 }
-            }
-        }
-
-        // if (!empty($request->mortgage_value)) {
-        //     foreach ($request->mortgage_value as $key => $column_name) {
-        //         if ($key === array_key_first($request->mortgage_value)) {
-        //             if (!empty($request->how_soon) || !empty($request->advice_area) ) {
-
-        //                 $sql .= "OR app." . $column_name . " = 1 ";
-        //             } else {
-        //                 $sql .= " app." . $column_name . " = 1 ";
-        //             }
-        //         } else {
-        //             $sql .= " OR app." . $column_name . " = 1 ";
-        //         }
-        //     }
-        // }
-        if (isset($request->gender)) {
-            if (!empty($request->how_soon) || !empty($request->advice_area)) {
-                $sql .= " AND ap.gender  = '" . $request->gender . "'";
-            } else {
-                $sql .= " ap.gender  =  '" . $request->gender . "'";
-            }
-        }
-        if (isset($request->language)) {
-            if (!empty($request->how_soon) || !empty($request->advice_area)) {
-                $sql .= " AND ap.language  =  '" . $request->language . "'";
-            } else {
-                $sql .= " ap.language  =  '" . $request->language . "'";
-            }
-        }
-        if (isset($request->local_advisor) && $request->local_advisor !=0 ) {
-            if (!empty($request->how_soon) || !empty($request->advice_area)) {
-                $sql .= " AND apc.non_uk_citizen  =  '" . $request->local_advisor . "'";
-            } else {
-                $sql .= " apc.non_uk_citizen  = '" . $request->local_advisor . "'";
-            }
-        }
-        if ($post_code != "") {
-            if (!empty($request->how_soon) || !empty($request->advice_area)|| isset($request->language) || isset($request->gender) ||  $request->local_advisor !=0) {
-             $sql .= "  AND ap.postcode  =  '" . $post_code . "'";
+                $user->userDetails = $userDetails;
             }else{
-                $sql .= "   ap.postcode  =  '" . $post_code . "'";  
+                $user->userDetails = [];
             }
-        }
-        
-        $advisor_data = DB::select($sql);
-
-        $getCustomerPostalDetails = PostalCodes::where('Postcode', '=', $post_code)->first();
-        $dataArray = array();
-        if ($advisor_data) {
-            foreach ($advisor_data as $key => $item) {
-                $rating =  ReviewRatings::select('review_ratings.*')
-                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                    ->where('review_ratings.status', '=', 0)
-                    ->get();
-
-                // if ($item->postcode != "") {
-                    // $getAdvisorPostalDetails = PostalCodes::where('Postcode', '=', $item->postcode)->first();
-                    // if (!empty($getAdvisorPostalDetails)) {
-                        // $customerEasting = $getCustomerPostalDetails->Easting;
-                        // $advisorEasting = $getAdvisorPostalDetails->Easting;
-                        // $customerNorthing = $getCustomerPostalDetails->Northing;
-                        // $advisorNorthing = $getAdvisorPostalDetails->Northing;
-                        // $distance = $this->getDistanceRange($customerEasting, $advisorEasting, $customerNorthing, $advisorNorthing);
-                        // $item->distance = $distance;
-                        // if ($item->serve_range > $distance) {
-
-                        //     unset($advisor_data[$key]);
-                        // } else {
-
-                            $rating =  ReviewRatings::select('review_ratings.*')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->where('review_ratings.status', '=', 0)
-                                ->get();
-
-                            $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisorId)->where('review_ratings.status', '=', 0)->avg('rating');
-
-
-                            $ratingGreat =  ReviewRatings::where('review_ratings.rating', '<=', '4')
-                                ->where('review_ratings.rating', '>', '3')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
-
-                            $ratingAverage =  ReviewRatings::where('review_ratings.rating', '<=', '3')
-                                ->where('review_ratings.rating', '>', '2')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
-
-                            $ratingPoor =  ReviewRatings::where('review_ratings.rating', '<=', '2')
-                                ->where('review_ratings.rating', '>', '1')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
-                $ratingBad =  ReviewRatings::where('review_ratings.rating', '<=', '1')
-                    ->where('review_ratings.rating', '>', '0')
-                    ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                    ->count();
-
-                            $ratingBad =  ReviewRatings::where('review_ratings.rating', '<=', '1')
-                                ->where('review_ratings.rating', '>', '0')
-                                ->where('review_ratings.advisor_id', '=', $item->advisorId)
-                                ->count();
-
-                            $item->avarageRating = number_format((float)$averageRating, 2, '.', '');
-                            $item->rating = [
-                                'total' => count($rating),
-                            ];
-                            $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
-                            ->Where('advisor_status','=',1)
-                            ->Where('advisor_id','=',$item->advisorId)
-                            ->count();
-                            $item->used_by  = $usedByMortage;
-                            $dataArray[] = $item;
-                        // }
-                    // } else {
-                    //     unset($advisor_data[$key]);
-                    // }
-                // } else {
-                //     unset($advisor_data[$key]);
-                // }
-           }
-
             return response()->json([
                 'status' => true,
-                'message' => 'success',
-                'data' => $dataArray
-                // 'current_page' => $advisor_data->currentPage(),
-                // 'first_page_url' => $advisor_data->url(1),
-                // 'last_page_url' => $advisor_data->url($advisor_data->lastPage()),
-                // 'per_page' => $advisor_data->perPage(),
-                // 'next_page_url' => $advisor_data->nextPageUrl(),
-                // 'prev_page_url' => $advisor_data->previousPageUrl(),
-                // 'total' => $advisor_data->total(),
-                // 'total_on_current_page' => $advisor_data->count(),
-                // 'has_more_page' => $advisor_data->hasMorePages(),
-            ], Response::HTTP_OK);
-        } else {
+                'data' => $user
+            ]);
+        }else{
             return response()->json([
                 'status' => false,
                 'message' => 'Not found',
                 'data' => []
-            ], Response::HTTP_OK);
+            ], Response::HTTP_UNAUTHORIZED);
         }
+    }
+    public function searchAdvisor(Request $request)
+    {
+        $id = JWTAuth::parseToken()->authenticate();
+        $post = $request->all();
+        $advisor_data = AdvisorProfile::getSearchedAdvisor($post);
+        return response()->json([
+            'status' => true,
+            'message' => 'success',
+            'data' => $advisor_data
+        ], Response::HTTP_OK);
     }
     public function updateAdvisorAboutUs(Request $request)
     {
@@ -1535,14 +1388,15 @@ class AdvisorController extends Controller
         // ->where('advisor_status', '=', 1)
         // ->where('created_at', '>', Carbon::today()->subDays(365))
         // ->count();
-        $promotion = 0;
-        if($userDetails->invite_count!=0){
-            $promotion = $userDetails->free_promotions;
-            // $app_settings = DB::table('app_settings')->where('key','no_of_free_leads_refer_friend')->first();
-            // if($app_settings){
-            //     $promotion = $userDetails->invite_count * $app_settings->value;
-            // }
-        }
+        $promotion = $userDetails->free_promotions;
+        // if
+        // if($userDetails->invite_count!=0){
+        //     $promotion = $userDetails->free_promotions;
+        //     // $app_settings = DB::table('app_settings')->where('key','no_of_free_leads_refer_friend')->first();
+        //     // if($app_settings){
+        //     //     $promotion = $userDetails->invite_count * $app_settings->value;
+        //     // }
+        // }
         
         return response()->json([
             'status' => true,
@@ -1583,7 +1437,8 @@ class AdvisorController extends Controller
                 ),
                 'message_unread_count'=>$unread_count_total[0]->count_message,
                 'notification_unread_count'=>0,
-                'promotions'=>$promotion
+                'promotions'=>$promotion,
+                'userDetails'=>$userDetails
 
             ]
         ], Response::HTTP_OK);
@@ -1876,6 +1731,15 @@ class AdvisorController extends Controller
                     $invoice_detais = Invoice::where('id','=',$invoice_IID->id)->first();
                     $total_data = json_decode($invoice_detais->invoice_data,true);
                     $total_data['invoice_data'] = $invoice_detais;
+                    $this->saveNotification(array(
+                        'type'=>'5', // 1:
+                        'message'=>'Your invoice generated', // 1:
+                        'read_unread'=>'0', // 1:
+                        'user_id'=>1,// 1:
+                        'advisor_id'=>$row->id, // 1:
+                        'area_id'=>0,// 1:
+                        'notification_to'=>0
+                    ));
                     // $total_data['invoice_id']=$invoice_detais->id;
                     // $total_data['last_payment_invoice']=$last_payment_invoice;
                     // $total_data['last_invoice_amount']=$last_invoice_amount;
@@ -1967,6 +1831,15 @@ class AdvisorController extends Controller
                     )),
                     
                 ]);
+                $this->saveNotification(array(
+                    'type'=>'5', // 1:
+                    'message'=>'Your invoice generated', // 1:
+                    'read_unread'=>'0', // 1:
+                    'user_id'=>1,// 1:
+                    'advisor_id'=>$row->id, // 1:
+                    'area_id'=>0,// 1:
+                    'notification_to'=>0
+                ));
                 $invoice_detais = Invoice::where('advisor_id','=',$row->id)->where('month','=',$month)->where('year','=',$year)->first();
                 $total_data = json_decode($invoice_detais->invoice_data,true);
                 $total_data['invoice_data'] = $invoice_detais;
@@ -2084,5 +1957,145 @@ class AdvisorController extends Controller
         $encryption_key = "&*(#Pp@IND";
         // Use openssl_decrypt() function to decrypt the data 
         return openssl_decrypt($id, $ciphering, $encryption_key, $options, $encryption_iv);
+    }
+
+    //Today match leads summary cron job
+    function matchLeadsSummaryCron(){
+        $users = User::where('status',1)->get();
+        foreach($users as $user){
+            $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
+            $requestTime = [];
+            $ltv_max ="";
+            $lti_max ="";
+            if($userPreferenceCustomer){
+                $ltv_max = $userPreferenceCustomer->ltv_max;
+                $lti_max = $userPreferenceCustomer->lti_max;
+                if(!empty($userPreferenceCustomer)) {
+                    if($userPreferenceCustomer->asap == 1) {
+                        $requestTime[] = "as soon as possible";
+                    }
+                    if($userPreferenceCustomer->next_3_month == 1) {
+                        $requestTime[] = "in the next 3 months";
+                    }
+                    if($userPreferenceCustomer->more_3_month == 1) {
+                        $requestTime[] = "in more than 3 months";
+                    }
+                }
+            }
+            
+            
+            // TODO: Ltv max and Lti Max need to check for filter
+            $userPreferenceProduct = AdviserProductPreferences::where('adviser_id','=',$user->id)->get();
+            $service_type = array();
+            if(!empty($userPreferenceProduct)) {
+                foreach($userPreferenceProduct as $userPreferenceProduct_data){
+                    array_push($service_type,$userPreferenceProduct_data->service_id);
+                }
+            }
+            
+            $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
+                ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
+                ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+                ->where(function($query) use ($userPreferenceCustomer){
+                    if(!empty($userPreferenceCustomer)) {
+                        if($userPreferenceCustomer->self_employed == 1){
+                            $query->orWhere('advice_areas.self_employed','=',$userPreferenceCustomer->self_employed);
+                        }
+                        if($userPreferenceCustomer->non_uk_citizen == 1){
+                            $query->orWhere('advice_areas.non_uk_citizen','=',$userPreferenceCustomer->non_uk_citizen);
+                        }
+                        if($userPreferenceCustomer->adverse_credit == 1){
+                            $query->orWhere('advice_areas.adverse_credit','=',$userPreferenceCustomer->adverse_credit);
+                        }
+                        if($userPreferenceCustomer->fees_preference == 1){
+                            $query->orWhere('advice_areas.fees_preference','=',$userPreferenceCustomer->fees_preference);
+                        }
+                    }
+            })->where(function($query) use ($requestTime){
+                    if(!empty($requestTime)) {
+                        $query->where(function($q) use ($requestTime) {
+                            foreach($requestTime as $rtime){
+                                $q->orWhere('advice_areas.request_time',$rtime);
+                            }
+                        });
+                    }
+            })
+            ->where(function($query) use ($service_type){
+                    if(!empty($service_type)) {
+                        $query->where(function($q) use ($service_type) {
+                            foreach($service_type as $sitem){
+                                $q->orWhere('advice_areas.service_type_id',$sitem);
+                            }
+                        });
+                    }
+                
+            })
+            ->where(function($query) use ($ltv_max){
+                if($ltv_max != "") {
+                
+                    $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));
+                    $query->where('advice_areas.ltv_max','>',0);
+                }
+            })->where(function($query) use ($lti_max){
+                if($lti_max != "") {
+                    $query->where('advice_areas.lti_max','<=',chop($lti_max,"x"));
+                    $query->where('advice_areas.lti_max','>',0);
+                }
+            })->whereNotIn('advice_areas.id',function($query) use ($user){
+                $query->select('area_id')->from('advisor_bids')->where('advisor_id','=',$user->id);
+            })->where('advice_areas.start_date',date('Y-m-d H:i:s'))->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
+            ->groupBy('advice_areas.'.'user_id')
+            ->groupBy('advice_areas.'.'service_type')
+            ->groupBy('advice_areas.'.'request_time')
+            ->groupBy('advice_areas.'.'property')
+            ->groupBy('advice_areas.'.'property_want')
+            ->groupBy('advice_areas.'.'size_want')
+            ->groupBy('advice_areas.'.'combined_income')
+            ->groupBy('advice_areas.'.'description')
+            ->groupBy('advice_areas.'.'occupation')
+            ->groupBy('advice_areas.'.'contact_preference')
+            ->groupBy('advice_areas.'.'advisor_preference')
+            ->groupBy('advice_areas.'.'fees_preference')
+            ->groupBy('advice_areas.'.'self_employed')
+            ->groupBy('advice_areas.'.'non_uk_citizen')
+            ->groupBy('advice_areas.'.'adverse_credit')
+            ->groupBy('advice_areas.'.'contact_preference_face_to_face')
+            ->groupBy('advice_areas.'.'contact_preference_online')
+            ->groupBy('advice_areas.'.'contact_preference_telephone')
+            ->groupBy('advice_areas.'.'contact_preference_evening_weekend')
+            ->groupBy('advice_areas.'.'advisor_preference_local')
+            ->groupBy('advice_areas.'.'advisor_preference_gender')
+            ->groupBy('advice_areas.'.'status')
+            ->groupBy('advice_areas.'.'combined_income_currency')
+            ->groupBy('advice_areas.'.'property_currency')
+            ->groupBy('advice_areas.'.'size_want_currency')
+            ->groupBy('advice_areas.'.'advisor_id')
+            ->groupBy('advice_areas.'.'close_type')
+            ->groupBy('advice_areas.'.'need_reminder')
+            ->groupBy('advice_areas.'.'initial_term')
+            ->groupBy('advice_areas.'.'start_date')
+            ->groupBy('advice_areas.'.'created_at')
+            ->groupBy('advice_areas.'.'updated_at')
+            ->groupBy('users.'.'name')
+            ->groupBy('users.'.'email')
+            ->groupBy('users.'.'address')
+            ->groupBy('advice_areas.'.'ltv_max')
+            ->groupBy('advice_areas.'.'lti_max')
+            ->groupBy('advice_areas.'.'advisor_preference_language')->orderBy('advice_areas.id','DESC')->count();
+            $bidCountArr = array();
+            if($advice_area>0){
+                $this->saveNotification(array(
+                    'type'=>'2', // 1:
+                    'message'=>$advice_area.' Leads matched today', // 1:
+                    'read_unread'=>'0', // 1:
+                    'user_id'=>1,// 1:
+                    'advisor_id'=>$user->id, // 1:
+                    'area_id'=>0,// 1:
+                    'notification_to'=>0
+                ));
+            }
+        }
+        return "Summary of today's matching leads";
+        exit;
     }
 }

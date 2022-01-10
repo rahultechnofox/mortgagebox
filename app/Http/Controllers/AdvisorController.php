@@ -598,6 +598,17 @@ class AdvisorController extends Controller
             $request->image = "";
         }
 
+        if(isset($request->email) && $request->email != ''){
+            $emailExist = User::where('email',$request->email)->where('id','!=',$id->id)->count();
+            if ($emailExist) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Email is already exist',
+                    'data' => $post
+                ], Response::HTTP_OK);
+            }
+            $arr['email'] = $request->email;
+        }
         if ($request->hasFile('company_logo')) {
             $uploadFolder = 'advisor';
             $image = $request->file('company_logo');
@@ -709,9 +720,9 @@ class AdvisorController extends Controller
             $arr['network'] = $request->network;
         }
 
-        if ($request->email != "" && $request->email != "null") {
-            $arr['email'] = $request->email;
-        }
+        // if ($request->email != "" && $request->email != "null") {
+        //     $arr['email'] = $request->email;
+        // }
 
         if ($request->gender != "" && $request->gender != "null") {
             $arr['gender'] = $request->gender;
@@ -1173,10 +1184,14 @@ class AdvisorController extends Controller
                 'property_currency'=>'£',
                 'size_want_currency'=>'£'
             ]);
-
+            $service_name = "";
+            $service = ServiceType::where('id',$request->need_advice)->first();
+            if($service){
+                $service_name = $service->name;
+            }
             $this->saveNotification(array(
                 'type'=>'9', // 1:
-                'message'=>'You have invited for new bid from '.$request->name, // 1:
+                'message'=>$request->name.' has directly contacted you regarding a '.$request->mortgage_required.' '.$service_name.' mortgage need',// 1:
                 'read_unread'=>'0', // 1:
                 'user_id'=>$user->id,// 1:
                 'advisor_id'=>$request->advisor_id, // 1:

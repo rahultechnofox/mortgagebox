@@ -128,6 +128,7 @@ class Advice_area extends Model
         try {
             $query = new Self;
             $advisorAreaArr = array();
+
             $AdviceAreaIds = array();
             $final_date = array();
             $datesAreaIds = array();
@@ -135,8 +136,10 @@ class Advice_area extends Model
             $mortgageValueIds = array();
             $finalAreaArr = array();
             $preferencesIds = array();
+            $promotionIds = array();
             $ltv_max = "";
             $lti_max = "";
+
             $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$search['user_id'])->first();
             if($userPreferenceCustomer){
                 $ltv_max = $userPreferenceCustomer->ltv_max;
@@ -148,40 +151,34 @@ class Advice_area extends Model
                 $default = Advice_area::whereIn('service_type_id',$search['advice_area'])->where('status',1)->get();
                 if(count($default)){
                     foreach($default as $default_data){
-                        if(!in_array($default_data->id,$advisorAreaArr)){
-                            array_push($advisorAreaArr,$default_data->id);
-                        }
+                        array_push($advisorAreaArr,$default_data->id);
                     }
                 }
             }
+
             if(isset($search['fees_preference']) && count($search['fees_preference'])){
                 $preferencesIds = array(-1);
                 for($i=0;$i<count($search['fees_preference']);$i++){
                     if($search['fees_preference'][$i]=="no_fee") {
                         $preference = Advice_area::where('fees_preference',0)->where('status',1)->get();
                         foreach($preference as $preference_data){
-                            if(!in_array($preference_data->id,$preferencesIds)){
-                                array_push($preferencesIds,$preference_data->id);
-                            }
+                            array_push($preferencesIds,$preference_data->id);
                         }
                     }else{  
                         $preference_no = Advice_area::where('fees_preference',1)->where('status',1)->get();
                         foreach($preference_no as $preference_no_data){
-                            if(!in_array($preference_no_data->id,$preferencesIds)){
-                                array_push($preferencesIds,$preference_no_data->id);
-                            }
+                            array_push($preferencesIds,$preference_no_data->id);
                         }
                     }
                 }
-                // $default = Advice_area::whereIn('service_type_id',$search['advice_area'])->where('status',1)->get();
-                // if(count($default)){
-                //     foreach($default as $default_data){
-                //         if(!in_array($default_data->id,$advisorAreaArr)){
-                //             array_push($advisorAreaArr,$default_data->id);
-                //         }
-                //     }
-                // }
+
+                if(count($advisorAreaArr)>0){
+                    $advisorAreaArr = array_intersect($advisorAreaArr, $preferencesIds);
+                }else{
+                    $advisorAreaArr = array_unique($preferencesIds);
+                }
             }
+
             if(isset($search['mortgage_value']) && count($search['mortgage_value'])){
                 $mortgageValueIds = array(-1);
                 for($i=0;$i<count($search['mortgage_value']);$i++){
@@ -192,16 +189,22 @@ class Advice_area extends Model
                     if($explode[1]>0){
                         $explode[1] = $explode[1]."000";
                     }
+                    
                     $ad = Advice_area::where('size_want','>',$explode[0])->where('size_want','<=',$explode[1])->get();
                     if(count($ad)){
                         foreach($ad as $ad_data){
-                            if(!in_array($ad_data->id,$mortgageValueIds)){
-                                array_push($mortgageValueIds,$ad_data->id);
-                            }
+                            array_push($mortgageValueIds,$ad_data->id);
                         }
                     }
                 }
+                // echo json_encode($mortgageValueIds);
+                if(count($advisorAreaArr)>0){
+                    $advisorAreaArr = array_intersect($advisorAreaArr, $mortgageValueIds);
+                }else{
+                    $advisorAreaArr = array_unique($mortgageValueIds);
+                }
             }
+
             if(isset($search['lead_submitted']) && count($search['lead_submitted'])){
                 $datesAreaIds = array(-1);
                 foreach($search['lead_submitted'] as $item){
@@ -209,9 +212,7 @@ class Advice_area extends Model
                         $today = Advice_area::where('created_at', Carbon::today())->get();
                         if(count($today)){
                             foreach($today as $today_data){
-                                if(!in_array($today_data->id,$datesAreaIds)){
-                                    array_push($datesAreaIds,$today_data->id);
-                                }
+                                array_push($datesAreaIds,$today_data->id);
                             }
                         }
                     }
@@ -219,9 +220,7 @@ class Advice_area extends Model
                         $yesterday = Advice_area::where('created_at', Carbon::yesterday())->get();
                         if(count($yesterday)){
                             foreach($yesterday as $yesterday_data){
-                                if(!in_array($yesterday_data->id,$datesAreaIds)){
-                                    array_push($datesAreaIds,$yesterday_data->id);
-                                }
+                                array_push($datesAreaIds,$yesterday_data->id);
                             }
                         }
                     }
@@ -229,50 +228,36 @@ class Advice_area extends Model
                         $last_hour = Advice_area::where('created_at', date("Y-m-d H:i:s", strtotime('-1 hour')))->get();
                         if(count($last_hour)){
                             foreach($last_hour as $last_hour_data){
-                                if(!in_array($last_hour_data->id,$datesAreaIds)){
-                                    array_push($datesAreaIds,$last_hour_data->id);
-                                }
+                                array_push($datesAreaIds,$last_hour_data->id);
                             }
                         }
                     }
                     if($item=='less_3_days'){
-                        $three_days = Advice_area::where('created_at', '>', Carbon::yesterday()->subDays(3))->where('created_at', '<', Carbon::today())->get();
+                        $three_days = Advice_area::where('created_at', '>', Carbon::today()->subDays(3))->get();
                         if(count($three_days)){
                             foreach($three_days as $three_days_data){
-                                if(!in_array($three_days_data->id,$datesAreaIds)){
-                                    array_push($datesAreaIds,$three_days_data->id);
-                                }
+                                array_push($datesAreaIds,$three_days_data->id);
                             }
                         }
                     }
                     if($item=='less_3_week'){
-                        $three_week = Advice_area::where('created_at', '>', Carbon::yesterday()->subDays(21))->where('created_at', '<', Carbon::today())->get();
+                        $three_week = Advice_area::where('created_at', '>', Carbon::today()->subDays(7))->get();
                         if(count($three_week)){
                             foreach($three_week as $three_week_data){
-                                if(!in_array($three_week_data->id,$datesAreaIds)){
-                                    array_push($datesAreaIds,$three_week_data->id);
-                                }
+                                array_push($datesAreaIds,$three_week_data->id);
                             }
                         }
                     }
-                    // if($item!="anytime"){
-                    //     if($item=="today"){
-                    //         $q->orWhereDate('advice_areas.created_at', Carbon::today());
-                    //     }else if($item=="yesterday") {
-                    //         $q->orWhereDate('advice_areas.created_at', Carbon::yesterday());
-                    //     }else if($item=="last_hour") {
-                    //         //TODO last hour query
-                    //         $q->orWhereDate('created_at', Carbon::yesterday());
-                    //     }else if($item=="less_3_days") {
-                    //         $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(3))->where('advice_areas.created_at', '<', Carbon::today())->count();
-                    //     }else if($item=="less_3_week") {
-                    //         $q->orWhere('advice_areas.created_at', '>', Carbon::yesterday()->subDays(21))->where('advice_areas.created_at', '<', Carbon::today())->count();
-                    //     }
-                    // }
-                    
                 }
                 
+                
+                if(count($advisorAreaArr)>0){
+                    $advisorAreaArr = array_intersect($advisorAreaArr, $datesAreaIds);
+                }else{
+                    $advisorAreaArr = array_unique($datesAreaIds);
+                }
             }
+
             if(isset($search['status']) && count($search['status'])){
                 $statusIds = array(-1);
                 foreach($search['status'] as $status){
@@ -280,67 +265,94 @@ class Advice_area extends Model
                         $area_read = AdviceAreaRead::where('adviser_id',$search['user_id'])->get();
                         if(count($area_read)){
                             foreach($area_read as $area_read_data){
-                                if(!in_array($area_read_data->area_id,$statusIds)){
-                                    array_push($statusIds,$area_read_data->area_id);
-                                }
+                                array_push($statusIds,$area_read_data->area_id);
                             }
                         }
                     }
                     if($status=='unread'){
                         $aStatus = array(-1);
                         $area = AdviceAreaRead::where('adviser_id',$search['user_id'])->get();
-                        if(count($default)){
-                            foreach($default as $default_data){
-                                if(!in_array($default_data->area_id,$aStatus)){
-                                    array_push($aStatus,$area_data->area_id);
-                                }
+                        if(count($area)){
+                            foreach($area as $default_data){
+                                array_push($aStatus,$default_data->area_id);
                             }
                         }
                         if(count($aStatus)){
                             $area_id = Advice_area::whereNotIn('id',$aStatus)->get();
                             if(count($area_id)){
                                 foreach($area_id as $area_id_data){
-                                    if(!in_array($area_id_data->id,$statusIds)){
-                                        array_push($statusIds,$area_id_data->id);
-                                    }
+                                    array_push($statusIds,$area_id_data->id);
                                 }
                             }
                         }
                     }
                     if($status=='not-interested'){
-                        $area_intrest = AdvisorBids::where('adviser_id',$search['user_id'])->where('advisor_status',2)->get();
+                        $area_intrest = AdvisorBids::where('advisor_id',$search['user_id'])->where('advisor_status',2)->get();
                         if(count($area_intrest)){
                             foreach($area_intrest as $area_intrest_data){
-                                if(!in_array($area_intrest_data->area_id,$statusIds)){
-                                    array_push($statusIds,$area_intrest_data->area_id);
-                                }
+                                array_push($statusIds,$area_intrest_data->area_id);
                             }
                         }
                     }
                 }
+                
+                if(count($advisorAreaArr)>0){
+                    $advisorAreaArr = array_intersect($advisorAreaArr, $statusIds);
+                }else{
+                    $advisorAreaArr = array_unique($statusIds);
+                }
             }
-            if(count($advisorAreaArr) && count($mortgageValueIds) && count($datesAreaIds) && count($statusIds)){
-                $advisorAreaArr = array_intersect($advisorAreaArr, $mortgageValueIds, $datesAreaIds, $statusIds);
-            }else if(!count($advisorAreaArr) && !count($mortgageValueIds) && count($datesAreaIds) && !count($statusIds)){
-                $advisorAreaArr = $datesAreaIds;
-            }else if(!count($advisorAreaArr) && !count($mortgageValueIds) && !count($datesAreaIds) && count($statusIds)){
-                $advisorAreaArr = $statusIds;
-            }else if(!count($advisorAreaArr) && !count($mortgageValueIds) && !count($datesAreaIds) && !count($statusIds) && count($preferencesIds)){
-                $advisorAreaArr = $preferencesIds;
-            }else if(count($advisorAreaArr) && !count($mortgageValueIds) && !count($datesAreaIds) && !count($statusIds) && count($preferencesIds)){
-                $advisorAreaArr = array_intersect($advisorAreaArr, $preferencesIds);
+            
+            if(isset($search['promotion']) && count($search['promotion'])){
+                $promotionIds = array(-1);
+                foreach($search['promotion'] as $item){
+                    if($item=='none'){
+                        $none = AdvisorBids::where('is_discounted', 0)->get();
+                        if(count($none)){
+                            foreach($none as $none_data){
+                                array_push($promotionIds,$none_data->area_id);
+                            }
+                        }
+                    }
+                    if($item=='75-off'){
+                        $third = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Third cycle")->get();
+                        if(count($third)){
+                            foreach($third as $third_data){
+                                array_push($promotionIds,$third_data->area_id);
+                            }
+                        }
+                    }
+                    if($item=='50-off'){
+                        $half = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Second cycle")->get();
+                        if(count($half)){
+                            foreach($half as $half_data){
+                                array_push($promotionIds,$half_data->area_id);
+                            }
+                        }
+                    }
+                    if($item=='free'){
+                        $free = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Fourth cycle")->get();
+                        if(count($free)){
+                            foreach($free as $free_data){
+                                array_push($promotionIds,$free_data->area_id);
+                            }
+                        }
+                    }
+                }
+                
+                
+                if(count($advisorAreaArr)>0){
+                    $advisorAreaArr = array_intersect($advisorAreaArr, $promotionIds);
+                }else{
+                    $advisorAreaArr = array_unique($promotionIds);
+                }
             }
+    
             if(count($advisorAreaArr)){
                 $query = $query->whereIn('id',$advisorAreaArr);
             }
-            // if($ltv_max != ""){
-            //     $query = $query->where('ltv_max','<=',chop($ltv_max,"%"))->where('ltv_max','>',0);
-            // }
-            // if($lti_max != ""){
-            //     $query = $query->where('lti_max','<=',chop($lti_max,"x"))->where('lti_max','>',0);
-            // }
+
             $data = $query->with('service')->orderBy('id','DESC')->paginate();
-            // groupBy('id')->sortable()->paginate(25)
             if(count($data)){
                 foreach($data as $key=> $item) {
                     $bidCountArr = array();
@@ -421,6 +433,7 @@ class Advice_area extends Model
             }
             return $data;
         }catch (\Exception $e) {
+            // echo json_encode($e->getMessage());exit;
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
         }
     }

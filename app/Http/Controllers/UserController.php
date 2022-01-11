@@ -176,6 +176,9 @@ class UserController extends Controller
             'spam_reason' => $request->spam_reason,
             'reviewer_name'=>$request->reviewer_name
         );
+        if($request->reply_reason!=''){
+            $review_arr['replied_on'] = date("Y-m-d H:i:s");
+        }
         if(isset($request->area_id) && $request->area_id!=0){
             $review_arr['area_id'] = $request->area_id;
         }

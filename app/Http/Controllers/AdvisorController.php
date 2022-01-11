@@ -352,14 +352,41 @@ class AdvisorController extends Controller
     public function setAdvisorLinks(Request $request)
     {
         $id = JWTAuth::parseToken()->authenticate();
-        $advisorDetails = AdvisorProfile::select('web_address', 'facebook', 'twitter', 'linkedin_link', 'updated_at')->where('advisorId', '=', $id->id)->update(
-            [
-                'web_address' => $request->web_address,
-                'facebook' => $request->facebook,
-                'twitter' => $request->twitter,
-                'linkedin_link' => $request->linkedin_link,
-            ]
-        );
+        $update_arr = array();
+        $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
+        if(isset($request->web_address) && $request->web_address!=''){
+            if($advisor_data->web_address!=''){
+                if($request->web_address!=$advisor_data->web_address){
+                    $update_arr['web_address'] = $request->web_address;
+                    $update_arr['web_address_update'] = date("Y-m-d H:i:s");
+                }
+            }
+        }
+        if(isset($request->facebook) && $request->facebook!=''){
+            if($advisor_data->facebook!=''){
+                if($request->facebook!=$advisor_data->facebook){
+                    $update_arr['facebook'] = $request->facebook;
+                    $update_arr['fb_update'] = date("Y-m-d H:i:s");
+                }
+            }
+        }
+        if(isset($request->twitter) && $request->twitter!=''){
+            if($advisor_data->twitter!=''){
+                if($request->twitter!=$advisor_data->twitter){
+                    $update_arr['twitter'] = $request->twitter;
+                    $update_arr['twitter_update'] = date("Y-m-d H:i:s");
+                }
+            }
+        }
+        if(isset($request->linkedin_link) && $request->linkedin_link!=''){
+            if($advisor_data->linkedin_link!=''){
+                if($request->linkedin_link!=$advisor_data->linkedin_link){
+                    $update_arr['linkedin_link'] = $request->linkedin_link;
+                    $update_arr['linkedin_update'] = date("Y-m-d H:i:s");
+                }
+            }
+        }
+        $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($update_arr);
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         return response()->json([
             'status' => true,
@@ -373,9 +400,21 @@ class AdvisorController extends Controller
         JWTAuth::parseToken()->authenticate();
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id)->first();
         if($advisor_data){
+            $advisor_data->profile_percent = 15;
+            if($advisor_data->image!=''){
+                $advisor_data->profile_percent = $advisor_data->profile_percent + 20;
+            }
+            if($advisor_data->web_address!=''){
+                $advisor_data->profile_percent = $advisor_data->profile_percent + 20;
+            }
             $advisor_data->completed_bid = AdvisorBids::where('advisor_id',$id)->where('status',2)->where('advisor_status',1)->count();
             $company = companies::where('id',$advisor_data->company_id)->first();
             if($company){
+                if($advisor_data->short_description!=''){
+                    if($company->company_about!=''){
+                        $advisor_data->profile_percent = $advisor_data->profile_percent + 15;
+                    }
+                }
                 $advisor_data->company_name = $company->company_name;
                 $advisor_data->company_about = $company->company_about;
                 $advisor_data->updated_by_name = "";
@@ -425,6 +464,12 @@ class AdvisorController extends Controller
         
         $last_activity = User::select('users.last_active')->where('id', '=', $id)->first();
         $offer_data = AdvisorOffers::where('advisor_id', '=', $id)->get();
+        if(count($offer_data)){
+            $advisor_data->profile_percent = $advisor_data->profile_percent + 30;
+            $advisor_data->offer = 1;
+        }else{
+            $advisor_data->offer = 0;
+        }
         $countofCOunt = 0;
         $rating =  ReviewRatings::select('review_ratings.*', 'users.name', 'users.email', 'users.address')
             ->leftJoin('users', 'review_ratings.user_id', '=', 'users.id')
@@ -440,6 +485,7 @@ class AdvisorController extends Controller
                 if($rating_reply){
                     $rating_data->reply = $rating_reply->reply_reason;
                     $rating_data->is_replied = 1;
+                    $rating_data->replied_on = date("d-m-Y H:i A",strtotime($rating_reply->replied_on));
                 }else{
                     $rating_data->reply = "";
                     $rating_data->is_replied = 0;
@@ -461,6 +507,7 @@ class AdvisorController extends Controller
                     $rating_data->spam_status = 2;
                     $rating_data->is_spam = 0;
                 }
+                
             }
         }
 
@@ -470,8 +517,6 @@ class AdvisorController extends Controller
         ->count();
         
         $averageRating = ReviewRatings::where('advisor_id', '=', $id)->where('status', '!=', 2)->avg('rating');
-
-
         if ($advisor_data) {
             $advisor_data->used_by  = $usedByMortage;
             $advisor_data->last_activity  = $last_activity->last_active;
@@ -591,13 +636,14 @@ class AdvisorController extends Controller
     {
         $id = JWTAuth::parseToken()->authenticate();
         $data = $request->only('display_name');
-        if ($request->company_logo == "") {
-            $request->company_logo = "";
-        }
-        if ($request->image == "") {
-            $request->image = "";
-        }
-
+        // if ($request->company_logo == "") {
+        //     $request->company_logo = "";
+        // }
+        // if ($request->image == "") {
+        //     $request->image = "";
+        // }
+        $arr = array();
+    
         if(isset($request->email) && $request->email != ''){
             $emailExist = User::where('email',$request->email)->where('id','!=',$id->id)->count();
             if ($emailExist) {
@@ -609,93 +655,100 @@ class AdvisorController extends Controller
             }
             $arr['email'] = $request->email;
         }
-        if ($request->hasFile('company_logo')) {
-            $uploadFolder = 'advisor';
-            $image = $request->file('company_logo');
-            // $image_uploaded_path = $image->store($uploadFolder, 'public');
-            $name = $request->file('company_logo')->getClientOriginalName();
-            $extension = $request->file('company_logo')->extension();
-            $originalString = str_replace("." . $extension, "", $name);
-            //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
-            $upfileName = $name;
 
-            $num = 1;
-
-
-            while (Storage::exists("public/" . $uploadFolder . "/" . $upfileName)) {
-                $file_name = (string) $originalString . "-" . $num;
-                $upfileName = $file_name . "." . $extension;
-                $num++;
-            }
-            $image_uploaded_path = $image->storeAs($uploadFolder, $upfileName, 'public');
-            $request->company_logo = basename($image_uploaded_path);
-
-
-            $uploadedImageResponse = array(
-                "image_name" => basename($image_uploaded_path),
-                "image_url" => Storage::disk('public')->url($image_uploaded_path),
-                "mime" => $image->getClientMimeType()
-            );
-        } else if ($request->company_logo != "") {
-            $request->company_logo =  str_replace("data:image/jpeg;base64,","",$request->company_logo);
-            $request->company_logo =  str_replace("data:image/png;base64,","",$request->company_logo);
-            $file = base64_decode($request->company_logo);
-            $folderName = 'advisor';
-
-            $safeName = $this->quickRandom(10) . '.' . 'png';
-            $destinationPath = public_path() . "/storage/" . $folderName;
-            file_put_contents($destinationPath . "/" . $safeName, $file);
-
-            //save new file path into db
-            $request->company_logo = $safeName;
-        }
-
-        if ($request->hasFile('image')) {
-            $uploadFolder = 'advisor';
-            $image = $request->file('image');
-            // $image_uploaded_path = $image->store($uploadFolder, 'public');
-            $name = $request->file('image')->getClientOriginalName();
-            $extension = $request->file('image')->extension();
-            $originalString = str_replace("." . $extension, "", $name);
-            //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
-            $upfileName = $name;
-
-            $num = 1;
-
-
-            while (Storage::exists("public/" . $uploadFolder . "/" . $upfileName)) {
-                $file_name = (string) $originalString . "-" . $num;
-                $upfileName = $file_name . "." . $extension;
-                $num++;
-            }
-            $image_uploaded_path = $image->storeAs($uploadFolder, $upfileName, 'public');
-            $request->image = basename($image_uploaded_path);
-
-
-            $uploadedImageResponse = array(
-                "image_name" => basename($image_uploaded_path),
-                "image_url" => Storage::disk('public')->url($image_uploaded_path),
-                "mime" => $image->getClientMimeType()
-            );
-        } else if ($request->image != "") {
-            $request->image =  str_replace("data:image/jpeg;base64,","",$request->image);
-            $request->image =  str_replace("data:image/png;base64,","",$request->image);
-            $file = base64_decode($request->image);
-            $folderName = 'advisor';
-
-            $safeName = $this->quickRandom(10) . '.' . 'png';
-            $destinationPath = public_path() . "/storage/" . $folderName;
-            file_put_contents($destinationPath . "/" . $safeName, $file);
-
-            //save new file path into db
-            $request->image = $safeName;
-        }
-        $arr = array();
+        
         if ($request->company_logo != "") {
-            $arr['company_logo'] = $request->company_logo;
+            $explode = explode(":",$request->company_logo);
+            if($explode[0]!='https'){
+                if ($request->hasFile('company_logo')) {
+                    $uploadFolder = 'advisor';
+                    $image = $request->file('company_logo');
+                    // $image_uploaded_path = $image->store($uploadFolder, 'public');
+                    $name = $request->file('company_logo')->getClientOriginalName();
+                    $extension = $request->file('company_logo')->extension();
+                    $originalString = str_replace("." . $extension, "", $name);
+                    //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
+                    $upfileName = $name;
+        
+                    $num = 1;
+        
+        
+                    while (Storage::exists("public/" . $uploadFolder . "/" . $upfileName)) {
+                        $file_name = (string) $originalString . "-" . $num;
+                        $upfileName = $file_name . "." . $extension;
+                        $num++;
+                    }
+                    $image_uploaded_path = $image->storeAs($uploadFolder, $upfileName, 'public');
+                    $request->company_logo = basename($image_uploaded_path);
+        
+        
+                    $uploadedImageResponse = array(
+                        "image_name" => basename($image_uploaded_path),
+                        "image_url" => Storage::disk('public')->url($image_uploaded_path),
+                        "mime" => $image->getClientMimeType()
+                    );
+                } else if ($request->company_logo != "") {
+                    $request->company_logo =  str_replace("data:image/jpeg;base64,","",$request->company_logo);
+                    $request->company_logo =  str_replace("data:image/png;base64,","",$request->company_logo);
+                    $file = base64_decode($request->company_logo);
+                    $folderName = 'advisor';
+        
+                    $safeName = $this->quickRandom(10) . '.' . 'png';
+                    $destinationPath = public_path() . "/storage/" . $folderName;
+                    file_put_contents($destinationPath . "/" . $safeName, $file);
+        
+                    //save new file path into db
+                    $request->company_logo = $safeName;
+                    $arr['company_logo'] = $request->company_logo;
+                }
+                $arr['company_logo'] = $request->company_logo;
+            }
         }
         if ($request->image != "") {
-            $arr['image'] = $request->image;
+            $explode1 = explode(":",$request->image);
+            if($explode1[0]!='https'){
+                if ($request->hasFile('image')) {
+                    $uploadFolder = 'advisor';
+                    $image = $request->file('image');
+                    // $image_uploaded_path = $image->store($uploadFolder, 'public');
+                    $name = $request->file('image')->getClientOriginalName();
+                    $extension = $request->file('image')->extension();
+                    $originalString = str_replace("." . $extension, "", $name);
+                    //$upfileName = preg_replace('/\s+/', '_', $originalString).".".$extension;
+                    $upfileName = $name;
+        
+                    $num = 1;
+        
+        
+                    while (Storage::exists("public/" . $uploadFolder . "/" . $upfileName)) {
+                        $file_name = (string) $originalString . "-" . $num;
+                        $upfileName = $file_name . "." . $extension;
+                        $num++;
+                    }
+                    $image_uploaded_path = $image->storeAs($uploadFolder, $upfileName, 'public');
+                    $request->image = basename($image_uploaded_path);
+        
+        
+                    $uploadedImageResponse = array(
+                        "image_name" => basename($image_uploaded_path),
+                        "image_url" => Storage::disk('public')->url($image_uploaded_path),
+                        "mime" => $image->getClientMimeType()
+                    );
+                } else if ($request->image != "") {
+                    $request->image =  str_replace("data:image/jpeg;base64,","",$request->image);
+                    $request->image =  str_replace("data:image/png;base64,","",$request->image);
+                    $file = base64_decode($request->image);
+                    $folderName = 'advisor';
+        
+                    $safeName = $this->quickRandom(10) . '.' . 'png';
+                    $destinationPath = public_path() . "/storage/" . $folderName;
+                    file_put_contents($destinationPath . "/" . $safeName, $file);
+        
+                    //save new file path into db
+                    $request->image = $safeName;
+                    $arr['image'] = $request->image;
+                }
+            }
         }
         if ($request->display_name != "" && $request->display_name != "null") {
             $arr['display_name'] = $request->display_name;
@@ -735,7 +788,6 @@ class AdvisorController extends Controller
         if ($request->company_name != "" && $request->company_name != "null") {
             $arr['company_name'] = $request->company_name;
         }
-
         $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($arr);
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         // echo json_encode($advisor_data);exit;
@@ -1301,6 +1353,22 @@ class AdvisorController extends Controller
     }
     function advisorDashboard() {
         $userDetails = JWTAuth::parseToken()->authenticate();
+        $userData = AdvisorProfile::where('advisorId',$userDetails->id)->first();
+        if($userData){
+            if($userData->short_description!=''){
+                $company = companies::where('id',$userData->company_id)->first();
+                if($company){
+                    $userData->company_about = $company->company_about;
+                }
+            }
+            $offer_data = AdvisorOffers::where('advisor_id', '=', $userDetails->id)->get();
+            if(count($offer_data)){
+                $userData->offer = 1;
+            }else{
+                $userData->offer = 0;
+            }
+        }
+        
         $matched_last_hour = DB::table('advice_areas')
             ->where('created_at', '>=',DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)'))
             ->count();
@@ -1453,7 +1521,7 @@ class AdvisorController extends Controller
                 'message_unread_count'=>$unread_count_total[0]->count_message,
                 'notification_unread_count'=>0,
                 'promotions'=>$promotion,
-                'userDetails'=>$userDetails
+                'userDetails'=>$userData
 
             ]
         ], Response::HTTP_OK);

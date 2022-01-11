@@ -144,10 +144,31 @@ class ApiController extends Controller
             ], 500);
         }
 
-        
+        $user->profile_percent = 15;
         if($user->user_role == 1) {
             $userDetails =  AdvisorProfile::where('advisorId', '=', $user->id)->first(); 
             if($userDetails){
+                if($userDetails->image!=''){
+                    $user->profile_percent = $user->profile_percent + 20;
+                }
+                if($userDetails->short_description!=''){
+                    $company = companies::where('id',$userDetails->company_id)->first();
+                    if($company){
+                        if($company->company_about!=''){
+                            $user->profile_percent = $user->profile_percent + 15;
+                        }
+                    }
+                }
+                $offer_data = AdvisorOffers::where('advisor_id', '=', $user->id)->get();
+                if(count($offer_data)){
+                    $user->profile_percent = $user->profile_percent + 30;
+                    $user->offer = 1;
+                }else{
+                    $user->offer = 0;
+                }
+                if($userDetails->web_address!=''){
+                    $user->profile_percent = $user->profile_percent + 20;
+                }
                 $team_member = CompanyTeamMembers::where('email',$userDetails->email)->first();
                 // $userDetails->is_admin = $team_member;
                 if($team_member){
@@ -226,6 +247,28 @@ class ApiController extends Controller
         if($user->user_role==1){
             $user->userDetails = AdvisorProfile::where('advisorId',$user->id)->first();
             if($user->userDetails){
+                $user->userDetails->profile_percent = 15;
+                if($user->userDetails->image!=''){
+                    $user->userDetails->profile_percent = $user->userDetails->profile_percent + 20;
+                }
+                if($user->userDetails->web_address!=''){
+                    $user->userDetails->profile_percent = $user->userDetails->profile_percent + 20;
+                }
+                if($user->userDetails->short_description!=''){
+                    $company = companies::where('id',$user->userDetails->company_id)->first();
+                    if($company){
+                        if($company->company_about!=''){
+                            $user->userDetails->profile_percent = $user->userDetails->profile_percent + 15;
+                        }
+                    }
+                }
+                $offer_data = AdvisorOffers::where('advisor_id', '=', $user->id)->get();
+                if(count($offer_data)){
+                    $user->userDetails->profile_percent = $user->userDetails->profile_percent + 30;
+                    $user->userDetails->offer = 1;
+                }else{
+                    $user->userDetails->offer = 0;
+                }
                 $team_member = CompanyTeamMembers::where('email',$user->userDetails->email)->first();
                 // $userDetails->is_admin = $team_member;
                 if($team_member){
@@ -490,6 +533,7 @@ class ApiController extends Controller
         $user = User::create($user_data);
         $free_promotions = 0;
         if($user){
+            $user->profile_percent = 15;
             $check_promotion_advisor = DB::table('app_settings')->where('key','new_adviser_status')->where('value','1')->first();
             if($check_promotion_advisor){
                 $free_promotion_value = DB::table('app_settings')->where('key','no_of_free_leads_adviser')->first();
@@ -518,9 +562,6 @@ class ApiController extends Controller
 
                 }
             }
-            
-
-            
             $invited_by_user = AdvisorProfile::where('advisorId',$user->invited_by)->first();
             if($invited_by_user){
                 $this->saveNotification(array(
@@ -1739,34 +1780,34 @@ class ApiController extends Controller
                             $q->where('area_status','!=',0)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 6 month")));
                         }else if($item=="last_year") {
                             $q->where('area_status','!=',0)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 12 month")));
-                        }else if($item=="two_years") {
-                            $q->where('area_status','!=',0)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 24 month")));
-                        }                      
-                    }
-                });
-            }
-        })
-        ->where(function($query) use ($prospect){
-            if(!empty($prospect)) {
-                $query->where(function($q) use ($prospect) {
-                    foreach($prospect as $item){
-                        if($item=="yesterday"){
-                            $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 1 day")));
-                        }else if($item=="less_four_week") {
-                            $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 4 week")));
-                        }else if($item=="less_three_days") {
-                            $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 3 day")));
-                        }else if($item=="less_two_week") {
-                            $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 2 week")));
-                        }else if($item=="less_one_week") {
-                            $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 1 week")));
-                        }else if($item=="today") {
-                            $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d"));
+                        }else if($item=="this_year") {
+                            $q->where('area_status','!=',0)->where('advice_areas.created_at','>=',date("Y").'-01-01');
                         }                      
                     }
                 });
             }
         });
+        // ->where(function($query) use ($prospect){
+        //     if(!empty($prospect)) {
+        //         $query->where(function($q) use ($prospect) {
+        //             foreach($prospect as $item){
+        //                 if($item=="yesterday"){
+        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 1 day")));
+        //                 }else if($item=="less_four_week") {
+        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 4 week")));
+        //                 }else if($item=="less_three_days") {
+        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 3 day")));
+        //                 }else if($item=="less_two_week") {
+        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 2 week")));
+        //                 }else if($item=="less_one_week") {
+        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 1 week")));
+        //                 }else if($item=="today") {
+        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d"));
+        //                 }                      
+        //             }
+        //         });
+        //     }
+        // });
         if(count($advisorAreaArr)){
             $advice_area = $advice_area->whereIn('advice_areas.id',$advisorAreaArr);
         }
@@ -2651,6 +2692,16 @@ class ApiController extends Controller
         $notification = NotificationsPreferences::where('user_id', '=', $user->id)->first();
         if (empty($notification)) {
             NotificationsPreferences::create([
+                'new_lead'=>0,
+                'newslatter'=>1,
+                'direct_contact'=>1,
+                'monthly_invoice'=>1,
+                'direct_message'=>1,
+                'accept_offer'=>1,
+                'decline_offer'=>1,
+                'lead_match'=>1,
+                'review'=>1,
+                'promotional'=>1,
                 'user_id' => $user->id
             ]);
         }

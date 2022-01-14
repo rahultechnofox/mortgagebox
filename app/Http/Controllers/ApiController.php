@@ -94,7 +94,7 @@ class ApiController extends Controller
             'email'=>$request->email,
             'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
         );
-        $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
+        $c = \Helpers::sendEmail('emails.customer_signup',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
         return response()->json([
             'status' => true,
@@ -403,12 +403,18 @@ class ApiController extends Controller
           //  $msg = wordwrap($msg, 70);
 
             // mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+            // $newArr = array(
+            //     'name'=>$request->name,
+            //     'email'=>$request->email,
+            //     'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+            // );
+            // $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
             $newArr = array(
                 'name'=>$request->name,
                 'email'=>$request->email,
                 'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
             );
-            $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
+            $c = \Helpers::sendEmail('emails.customer_signup',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
 
             $credentials = $request->only('email', 'password');
             try {
@@ -747,6 +753,7 @@ class ApiController extends Controller
                 'display_name' => $request->display_name,
                 'tagline' => $request->tagline,
                 'FCANumber' => $request->FCANumber,
+                'invalidate_fca' => 0,
                 'phone_number' => $request->phone_number,
                 'address_line1' => $request->address_line1,
                 'address_line2' => $request->address_line2,
@@ -970,11 +977,11 @@ class ApiController extends Controller
         $advice_area->unread_message_count = $unread_count_total[0]->count_message;
 
         if ($advice_area) {
-            $advice_area->created_at = date("Y-m-d H:i A",strtotime($advice_area->created_at));
+            // $advice_area->created_at = date("Y-m-d H:i A",strtotime($advice_area->created_at));
             return response()->json([
                 'status' => true,
                 'message' => 'success',
-                'data' => array(),
+                'data' => $advice_area,
             ], Response::HTTP_OK);
         } else {
             return response()->json([
@@ -1057,7 +1064,7 @@ class ApiController extends Controller
     {
 
         $user = JWTAuth::parseToken()->authenticate();
-        $advice_area = Advice_area::where('id', '=', $request->id)->update([
+        $update_arr = array(
             'status' => 2,
             'area_status'=>4,
             'close_type' => $request->close_type,
@@ -1065,7 +1072,11 @@ class ApiController extends Controller
             'need_reminder' => $request->need_reminder,
             'initial_term' => $request->initial_term,
             'start_date' => $request->start_date,
-        ]);
+        );
+        if(isset($request->initial_term) && $request->initial_term!=''){
+            $update_arr['initial_term_number'] = $request->initial_term_number;
+        }
+        $advice_area = Advice_area::where('id', '=', $request->id)->update($update_arr);
         if ($advice_area == 1) {
             return response()->json([
                 'status' => true,
@@ -1125,10 +1136,21 @@ class ApiController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
-    public function resendActivationMail()
+    public function resendActivationMail(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
-
+        $post = $request->all();
+        if(isset($request->email) && $request->email != ''){
+            $emailExist = User::where('email',$request->email)->where('id','!=',$user->id)->count();
+            if ($emailExist) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Email is already exist',
+                    'data' => $post
+                ], Response::HTTP_OK);
+            }
+            $advisorDetails = AdvisorProfile::where('advisorId', '=', $user->id)->update(['email'=>$request->email]);
+        }
         // $msg = "To verify your email \n Please click below link ";
         // $msg .= config('constants.urls.email_verification_url');
 
@@ -1215,49 +1237,21 @@ class ApiController extends Controller
             foreach($userPreferenceProduct as $userPreferenceProduct_data){
                 array_push($service_type,$userPreferenceProduct_data->service_id);
             }
-            // if($userPreferenceProduct->remortgage == 1) {
-            //     $service_type[] = "remortgage";
-            // }
-            // if($userPreferenceProduct->first_buyer == 1) {
-            //     $service_type[]= "first time buyer";
-            // }
-            // if($userPreferenceProduct->next_buyer == 1) {
-            //     $service_type[]= "next time buyer";
-            // }
-            // if($userPreferenceProduct->but_let == 1) {
-            //     $service_type[]= "buy to let";
-            // }
-            // if($userPreferenceProduct->equity_release == 1) {
-            //     $service_type[]= "equity release";
-            // }
-            // if($userPreferenceProduct->overseas == 1) {
-            //     $service_type[]= "overseas";
-            // }
-            // if($userPreferenceProduct->self_build == 1) {
-            //     $service_type[]= "self build";
-            // }
-            // if($userPreferenceProduct->mortgage_protection == 1) {
-            //     $service_type[]= "mortgage protection";
-            // }
-            // if($userPreferenceProduct->secured_loan == 1) {
-            //     $service_type[]= "secured loan";
-            // }
-            // if($userPreferenceProduct->bridging_loan == 1) {
-            //     $service_type[]= "bridging loan";
-            // }
-            // if($userPreferenceProduct->commercial == 1) {
-            //     $service_type[]= "commercial";
-            // }
-            // if($userPreferenceProduct->something_else == 1) {
-            //     $service_type[]= "something else";
-            // }
         }
         // DB::enableQueryLog();
-        
-       $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
+        $advice_area_arr = array();
+        $advice = Advice_area::where('inquiry_adviser_id','!=',0)->where('inquiry_adviser_id','!=',$user->id)->where('inquiry_match_me',1)->where('area_status',0)->get();
+        foreach($advice as $advice_data){
+            $bid = AdvisorBids::where('area_id',$advice_data->id)->count();
+            if($bid<5){
+                array_push($advice_area_arr,$advice_data->id);
+            }
+        }
+        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
             ->where('area_status',0)
+            // ->whereIn('advice_areas.id',$advice_area_arr)
             ->where(function($query) use ($userPreferenceCustomer){
                 if(!empty($userPreferenceCustomer)) {
                     if($userPreferenceCustomer->self_employed == 1){
@@ -1307,7 +1301,13 @@ class ApiController extends Controller
                 $query->where('advice_areas.lti_max','<=',chop($lti_max,"x"));
                 $query->where('advice_areas.lti_max','>',0);
             }
-        })->whereNotIn('advice_areas.id',function($query) use ($user){
+        })
+        // ->where(function($query) use ($advice_area_arr){
+        //     if(count($advice_area_arr)) {
+        //         $query->whereIn('advice_areas.id',$advice_area_arr);
+        //     }
+        // })
+        ->whereNotIn('advice_areas.id',function($query) use ($user){
             $query->select('area_id')->from('advisor_bids')->where('advisor_id','=',$user->id);
         })->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
         ->groupBy('advice_areas.'.'user_id')
@@ -1354,6 +1354,7 @@ class ApiController extends Controller
         //dd(end($lastquery));
         //echo '<pre>=';print_r($advice_area);die;
         foreach($advice_area as $key=> $item) {
+
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
                 $bidCountArr[] = ($bid->status == 3)? 0:1;
@@ -1374,7 +1375,7 @@ class ApiController extends Controller
                 $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
             }
             if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
                 $in = 48-$hourdiff;
                 $newAmount = (75 / 100) * $amount;
                 $hrArr = explode(".",$in);
@@ -1382,7 +1383,7 @@ class ApiController extends Controller
             }
             if($hourdiff > 48 && $hourdiff < 72) {
                 $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = "".($amount-$newAmount)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
                 $in = 72-$hourdiff;
                 $hrArr = explode(".",$in);
                 $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
@@ -1391,10 +1392,15 @@ class ApiController extends Controller
                 $costOfLeadsStr = ""."Free";
                 $costOfLeadsDropStr = "";
             }
+            if($user->free_promotions>0){
+                $costOfLeadsStr = "".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.$amount.")";
+            }
             $advice_area[$key]->is_accepted = 0;
             
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
             $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+            $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+
             $area_owner_details = User::where('id',$item->user_id)->first();
             $address = "";
             if(!empty($area_owner_details)) {
@@ -1409,7 +1415,7 @@ class ApiController extends Controller
                     
                 }
             }
-            $lead_value = "";
+            $lead_value = 0;
             $main_value = ($item->size_want/100);
             $advisorDetaultValue = "";
             $advisorDetaultPercent = 0;
@@ -1420,7 +1426,7 @@ class ApiController extends Controller
                 }
             }
             $lead_value = ($main_value)*($advisorDetaultPercent);
-            $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)$lead_value,0);
             // if($item->service_type=="remortgage") {
             //     $advisorDetaultValue = "remortgage";
             // }else if($item->service_type=="first time buyer") {
@@ -1908,7 +1914,7 @@ class ApiController extends Controller
             
             $advice_area[$key]->lead_address = $address;
             $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
-            $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            $advice_area[$key]->lead_value = number_format($item->size_want_currency.$lead_value,0);
             // $show_status = "Live Leads"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             // if(!empty($bidDetailsStatus)) {
@@ -2082,7 +2088,7 @@ class ApiController extends Controller
                     ));
                     return response()->json([
                         'status' => true,
-                        'message' => 'Bid placed successfully',
+                        'message' => 'Lead purchased successfully',
                         'data'=>$bid_arr
                     ], Response::HTTP_OK);
                 } else if ($request->advisor_status == 2) {
@@ -2254,6 +2260,12 @@ class ApiController extends Controller
                 );
             }
         }
+        $newArr = array(
+            'name'=>$user->name,
+            'email'=>$user->email,
+            'message_text' => "You have received the following message from ".$user->name
+        );
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'Mortgagebox.co.uk – Message received from '.$user->name,'','');
         return response()->json([
             'status' => true,
             'channel' => ['channel_id' => $channel_id, 'channel_name' => $channel_name],
@@ -2392,7 +2404,7 @@ class ApiController extends Controller
                     
                 }
             }
-            $lead_value = "";
+            $lead_value = 0;
             $main_value = ($item->size_want/100);
             $advisorDetaultValue = "";
             $advisorDetaultPercent = 0;
@@ -2403,7 +2415,7 @@ class ApiController extends Controller
                 }
             }
             $lead_value = ($main_value)*($advisorDetaultPercent);
-            $advice_area[$key]->lead_value = $item->size_want_currency.$lead_value;
+            $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)$lead_value,0);
             // if($item->service_type=="remortgage") {
             //     $advisorDetaultValue = "remortgage";
             // }else if($item->service_type=="first time buyer") {
@@ -2776,6 +2788,8 @@ class ApiController extends Controller
         $bidDetails = AdvisorBids::where('id', '=', $id)->first();
         $message = "";
         if($status==1){
+            $advice_area = Advice_area::where('id',$bidDetails->area_id)->first();
+            $service = ServiceType::where('id',$advice_area->service_type_id)->first();
             Advice_area::where('id',$bidDetails->area_id)->update(['area_status'=>2,'advisor_id'=>$bidDetails->advisor_id]);
             $message = "Offer accepted";
             $this->saveNotification(array(
@@ -2791,9 +2805,9 @@ class ApiController extends Controller
             $newArr = array(
                 'name'=>$advisor->display_name,
                 'email'=>$advisor->email,
-                'message_text' => 'Your bid accepted by customer '.$user->name
+                'message_text' => 'Congratulations, you have been selected by '.$user->name.' to arrange their '.$advice_area->size_want.' '.$service->name.' mortgage. This is required '.$advice_area->request_time
             );
-            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox Bid Accepted','','');
+            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – '.$advice_area->size_want.' Lead won from '.$user->name,'','');
         }else{
             $message = "Offer declined";
             $this->saveNotification(array(
@@ -3212,9 +3226,12 @@ class ApiController extends Controller
     public function getCMSData(Request $request) {
         $post = $request->all();
         $postData = array(
-            'slug' => $post['page']
+            'slug' => $post['page'],
         );
-        $advice_read = StaticPage::where('slug',$postData['slug'])->first();
+        if(isset($post['type']) && $post['type']!=''){
+            $postData['type'] = $post['type'];
+        }
+        $advice_read = StaticPage::where('slug',$postData['slug'])->where('type',$post['type'])->first();
         return response()->json([
             'status' => true,
             'message' => 'Data fetched successfully.',
@@ -3429,9 +3446,9 @@ class ApiController extends Controller
                             $newArr = array(
                                 'name'=>$advisor_update_to->display_name,
                                 'email'=>$advisor_update_to->email,
-                                'message_text' => 'You are a company admin now'
+                                'message_text' => 'You have now been made the administrator for '.$admin->company_name.' by '.$advisor_profiles->display_name.'. This allows you to view the performance of all advisers in your company.'
                             );
-                            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_update_to->email,$advisor_update_to->display_name,'MortgageBox Company Admin','','');
+                            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_update_to->email,$advisor_update_to->display_name,'Mortgagebox.co.uk – Administrator role','','');
                         }
                     }
                 }

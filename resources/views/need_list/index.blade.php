@@ -12,7 +12,7 @@
                         <h2 class="content-header-title float-start mb-0">Need List</h2>
                         <div class="breadcrumb-wrapper">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{'/'}}">Dashboard</a>
+                                <li class="breadcrumb-item"><a href="{{url('admin')}}">Dashboard</a>
                                     </li>
                                 <li class="breadcrumb-item active">Need List</li>
                             </ol>
@@ -49,7 +49,7 @@
                             <select class="form-select" id="" name="status">    
                                 <option value="">Status</option>
                                 <option value="1" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>>Active</option>
-                                <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==1){ echo "selected"; } } ?>>Deactive</option>
+                                <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==0){ echo "selected"; } } ?>>Deactive</option>
                             </select>
                         </div>
                         <div class="col-md-2 col-12">

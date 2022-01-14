@@ -18,6 +18,9 @@ class StaticPage extends Model
             if(isset($search['name']) && $search['name']!=''){
                 $query = $query->where('page_name', 'like', '%' .strtolower($search['name']). '%');
             }
+            if(isset($search['type']) && $search['type']!=''){
+                $query = $query->where('type', 'like', '%' .strtolower($search['type']). '%');
+            }
             if(isset($search['status']) && $search['status']!=''){
                 $query = $query->where('status',$search['status']);
             }

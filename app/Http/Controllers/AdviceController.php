@@ -61,12 +61,18 @@ class AdviceController extends Controller
           //  $msg = wordwrap($msg, 70);
            
             // $mailStatus = mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
+            // $newArr = array(
+            //     'name'=>$request->name,
+            //     'email'=>$request->email,
+            //     'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
+            // );
+            // $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
             $newArr = array(
                 'name'=>$request->name,
                 'email'=>$request->email,
                 'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
             );
-            $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
+            $c = \Helpers::sendEmail('emails.customer_signup',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         } 
         
         $user = Advice_area::create([

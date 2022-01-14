@@ -69,11 +69,15 @@ table[class="table750"] {width: 100% !important;}
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Mortgagebox is the smart and cost effective way for finding new customers actively looking for mortgages based on your specialities and preferences. We let you focus on what you do best ... arranging great mortgages for your customers rather than scrambling around for leads</span>
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Finding the right mortgage should be easy, but too often it’s a hassle. It’s very easy to spend hours searching on the web and end up no further forward. And if you speak to just one adviser how can you be sure they have fully understood your needs and found you the best deal?</span>
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 18px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 24px; line-height: 32px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Mortgagebox will help grow and sustain your business and allow you to efficiently manage your customer relationships. We also give you the tools to manage them all in one place.</span>
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">That’s why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your needs.</span>
+                   </font>
+                   <div style="height: 20px; line-height: 20px; font-size: 18px;">&nbsp;</div>
+                   <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 24px; line-height: 32px;">
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees, cashback or some other criteria important to you.</span>
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 18px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 24px; line-height: 32px;">

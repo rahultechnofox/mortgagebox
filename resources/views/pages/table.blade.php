@@ -43,7 +43,7 @@
                                                 <i data-feather="eye" class="me-50"></i>
                                                 <span>Detail</span>
                                             </a> -->
-                                            <a class="dropdown-item"  href="{{ route('admin/pages/edit',$users_data->id) }}">
+                                            <a class="dropdown-item"  href="{{ route('admin/pages/edit',$users_data->id) }}<?php if(isset($_GET['type']) && $_GET['type']!=''){ echo "?type=".$_GET['type']; }?>">
                                                 <i data-feather="edit-2" class="me-50"></i>
                                                 <span>Edit</span>
                                             </a>

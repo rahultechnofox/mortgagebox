@@ -157,8 +157,10 @@ class AdvisorController extends Controller
                 unset($post['_token']);
                 if($post['status']==1){
                     $postData['FCA_verified'] = date("Y-m-d H:i:s");
+                    $postData['invalidate_fca'] = 0;
                 }else{
                     $postData['FCA_verified'] = null;
+                    $postData['invalidate_fca'] = 1;
                     $advisor = AdvisorProfile::where('id',$post['id'])->first();
                     Notifications::create(array(
                         'type'=>'10', // 1:
@@ -352,46 +354,61 @@ class AdvisorController extends Controller
     public function setAdvisorLinks(Request $request)
     {
         $id = JWTAuth::parseToken()->authenticate();
-        $update_arr = array();
+        $post = $request->all();
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
-        if(isset($request->web_address) && $request->web_address!=''){
+        $update_arr = array();
+        if(isset($post['web_address']) && $post['web_address']!=''){
             if($advisor_data->web_address!=''){
-                if($request->web_address!=$advisor_data->web_address){
-                    $update_arr['web_address'] = $request->web_address;
+                if($post['web_address']!=$advisor_data->web_address){
+                    $update_arr['web_address'] = $post['web_address'];
                     $update_arr['web_address_update'] = date("Y-m-d H:i:s");
                 }
+            }else{
+                $update_arr['web_address'] = $post['web_address'];
+                $update_arr['web_address_update'] = date("Y-m-d H:i:s");
             }
         }
-        if(isset($request->facebook) && $request->facebook!=''){
+        if(isset($post['facebook']) && $post['facebook']!=''){
             if($advisor_data->facebook!=''){
-                if($request->facebook!=$advisor_data->facebook){
-                    $update_arr['facebook'] = $request->facebook;
+                if($post['facebook']!=$advisor_data->facebook){
+                    $update_arr['facebook'] = $post['facebook'];
                     $update_arr['fb_update'] = date("Y-m-d H:i:s");
                 }
+            }else{
+                $update_arr['facebook'] = $post['facebook'];
+                $update_arr['fb_update'] = date("Y-m-d H:i:s");
             }
         }
-        if(isset($request->twitter) && $request->twitter!=''){
+        if(isset($post['twitter']) && $post['twitter']!=''){
             if($advisor_data->twitter!=''){
-                if($request->twitter!=$advisor_data->twitter){
-                    $update_arr['twitter'] = $request->twitter;
+                if($post['twitter']!=$advisor_data->twitter){
+                    $update_arr['twitter'] = $post['twitter'];
                     $update_arr['twitter_update'] = date("Y-m-d H:i:s");
                 }
+            }else{
+                $update_arr['twitter'] = $post['twitter'];
+                $update_arr['twitter_update'] = date("Y-m-d H:i:s");
             }
         }
-        if(isset($request->linkedin_link) && $request->linkedin_link!=''){
+        if(isset($post['linkedin_link']) && $post['linkedin_link']!=''){
             if($advisor_data->linkedin_link!=''){
-                if($request->linkedin_link!=$advisor_data->linkedin_link){
-                    $update_arr['linkedin_link'] = $request->linkedin_link;
+                if($post['linkedin_link']!=$advisor_data->linkedin_link){
+                    $update_arr['linkedin_link'] = $post['linkedin_link'];
                     $update_arr['linkedin_update'] = date("Y-m-d H:i:s");
                 }
+            }else{
+                $update_arr['linkedin_link'] = $post['linkedin_link'];
+                $update_arr['linkedin_update'] = date("Y-m-d H:i:s");
             }
         }
-        $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($update_arr);
-        $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
+        $advisorDetails = AdvisorProfile::where('id', '=',$advisor_data->id)->update($update_arr);
+        AdvisorProfile::where('company_id', $advisor_data->company_id)->update($update_arr);
+
+        $advisor_data_after = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         return response()->json([
             'status' => true,
             'message' => 'Links updated successfully',
-            'data' => $advisor_data
+            'data' => $advisor_data_after
         ], Response::HTTP_OK);
     }
 
@@ -464,12 +481,14 @@ class AdvisorController extends Controller
         
         $last_activity = User::select('users.last_active')->where('id', '=', $id)->first();
         $offer_data = AdvisorOffers::where('advisor_id', '=', $id)->get();
-        if(count($offer_data)){
-            $advisor_data->profile_percent = $advisor_data->profile_percent + 30;
-            $advisor_data->offer = 1;
-        }else{
-            $advisor_data->offer = 0;
-        }
+        // if($advisor_data){
+        //     if(count($offer_data)){
+        //         $advisor_data->profile_percent = $advisor_data->profile_percent + 30;
+        //         $advisor_data->offer = 1;
+        //     }else{
+        //         $advisor_data->offer = 0;
+        //     }
+        // }
         $countofCOunt = 0;
         $rating =  ReviewRatings::select('review_ratings.*', 'users.name', 'users.email', 'users.address')
             ->leftJoin('users', 'review_ratings.user_id', '=', 'users.id')
@@ -635,6 +654,7 @@ class AdvisorController extends Controller
     public function updateAdvisorGeneralInfo(Request $request)
     {
         $id = JWTAuth::parseToken()->authenticate();
+        $post = $request->all();
         $data = $request->only('display_name');
         // if ($request->company_logo == "") {
         //     $request->company_logo = "";
@@ -755,6 +775,7 @@ class AdvisorController extends Controller
         }
         if ($request->FCANumber != "" && $request->FCANumber != "null") {
             $arr['FCANumber'] = $request->FCANumber;
+            $arr['invalidate_fca'] = 0;
         }
         if ($request->phone_number != "" && $request->phone_number != "null") {
             $arr['phone_number'] = $request->phone_number;
@@ -1070,7 +1091,7 @@ class AdvisorController extends Controller
                 'email'=>$request->email,
                 'url' => config('constants.urls.team_signup_url')."?invitedBy=".$this->getEncryptedId($user->id)."&invitedToEmail=".urlencode($request->email)."&invitedForCompany=".$company->company_name
             );
-            $c = \Helpers::sendEmail('emails.team_email_signup',$newArr ,$request->email,$request->name,'Create Account | Mortgagebox.co.uk','','');
+            $c = \Helpers::sendEmail('emails.team_email_signup',$newArr ,$request->email,$request->name,'Mortgagebox.co.uk – '.$user->name.' has invited you to join','','');
         }
         //Send Email
         return response()->json([
@@ -1213,6 +1234,7 @@ class AdvisorController extends Controller
     function makeEnquiry(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
+        $post = $request->all();
         $userDetails = User::where('id', '=', $request->advisor_id)->first();
        
 
@@ -1252,98 +1274,103 @@ class AdvisorController extends Controller
             ));
             
         
-        $msg = "";
-        $msg .= "<table>"; 
+        // $msg = "";
+        // $msg .= "<table>"; 
 
 
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "Name";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->name;
-        $msg .= "</td>"; 
-        $msg .= "</tr>"; 
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "Name";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->name;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>"; 
 
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "Email";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->email;
-        $msg .= "</td>"; 
-        $msg .= "</tr>";
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "Email";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->email;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>";
         
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "Mortgage Required";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->mortgage_required;
-        $msg .= "</td>"; 
-        $msg .= "</tr>";
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "Mortgage Required";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->mortgage_required;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>";
 
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "Property Value";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->prop_value;
-        $msg .= "</td>"; 
-        $msg .= "</tr>";
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "Property Value";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->prop_value;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>";
 
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "Combined Income";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->combined_income;
-        $msg .= "</td>"; 
-        $msg .= "</tr>";
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "Combined Income";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->combined_income;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>";
 
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "How soon do you need the mortgage?";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->how_soon;
-        $msg .= "</td>"; 
-        $msg .= "</tr>";
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "How soon do you need the mortgage?";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->how_soon;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>";
 
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "Postcode";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->post_code;
-        $msg .= "</td>"; 
-        $msg .= "</tr>";
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "Postcode";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->post_code;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>";
         
-        $msg .= "<tr>"; 
-        $msg .= "<th>"; 
-        $msg .= "Is there anything else you feel is important?";
-        $msg .= "</th>"; 
-        $msg .= "<td>"; 
-        $msg .= $request->anything_else;
-        $msg .= "</td>"; 
-        $msg .= "</tr>";
+        // $msg .= "<tr>"; 
+        // $msg .= "<th>"; 
+        // $msg .= "Is there anything else you feel is important?";
+        // $msg .= "</th>"; 
+        // $msg .= "<td>"; 
+        // $msg .= $request->anything_else;
+        // $msg .= "</td>"; 
+        // $msg .= "</tr>";
 
-        $msg .= "</table>"; 
+        // $msg .= "</table>"; 
 
-        $userDetails = User::where('id', '=', $request->advisor_id)->first();
+        // $userDetails = User::where('id', '=', $request->advisor_id)->first();
 
-        $headers = "From: mbox@technofox.co.in\r\n";
-        $headers .= "Reply-To: mbox@technofox.co.in\r\n";
-        $headers .= "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-        mail($userDetails->email, "New Enquiry", $msg,$headers);
+        // $headers = "From: mbox@technofox.co.in\r\n";
+        // $headers .= "Reply-To: mbox@technofox.co.in\r\n";
+        // $headers .= "MIME-Version: 1.0\r\n";
+        // $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        // mail($userDetails->email, "New Enquiry", $msg,$headers);
         //for discussion
-        // $newArr = array(
-        //     'name'=>$request->name,
-        //     'email'=>$request->email,
-        //     'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
-        // );
-        // $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
+        $newArr = array(
+            'name'=>$request->name,
+            'email'=>$request->email,
+            'mortgage_required' => $post['mortgage_required'],
+            'prop_value' => $post['prop_value'],
+            'combined_income' => $post['combined_income'],
+            'how_soon' => $post['how_soon'],
+            'post_code' => $post['post_code'],
+            'anything_else' => $post['anything_else'],
+        );
+        $c = \Helpers::sendEmail('emails.enquiry',$newArr ,$request->email,$request->name,'Mortgagebox.co.uk – New Enquiry from '.$request->name,'','');
 
         return response()->json([
             'status' => true,
@@ -1397,6 +1424,8 @@ class AdvisorController extends Controller
         $accepted_leads = AdvisorBids::where('advisor_id','=',$userDetails->id)
             ->where('status', '!=', 3)
             ->where('advisor_status', '=', 1)
+            ->where('is_discounted',0)
+            ->where('free_introduction',0)
             ->sum('cost_leads');
         $hired_leads = AdvisorBids::where('advisor_id','=',$userDetails->id)
             ->where('status', '=', 1)
@@ -1466,6 +1495,23 @@ class AdvisorController extends Controller
         ->where('created_at', '>', Carbon::today()->subDays(365))
         ->count();
 
+        $lost_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+            ->where('status', '=', 3)
+            ->where('advisor_status', '=', 1)
+            ->where('created_at', '>', Carbon::today()->subDays(30))
+            ->count();
+        $lost_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        ->where('status', '=', 3)
+        ->where('advisor_status', '=', 1)
+        ->where('created_at', '>', Carbon::today()->subDays(90))
+        ->count();
+
+        $lost_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        ->where('status', '=', 3)
+        ->where('advisor_status', '=', 1)
+        ->where('created_at', '>', Carbon::today()->subDays(365))
+        ->count();
+
         // $promotion = User::where('advisor_id','=',$userDetails->id)
         // ->where('status', '=', 2)
         // ->where('advisor_status', '=', 1)
@@ -1480,7 +1526,30 @@ class AdvisorController extends Controller
         //     //     $promotion = $userDetails->invite_count * $app_settings->value;
         //     // }
         // }
-        
+
+        $es_val = AdvisorBids::where('advisor_id','=',$userDetails->id)->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
+        $estimated = number_format(0.00,0);
+        $area_arr = array();
+        if(count($es_val)){
+            foreach($es_val as $es_val_data){
+                array_push($area_arr,$es_val_data->area_id);
+            }
+            if(count($area_arr)){
+                $value_data = Advice_area::whereIn('id',$area_arr)->sum('size_want');
+                $main_value = ($value_data/100);
+                $advisorDetaultPercent = 0;
+                $services = DB::table('app_settings')->where('key','estimate_calculation_percent')->first();
+                if($services){
+                    $advisorDetaultPercent = $services->value;
+                }
+                $lead_value = ($main_value)*($advisorDetaultPercent);
+                $estimated = number_format($lead_value,0);
+            }
+            
+        }
+        // $row->value = json_encode($es_val);
+        // $row->estimated_lead_value = $estimated;
+        $total_due = DB::table('invoices')->where('is_paid',0)->where('advisor_id',$userDetails->id)->sum('total_due');
         return response()->json([
             'status' => true,
             'message' => '',
@@ -1502,27 +1571,30 @@ class AdvisorController extends Controller
                     'live_leads'=>$live_leads_months,
                     'hired'=>$hired_leads_months,
                     'completed'=>$completed_leads_months,
+                    'lost'=>$lost_leads_months,
                 ),
                 'accepted_card_two'=>array(
                     'live_leads'=>$live_leads_quarter,
                     'hired'=>$hired_leads_quarter,
                     'completed'=>$completed_leads_quarter,
+                    'lost'=>$lost_leads_quarter,
                 ),
                 'accepted_card_three'=>array(
                     'live_leads'=>$live_leads_year,
                     'hired'=>$hired_leads_year,
                     'completed'=>$completed_leads_year,
+                    'lost'=>$lost_leads_year,
                 ),
                 'performance'=>array(
                     'conversion_rate'=>round($conversion_rate, 2),
                     'cost_of_leads'=>round($accepted_leads, 2),
-                    'estimated_revenue'=>round($hired_leads, 2),
+                    'estimated_revenue'=>$estimated,
                 ),
                 'message_unread_count'=>$unread_count_total[0]->count_message,
                 'notification_unread_count'=>0,
                 'promotions'=>$promotion,
-                'userDetails'=>$userData
-
+                'userDetails'=>$userData,
+                'total_invoice'=>round($total_due,2)
             ]
         ], Response::HTTP_OK);
     }

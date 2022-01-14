@@ -132,9 +132,10 @@ class User extends Authenticatable implements JWTSubject
             ->leftJoin('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')
             ->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             // echo json_encode($data);exit;
-            $success_per = 0;
+            
             if(isset($data) && count($data)){
                 foreach($data as $row){
+                    $success_per = 0;
                     // $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address','users.status as user_status', 'advisor_bids.advisor_id as advisor_id', 'companies.advisor_id as advisor_id')
                     // ->join('users', 'advice_areas.user_id', '=', 'users.id')
                     // ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
@@ -379,6 +380,16 @@ class User extends Authenticatable implements JWTSubject
             $closedArr = array();
             $closed_count = 0;
             if($data['userDetails']){
+                $current_balance = 0;
+                $current_bal = AdvisorBids::where('free_introduction',0)->where('is_paid_invoice',0)->where('advisor_id',$data['userDetails']->id)->get();
+                foreach($current_bal as $current_bal_data){
+                    if($current_bal_data->is_discounted==1){
+                        $current_balance = $current_balance + $current_bal_data->cost_discounted;
+                    }else{
+                        $current_balance = $current_balance + $current_bal_data->cost_leads;
+                    }
+                }
+                $data['userDetails']->current_balance = $current_balance;
                 $advice_areaCount =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address','users.status as user_status', 'advisor_bids.advisor_id as advisor_id', 'companies.advisor_id as advisor_id')
                 ->join('users', 'advice_areas.user_id', '=', 'users.id')
                 ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')

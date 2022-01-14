@@ -27,6 +27,9 @@ class PagesController extends Controller
      */
     public function index(Request $request){
         $post = $request->all();
+        // if(isset($_GET['type']) && $_GET['type']!=''){
+        //     $post['type']
+        // }
         $pages = StaticPage::getPages($post);
         return view('pages.index',['page_list'=>$pages]);
     }
@@ -37,6 +40,7 @@ class PagesController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit($id){
+
         $data['row'] = StaticPage::find($id);
         return view('pages.edit',$data);
     }
@@ -55,7 +59,7 @@ class PagesController extends Controller
             'page_content' => $post['page_content']
         );
         StaticPage::where('id',$post['id'])->update($postUpdate);
-        return redirect()->route('admin/pages')->with('success','Page content updated successfully');
+        return redirect()->to('admin/pages?type='.$post['type'])->with('success','Page content updated successfully');
     }
     /**
      * Update status the specified resource in storage.

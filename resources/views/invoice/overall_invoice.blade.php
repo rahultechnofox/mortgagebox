@@ -20,7 +20,7 @@
 			<div class="content-header-right text-md-end col-md-12 col-12 d-md-block mb-1">
                 <form role="form" method="get">
                     <div class="form-group row">
-						<div class="col-md-3 col-12" style="margin-top: 15px;">
+						<!-- <div class="col-md-3 col-12" style="margin-top: 15px;">
                             <select class="form-select" id="" name="discount">
                                 <option value="">Discount</option>
 								<option value="">50%</option>
@@ -32,8 +32,8 @@
                             <select class="form-select" id="" name="service_type">
                                 <option value="">Fee type</option>
                             </select>
-                        </div>
-                        <div class="col-md-3 col-12" style="margin-top: 15px;">
+                        </div> -->
+                        <!-- <div class="col-md-3 col-12" style="margin-top: 15px;">
                             <select class="form-select" id="" name="status">    
                                 <option value="">Status</option>
                                 <option value="0" <?php if(isset($_GET['status']) && $_GET['status']!=''){ if($_GET['status']==0){ echo "selected"; } } ?>>In-Progress</option>
@@ -48,7 +48,7 @@
                         </div>
 						<div class="col-md-4 col-12" style="margin-top: 15px;">
 							<input type="text" id="fp-range" class="form-control flatpickr-range" name="date" placeholder="YYYY-MM-DD to YYYY-MM-DD" value="<?php if(isset($_GET['date']) && $_GET['date']!=''){ echo $_GET['date']; } ?>"/>
-                        </div>
+                        </div> -->
 						<div class="col-md-2 col-12" style="margin-top: 15px;">
                             <select class="form-select" id="" name="advisor_id">
                                 <option value="">Adviser</option>
@@ -74,11 +74,11 @@
                                 <option value="12" <?php if(isset($_GET['month']) && $_GET['month']!=''){ if($_GET['month']==12){ echo "selected"; } } ?>>Dec</option>
                             </select>
                         </div>
-                        <?php $firstYear = (int)date('Y') - 20; ?>
+                        <?php $firstYear = (int)date('Y'); ?>
                         <div class="col-md-2 col-12" style="margin-top: 15px;">
                             <select class="form-select" id="" name="year">    
                                 <option value="">Year</option>
-                                <?php for($i=$firstYear;$i<=date('Y');$i++){ ?>
+                                <?php for($i=$firstYear;$i>=2002;$i--){ ?>
                                     <option value="<?php echo $i;?>" <?php if(isset($_GET['year']) && $_GET['year']!=''){ if($_GET['year']==$i){ echo "selected"; } } ?>><?php echo $i;?></option>
                                 <?php }?>
                             </select>

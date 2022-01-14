@@ -196,9 +196,11 @@ class UserController extends Controller
             $newArr = array(
                 'name'=>$advisor->display_name,
                 'email'=>$advisor->email,
-                'message_text' => 'New review recieved from customer '.$userDetails->name
+                'message_text' => 'You have received a new review from '.$userDetails->name,
+                'url' =>config('constants.urls.host_url')."/adviser?type=Review",
+                'btn_text' => 'Reply'
             );
-            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'MortgageBox New Review','','');
+            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – New Review from '.$userDetails->name,'','');
         
         return response()->json([
             'status' => true,
@@ -253,8 +255,8 @@ class UserController extends Controller
             'parent_review_id' => $request->parent_review_id,
             'reply_reason' =>$request->reply_reason,
             'spam_reason' => $request->spam_reason,
-            'reviewer_name'=>$request->reviewer_name
-            
+            'reviewer_name'=>$request->reviewer_name,
+            'is_invited'=>1,
         ])->id;
         $this->saveNotification(array(
             'type'=>'4', // 1:

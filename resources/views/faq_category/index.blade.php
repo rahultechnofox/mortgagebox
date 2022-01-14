@@ -12,7 +12,7 @@
                         <h2 class="content-header-title float-start mb-0">Faq Categories</h2>
                         <div class="breadcrumb-wrapper">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{url('home')}}">Dashboard</a>
+                                <li class="breadcrumb-item"><a href="{{url('admin')}}">Dashboard</a>
                                     </li>
                                 <li class="breadcrumb-item active">Faq Categories List</li>
                             </ol>

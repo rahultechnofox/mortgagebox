@@ -9,7 +9,7 @@ class ReviewRatings extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'advisor_id','rating','reviews','user_id','status','parent_review_id','reply_reason','spam_reason','review_title','parent_review_id','reply_reason','spam_reason','reviewer_name','area_id','replied_on'
+        'advisor_id','rating','reviews','user_id','status','parent_review_id','reply_reason','spam_reason','review_title','parent_review_id','reply_reason','spam_reason','reviewer_name','area_id','replied_on','is_invited'
     ];
     public function user(){
         return $this->hasOne('App\Models\User',"id","user_id");

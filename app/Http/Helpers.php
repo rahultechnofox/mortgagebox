@@ -345,7 +345,7 @@ class Helpers
             $fromEmail ='gaurav@technofox.com';
         }
         try {
-            $fromName = 'Mbox';
+            $fromName = 'Mortgagebox.co.uk';
             $data = \Mail::send($template, $data, function ($message) use($toEmail, $toName, $subject, $data, $fromName, $fromEmail, $attachment) {
                 $message->to($toEmail, $toName);
                 $message->subject($subject);
@@ -509,6 +509,23 @@ class Helpers
     {
         if ($date) {
             return date(config('app.date_format_php'), strtotime($date));
+        } else {
+            if ($not_available == false) {
+                return '--';
+            }
+            return '--';
+        }
+    }
+
+    /**
+     * Format Date
+     * @param $date
+     * @return formatted date
+     */
+    public static function formatDateNormal($date, $not_available = true)
+    {
+        if ($date) {
+            return date(config('app.date_format'), strtotime($date));
         } else {
             if ($not_available == false) {
                 return '--';

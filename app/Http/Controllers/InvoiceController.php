@@ -96,7 +96,7 @@ class InvoiceController extends Controller
         // $data = AdvisorBids::getInvoice($post);
         $data['invoice'] = Invoice::getOverAllInvoice($post);
         $data['post_code'] = PostalCodes::get();
-        $data['adviser_data'] = User::where('user_role',1)->get();
+        $data['adviser_data'] = User::where('user_role',1)->orderBy('id','DESC')->get();
         // echo json_encode($data);exit;
         return view('invoice.overall_invoice',$data);
     }

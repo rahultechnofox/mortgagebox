@@ -123,10 +123,14 @@
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('FCA Verified:') }}</h6>
                                         <small>
-                                            @if(isset($profile->FCA_verified) && $profile->FCA_verified != "")  
-												<span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                            @if($profile->invalidate_fca==1)
+                                                <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Invalid</span>
                                             @else
-												<span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                                @if(isset($profile->FCA_verified) && $profile->FCA_verified != "")  
+                                                    <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                                @else
+                                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                                @endif
                                             @endif
                                         </small>
                                     </div>
@@ -137,7 +141,13 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Email Verified:') }}</h6>
-                                        <small>{{isset($userDetails->created_at) ? \Helpers::formatDateTime($userDetails->created_at) : '--'}}</small>
+                                        <small>
+                                        @if($userDetails->email_verified_at!='')
+                                            {{isset($userDetails->email_verified_at) && $userDetails->email_verified_at!=''? \Helpers::formatDateTime($userDetails->email_verified_at) : '--'}}
+                                        @else
+                                            --
+                                        @endif
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -233,8 +243,8 @@
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('Current Balance:') }}</h6>
                                         <small>
-                                            @if(isset($total_due))
-                                                {{\Helpers::currency($total_due)}}
+                                            @if(isset($userDetails->current_balance))
+                                                {{\Helpers::currency($userDetails->current_balance)}}
                                             @else
                                                 --                                            
                                             @endif

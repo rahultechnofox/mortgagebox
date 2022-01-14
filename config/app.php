@@ -83,6 +83,7 @@ return [
     'locale' => 'en',
     'currency' => '£',
     'date_format_php' => 'd M, Y',
+    'date_format' => 'd-m-y H:i',
     'date_time_format_php' => 'd M, Y h:i A',
 
     /*

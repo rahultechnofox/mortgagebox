@@ -30,8 +30,8 @@
                                 <td><a href="{{ route('admin/users/show',$users_data->id) }}">{{$users_data->name}}</a></td>
                                 <td>{{$users_data->post_code}}</td>
                                 <td>{{$users_data->email}}</td>
-                                <td>{{\Helpers::formatDateTime($users_data->created_at)}}</td>
-                                <td>{{\Helpers::formatDateTime($users_data->last_active)}}</td>
+                                <td>{{\Helpers::formatDateNormal($users_data->created_at)}}</td>
+                                <td>{{\Helpers::formatDateNormal($users_data->last_active)}}</td>
                                 <td>
                                     @if($users_data->email_status == 0)
                                         <span class="badge rounded-pill badge-light-danger me-1">Not Verifed</span>

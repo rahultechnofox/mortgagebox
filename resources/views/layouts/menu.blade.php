@@ -1,5 +1,5 @@
-<li class="{{ Request::is('/') || Request::is('/home*') ? 'active' : '' }} nav-item">
-    <a class="d-flex align-items-center" href="{{ url('/home') }}"><i data-feather="grid"></i><span class="menu-title text-truncate" data-i18n="Dashboards">Dashboard</span></a>
+<li class="{{ Request::is('admin') ? 'active' : '' }} nav-item">
+    <a class="d-flex align-items-center" href="{{ url('/admin') }}"><i data-feather="grid"></i><span class="menu-title text-truncate" data-i18n="Dashboards">Dashboard</span></a>
 </li>
 
 <li class="{{ Request::is('admin/users*') || Request::is('admin/users/show*') ? 'active' : '' }} nav-item">
@@ -18,8 +18,11 @@
     <a class="d-flex align-items-center" href="{{ route('admin/companies') }}"><i data-feather="database"></i><span class="menu-title text-truncate" data-i18n="Companies">Companies</span></a>
 </li>
 
-<li class="{{ Request::is('admin/pages*') ? 'active' : '' }} nav-item">
-    <a class="d-flex align-items-center" href="{{ route('admin/pages') }}"><i data-feather="book-open"></i><span class="menu-title text-truncate" data-i18n="Pages">Pages</span></a>
+<li class="<?php if(isset($_GET['type']) && $_GET['type']!=''){ if($_GET['type']=='customer'){ echo "active"; } }?> nav-item">
+    <a class="d-flex align-items-center" href="{{ route('admin/pages') }}?type=customer"><i data-feather="book-open"></i><span class="menu-title text-truncate" data-i18n="Pages">Customer Pages</span></a>
+</li>
+<li class="<?php if(isset($_GET['type']) && $_GET['type']!=''){ if($_GET['type']=='adviser'){ echo "active"; } }?> nav-item">
+    <a class="d-flex align-items-center" href="{{ route('admin/pages') }}?type=adviser"><i data-feather="book-open"></i><span class="menu-title text-truncate" data-i18n="Pages">Adviser Pages</span></a>
 </li>
 
 <li class="{{ Request::is('admin/services*') ? 'active' : '' }} nav-item">

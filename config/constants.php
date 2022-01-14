@@ -4,6 +4,7 @@ return [
         'email_verification_url' => 'https://mbox2.technofox.co.in/backend/api/verifyEmail/',
         'team_email_verification_url' => 'https://mbox2.technofox.co.in/backend/api/verifyTeamEmail/',
         'team_signup_url' => 'https://mbox2.technofox.co.in/register/',
+        'adviser_url' => 'https://mbox2.technofox.co.in/register/',
         'host_url' => 'https://mbox2.technofox.co.in',
         ],
     'stripe' => [

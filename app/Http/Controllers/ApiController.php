@@ -1613,7 +1613,7 @@ class ApiController extends Controller
             $post = $request->all();
             $post['user_id'] = $user->id;
             $advice_area = Advice_area::getMatchNeedFilter($post);
-            echo json_encode($advice_area);exit;
+            //echo json_encode($advice_area);exit;
             return response()->json([
                 'status' => true,
                 'data' => $advice_area->items(),
@@ -1914,7 +1914,7 @@ class ApiController extends Controller
             
             $advice_area[$key]->lead_address = $address;
             $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
-            $advice_area[$key]->lead_value = number_format($item->size_want_currency.$lead_value,0);
+            $advice_area[$key]->lead_value = $item->size_want_currency.number_format($lead_value,0);
             // $show_status = "Live Leads"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             // if(!empty($bidDetailsStatus)) {
@@ -2265,7 +2265,12 @@ class ApiController extends Controller
             'email'=>$user->email,
             'message_text' => "You have received the following message from ".$user->name
         );
-        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'Mortgagebox.co.uk – Message received from '.$user->name,'','');
+        $display_name = "";
+        $advisor_data = AdvisorProfile::where('advisorId',$user->id)->first();
+        if($advisor_data){
+            $display_name = $advisor_data->display_name;
+        }
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$user->email,$display_name,'Mortgagebox.co.uk – Message received from '.$user->name,'','');
         return response()->json([
             'status' => true,
             'channel' => ['channel_id' => $channel_id, 'channel_name' => $channel_name],
@@ -3421,6 +3426,8 @@ class ApiController extends Controller
                 // echo json_encode($post);exit;
                 AdvisorProfile::where('advisorId',$post['company_admin'])->update(['company_logo'=>$advisor_profiles->company_logo]);
                 $admin = companies::where('id',$post['company_id'])->update(['company_admin'=>$post['company_admin']]);
+                $admin_company = companies::where('id',$post['company_id'])->first();
+
                 // echo json_encode($admin);exit;
                 if($admin){
                     $team_member = CompanyTeamMembers::where('company_id',$post['company_id'])->get();
@@ -3446,7 +3453,7 @@ class ApiController extends Controller
                             $newArr = array(
                                 'name'=>$advisor_update_to->display_name,
                                 'email'=>$advisor_update_to->email,
-                                'message_text' => 'You have now been made the administrator for '.$admin->company_name.' by '.$advisor_profiles->display_name.'. This allows you to view the performance of all advisers in your company.'
+                                'message_text' => 'You have now been made the administrator for '.$admin_company->company_name.' by '.$advisor_profiles->display_name.'. This allows you to view the performance of all advisers in your company.'
                             );
                             $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_update_to->email,$advisor_update_to->display_name,'Mortgagebox.co.uk – Administrator role','','');
                         }

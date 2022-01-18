@@ -78,16 +78,27 @@ class AdvisorProfile extends Model
         try {
             $query = new Self;
             $advisorArr = array();
+            $advisorhowSoon = array();
+            $advisorhowSoonnext3 = array();
+            $advisorhowSoonAsap = array();
+
+
             $AdviceAreaIds = array();
             $mortgageValueIds = array();
             if(isset($search['advice_area']) && count($search['advice_area'])){
                 $AdviceAreaIds = array(-1);
-                $default = DefaultPercent::whereIn('service_id',$search['advice_area'])->where('status',1)->get();
+                // AdviserProductPreferences
+                // $default = DefaultPercent::whereIn('service_id',$search['advice_area'])->where('status',1)->get();
+
+                $default = AdviserProductPreferences::whereIn('service_id',$search['advice_area'])->get();
                 if(count($default)){
                     foreach($default as $default_data){
-                        if(!in_array($default_data->adviser_id,$AdviceAreaIds)){
-                            array_push($AdviceAreaIds,$default_data->adviser_id);
+                        if(!in_array($default_data->adviser_id,$advisorArr)){
+                            array_push($advisorArr,$default_data->adviser_id);
                         }
+                        // if(!in_array($default_data->adviser_id,$AdviceAreaIds)){
+                        //     array_push($AdviceAreaIds,$default_data->adviser_id);
+                        // }
                     }
                 }
             }
@@ -105,14 +116,14 @@ class AdvisorProfile extends Model
             }
 
             if(isset($search['how_soon']) && count($search['how_soon'])){
-                $advisorArr = array(-1);
+                $advisorhowSoon = array(-1);
                 for($i=0;$i<count($search['how_soon']);$i++){
                     if($search['how_soon'][$i]=='more_3_month'){
                         $ad_customer = AdvisorPreferencesCustomer::where('more_3_month',1)->get();
                         if(count($ad_customer)){
                             foreach($ad_customer as $ad_customer_data){
-                                if(!in_array($ad_customer_data->advisor_id,$advisorArr)){
-                                    array_push($advisorArr,$ad_customer_data->advisor_id);
+                                if(!in_array($ad_customer_data->advisor_id,$advisorhowSoon)){
+                                    array_push($advisorhowSoon,$ad_customer_data->advisor_id);
                                 }
                             }
                         }
@@ -121,8 +132,8 @@ class AdvisorProfile extends Model
                         $ad_customer_next = AdvisorPreferencesCustomer::where('next_3_month',1)->get();
                         if(count($ad_customer_next)){
                             foreach($ad_customer_next as $ad_customer_next_data){
-                                if(!in_array($ad_customer_next_data->advisor_id,$advisorArr)){
-                                    array_push($advisorArr,$ad_customer_next_data->advisor_id);
+                                if(!in_array($ad_customer_next_data->advisor_id,$advisorhowSoon)){
+                                    array_push($advisorhowSoon,$ad_customer_next_data->advisor_id);
                                 }
                             }
                         }
@@ -131,12 +142,17 @@ class AdvisorProfile extends Model
                         $ad_customer_asap = AdvisorPreferencesCustomer::where('asap',1)->get();
                         if(count($ad_customer_asap)){
                             foreach($ad_customer_asap as $ad_customer_asap_data){
-                                if(!in_array($ad_customer_asap_data->advisor_id,$advisorArr)){
-                                    array_push($advisorArr,$ad_customer_asap_data->advisor_id);
+                                if(!in_array($ad_customer_asap_data->advisor_id,$advisorhowSoon)){
+                                    array_push($advisorhowSoon,$ad_customer_asap_data->advisor_id);
                                 }
                             }
                         }
                     }
+                }
+                if(count($advisorArr)>0){
+                    $advisorArr = array_intersect($advisorArr, $advisorhowSoon);
+                }else{
+                    $advisorArr = array_unique($advisorhowSoon);
                 }
             }
             if(isset($search['mortgage_value']) && count($search['mortgage_value'])){
@@ -152,30 +168,20 @@ class AdvisorProfile extends Model
                     $ad = AdvisorProfile::where('mortgage_min_size','>',$explode[0])->where('mortgage_max_size','<=',$explode[1])->get();
                     if(count($ad)){
                         foreach($ad as $ad_data){
-                            if(!in_array($ad_data->id,$mortgageValueIds)){
-                                array_push($mortgageValueIds,$ad_data->id);
+                            if(!in_array($ad_data->advisorId,$mortgageValueIds)){
+                                array_push($mortgageValueIds,$ad_data->advisorId);
                             }
                         }
                     }
                 }
+                if(count($advisorArr)>0){
+                    $advisorArr = array_intersect($advisorArr, $mortgageValueIds);
+                }else{
+                    $advisorArr = array_unique($mortgageValueIds);
+                }
             }
-
-            if(count($advisorArr) && count($AdviceAreaIds) && count($mortgageValueIds)){
-                $advisorArr = array_intersect($advisorArr, $AdviceAreaIds, $mortgageValueIds);
-            }else if(count($advisorArr) && count($AdviceAreaIds)){
-                $advisorArr = array_intersect($advisorArr, $AdviceAreaIds);
-            }else if(count($advisorArr) && count($mortgageValueIds)){
-                $advisorArr = array_intersect($advisorArr, $mortgageValueIds);
-            }else if(!count($advisorArr) && count($mortgageValueIds)){
-                $advisorArr = $mortgageValueIds;
-            }else if(!count($advisorArr) && count($AdviceAreaIds)){
-                $advisorArr = $AdviceAreaIds;
-            }else if(!count($mortgageValueIds) && count($AdviceAreaIds)){
-                $advisorArr = array_intersect($AdviceAreaIds, $mortgageValueIds);
-            }
-
             if(count($advisorArr)){
-                $query = $query->whereIn('id',$advisorArr);
+                $query = $query->whereIn('advisorId',$advisorArr);
             }
             $data = $query->orderBy('id','DESC')->groupBy('id')->get();
             $getCustomerPostalDetails = PostalCodes::where('Postcode', '=', $search['post_code'])->first();

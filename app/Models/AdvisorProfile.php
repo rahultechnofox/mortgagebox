@@ -106,15 +106,12 @@ class AdvisorProfile extends Model
             if(isset($search['post_code']) && $search['post_code']!=''){
                 $query = $query->where('postcode',$search['post_code']);
             }
-
             if(isset($search['gender']) && $search['gender']!=''){
                 $query = $query->where('gender',$search['gender']);
             }
-
             if(isset($search['language']) && $search['language']!=''){
                 $query = $query->where('language',$search['language']);
             }
-
             if(isset($search['how_soon']) && count($search['how_soon'])){
                 $advisorhowSoon = array(-1);
                 for($i=0;$i<count($search['how_soon']);$i++){

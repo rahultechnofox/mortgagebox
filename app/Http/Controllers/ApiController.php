@@ -1216,6 +1216,12 @@ class ApiController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
         $requestTime = [];
+        $timeVal='';
+        $service=0;
+        $discountArr=array();
+        $timeArr=array();
+
+        $discount='';
         $ltv_max = $userPreferenceCustomer->ltv_max;
         $lti_max = $userPreferenceCustomer->lti_max;
         if(!empty($userPreferenceCustomer)) {
@@ -1229,7 +1235,82 @@ class ApiController extends Controller
                 $requestTime[] = "in more than 3 months";
             }
         }
+        if(isset($_GET['service_id']) && $_GET['service_id']!=''){
+            $service = $_GET['service_id'];
+        }
         
+        if(isset($_GET['discount']) && $_GET['discount']!=''){
+            $discount = $_GET['discount'];
+            $discountArr=array(-1);
+            if($discount=='50%_off'){
+                $bid = AdvisorBids::where('discount_cycle','Second cycle')->get();
+                foreach($bid as $bid_data){
+                    if(!in_array($bid_data->area_id,$discountArr)){
+                        array_push($discountArr,$bid_data->area_id);
+                    }
+                }
+            }
+            if($discount=='75%_off'){
+                $bidTh = AdvisorBids::where('discount_cycle','Third cycle')->get();
+                foreach($bid as $bidTh_data){
+                    if(!in_array($bidTh_data->area_id,$discountArr)){
+                        array_push($discountArr,$bidTh_data->area_id);
+                    }
+                }
+            }
+            if($discount=='free'){
+                $bidFou = AdvisorBids::where('discount_cycle','Fourth cycle')->get();
+                foreach($bidFou as $bidFou_data){
+                    if(!in_array($bidFou_data->area_id,$discountArr)){
+                        array_push($discountArr,$bidFou_data->area_id);
+                    }
+                }
+            }
+        }
+
+        if(isset($_GET['time']) && $_GET['time']!=''){
+            $timeVal = $_GET['time'];
+            $timeArr = array(-1);
+            if($timeVal!='') {
+                if($timeVal=='last_hour'){
+                    $last = Advice_area::where('advice_areas.created_at','>=',DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)'))->get();
+                    foreach($last as $last_data){
+                        if(!in_array($last_data->id,$timeArr)){
+                            array_push($timeArr,$last_data->id);
+                        }
+                    }
+                }
+                if($timeVal=='today'){
+                    $today = Advice_area::where('advice_areas.created_at',Carbon::today());
+                    foreach($today as $today_data){
+                        if(!in_array($today_data->id,$timeArr)){
+                            array_push($timeArr,$today_data->id);
+                        }
+                    }
+                }
+                if($timeVal=='yesterday'){
+                    $yesterday = Advice_area::where('advice_areas.created_at',Carbon::yesterday());
+                    foreach($yesterday as $yesterday_data){
+                        if(!in_array($yesterday_data->id,$timeArr)){
+                            array_push($timeArr,$yesterday_data->id);
+                        }
+                    }
+                }
+                if($timeVal=='less_than_3_days'){
+                    $less_3 = Advice_area::where('advice_areas.created_at', '>', Carbon::today()->subDays(3))->where('created_at', '<', Carbon::today());
+                    foreach($less_3 as $less_3_data){
+                        if(!in_array($less_3_data->id,$timeArr)){
+                            array_push($timeArr,$less_3_data->id);
+                        }
+                    }
+                }
+            }
+            if(count($discountArr)>0){
+                $discountArr = array_intersect($discountArr, $timeArr);
+            }else{
+                $discountArr = array_unique($timeArr);
+            }
+        }
         // TODO: Ltv max and Lti Max need to check for filter
         $userPreferenceProduct = AdviserProductPreferences::where('adviser_id','=',$user->id)->get();
         $service_type = array();
@@ -1237,8 +1318,8 @@ class ApiController extends Controller
             foreach($userPreferenceProduct as $userPreferenceProduct_data){
                 array_push($service_type,$userPreferenceProduct_data->service_id);
             }
+            
         }
-        // DB::enableQueryLog();
         $advice_area_arr = array();
         $advice = Advice_area::where('inquiry_adviser_id','!=',0)->where('inquiry_adviser_id','!=',$user->id)->where('inquiry_match_me',1)->where('area_status',0)->get();
         foreach($advice as $advice_data){
@@ -1247,12 +1328,19 @@ class ApiController extends Controller
                 array_push($advice_area_arr,$advice_data->id);
             }
         }
+        if(count($advice_area_arr)){
+            if(count($discountArr)>0){
+                $discountArr = array_intersect($discountArr, $advice_area_arr);
+            }else{
+                $discountArr = array_unique($advice_area_arr);
+            }
+        }
+        //this is code of search area id array
+        // whereIn('advice_areas.id',$discountArr)->
         $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('area_status',0)
-            // ->whereIn('advice_areas.id',$advice_area_arr)
-            ->where(function($query) use ($userPreferenceCustomer){
+            ->where('area_status',0)->where(function($query) use ($userPreferenceCustomer){
                 if(!empty($userPreferenceCustomer)) {
                     if($userPreferenceCustomer->self_employed == 1){
                         $query->orWhere('advice_areas.self_employed','=',$userPreferenceCustomer->self_employed);
@@ -1278,8 +1366,7 @@ class ApiController extends Controller
                         }
                     });
                 }
-        })
-        ->where(function($query) use ($service_type){
+        })->where(function($query) use ($service_type){
                 if(!empty($service_type)) {
                     $query->where(function($q) use ($service_type) {
                         foreach($service_type as $sitem){
@@ -1288,8 +1375,7 @@ class ApiController extends Controller
                     });
                 }
             
-        })
-        ->where(function($query) use ($ltv_max){
+        })->where(function($query) use ($ltv_max){
             if($ltv_max != "") {
                
                 $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));
@@ -1301,13 +1387,11 @@ class ApiController extends Controller
                 $query->where('advice_areas.lti_max','<=',chop($lti_max,"x"));
                 $query->where('advice_areas.lti_max','>',0);
             }
-        })
-        // ->where(function($query) use ($advice_area_arr){
-        //     if(count($advice_area_arr)) {
-        //         $query->whereIn('advice_areas.id',$advice_area_arr);
-        //     }
-        // })
-        ->whereNotIn('advice_areas.id',function($query) use ($user){
+        })->where(function($query) use ($service){
+            if($service != 0) {
+                $query->where('advice_areas.service_type_id',$service);
+            }
+        })->whereNotIn('advice_areas.id',function($query) use ($user){
             $query->select('area_id')->from('advisor_bids')->where('advisor_id','=',$user->id);
         })->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
         ->groupBy('advice_areas.'.'user_id')
@@ -1675,62 +1759,47 @@ class ApiController extends Controller
             $status_arr = array(-1);
             foreach($request->status as $status_data){
                 if($status_data=='accepted'){
-                    $status_need = Advice_area::where('area_status',1)->get();
-                    // $status_need = AdvisorBids::where('advisor_status',1)->get();
+                    $status_need = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
                     if(count($status_need)){
                         foreach($status_need as $status_need_data){
-                            array_push($status_arr,$status_need_data->id);
+                            array_push($status_arr,$status_need_data->area_id);
                         }
                     }
-                    
                 }
                 if($status_data=='sole_adviser' || $status_data=='hired'){
-                    $hired = Advice_area::where('area_status',2)->get();
-                    // $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
+                    $hired = AdvisorBids::where('advisor_id',$user->id)->where('status',1)->get();
                     if(count($hired)){
                         foreach($hired as $hired_data){
-                            array_push($status_arr,$hired_data->id);
+                            array_push($status_arr,$hired_data->area_id);
                         }
                     }
                 }
                 if($status_data=='completed'){
-                    $complete = Advice_area::where('area_status',3)->get();
-                    // $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
-                    if(count($complete)){
-                        foreach($complete as $complete_data){
-                            array_push($status_arr,$complete_data->id);
+                    $completed = AdvisorBids::where('advisor_id',$user->id)->where('status',2)->where('advisor_status',1)->get();
+                    if(count($completed)){
+                        foreach($completed as $hired_data){
+                            array_push($status_arr,$hired_data->area_id);
                         }
                     }
-                    // $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
-                    // foreach($status_need as $status_need_data){
-                    //     array_push($status_arr,$status_need_data->area_id);
-                    // }
                 }
                 if($status_data=='no_response'){
-                    $no_response = Advice_area::where('area_status',5)->get();
-                    // $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
+                    $no_response = Advice_area::where('advisor_id',0)->get();
                     if(count($no_response)){
                         foreach($no_response as $no_response_data){
                             array_push($status_arr,$no_response_data->id);
                         }
                     }
-                    // $status_need = AdvisorBids::where('status',2)->where('advisor_status',1)->get();
-                    // foreach($status_need as $status_need_data){
-                    //     array_push($status_arr,$status_need_data->area_id);
-                    // }
-                }  
+                }
                 if($status_data=='lost'){
-                    $lost = Advice_area::where('area_status',4)->get();
-                    // $status_need = AdvisorBids::where('status',1)->where('advisor_status',1)->get();
-                    if(count($lost)){
-                        foreach($lost as $lost_data){
-                            array_push($status_arr,$lost_data->id);
+                    $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
+                    if(count($AllMyBids)){
+                        foreach($AllMyBids as $bids){
+                            $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->first();
+                            if($dataLost){
+                                array_push($status_arr,$bids->area_id);
+                            }
                         }
                     }
-                    // $status_need = AdvisorBids::where('advisor_status',2)->get();
-                    // foreach($status_need as $status_need_data){
-                    //     array_push($status_arr,$status_need_data->area_id);
-                    // }
                 }
             }
             if(count($advisorAreaArr)>0){
@@ -1781,14 +1850,14 @@ class ApiController extends Controller
                 $query->where(function($q) use ($lead_submitted) {
                     foreach($lead_submitted as $item ){
                         if($item=="three_month"){
-                            $q->where('area_status','!=',0)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 3 month")));
+                            $q->where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 3 month")));
                         }else if($item=="six_month") {
-                            $q->where('area_status','!=',0)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 6 month")));
+                            $q->where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 6 month")));
                         }else if($item=="last_year") {
-                            $q->where('area_status','!=',0)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 12 month")));
+                            $q->where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 12 month")));
                         }else if($item=="this_year") {
-                            $q->where('area_status','!=',0)->where('advice_areas.created_at','>=',date("Y").'-01-01');
-                        }                      
+                            $q->where('advice_areas.created_at','>=',date("Y").'-01-01');
+                        } 
                     }
                 });
             }
@@ -1932,20 +2001,27 @@ class ApiController extends Controller
             // }else{
             //     $show_status = "Live Leads";     
             // }
-            if($advice_area[$key]->area_status==0){
-                $show_status = "Live Leads";
-            }else if($advice_area[$key]->area_status==1) {
-                $show_status = "Accepted"; 
-            }else if($advice_area[$key]->area_status==2) {
-                $show_status = "Hired"; 
-            }else if($advice_area[$key]->area_status==3) {
-                $show_status = "Closed"; 
-            }else if($advice_area[$key]->area_status==4) {
-                $show_status = "Lost"; 
-            }else if($advice_area[$key]->area_status==5) {
-                $show_status = "Not Proceeding"; 
-            }else{
-                $show_status = "Live Leads";     
+            $show_status = "Accepted"; 
+            $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
+            if($bidDetailsStatus){
+                if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
+                    $show_status = "Accepted";
+                }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
+                    $show_status = "Hired"; 
+                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
+                    $show_status = "Completed"; 
+                }
+                $no_response = Advice_area::where('id',$item->id)->where('advisor_id',0)->get();
+                if(count($no_response)){
+                    $show_status = "No Response";
+                }
+                $AllMyBids = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->where('status',0)->first();
+                if($AllMyBids){
+                    $dataLost = Advice_area::where('id',$AllMyBids->area_id)->where('advisor_id','!=',$user->id)->first();
+                    if($dataLost){
+                        $show_status = "Lost";
+                    }
+                }
             }
             $advice_area[$key]->show_status = $show_status;
 
@@ -2336,16 +2412,14 @@ class ApiController extends Controller
     function advisorAcceptedLeads()
     {
         $user = JWTAuth::parseToken()->authenticate();
-        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
-        ->join('users', 'advice_areas.user_id', '=', 'users.id')
-        ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-        ->where('advisor_bids.advisor_status', '=', 1)
-        ->where('advisor_bids.advisor_id', '=', $user->id)
-        ->with('total_bid_count')
-        ->with('service')
-        ->orderBy('id','DESC')
-        ->paginate();
-
+        $post['user_id'] = $user->id;
+        if(isset($_GET['lead']) && $_GET['lead']){
+            $post['lead'] = $_GET['lead'];
+        }
+        if(isset($_GET['time']) && $_GET['time']){
+            $post['time'] = $_GET['time'];
+        }
+        $advice_area =  Advice_area::getAcceptedLeads($post);
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
@@ -2449,32 +2523,63 @@ class ApiController extends Controller
             // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
             
             $advice_area[$key]->lead_address = $address;
-            // 
-            // $show_status = "Live Leads"; 
+            $show_status = "Accepted"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
-            $show_status = "Live Leads"; 
-            if(!empty($bidDetailsStatus)) {
-                $checkStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','!=',$user->id)->where('status',1)->where('advisor_status',1)->count();
-                if($checkStatus!=0){
-                    $show_status = "Lost";
-                    $advice_area[$key]->is_bided = 1;
-                }else{
-                    $advice_area[$key]->is_bided = 0;
-                    if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
-                        $show_status = "Accepted";
-                    }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-                        $show_status = "Completed"; 
-                    }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
-                        $show_status = "Hired"; 
-                    }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+            if($bidDetailsStatus){
+                if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
+                    $show_status = "Accepted";
+                }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
+                    $show_status = "Hired"; 
+                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
+                    $show_status = "Completed"; 
+                }
+                $no_response = Advice_area::where('id',$item->id)->where('advisor_id',0)->get();
+                if(count($no_response)){
+                    $show_status = "No Response";
+                }
+                $AllMyBids = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->where('status',0)->first();
+                if($AllMyBids){
+                    $dataLost = Advice_area::where('id',$AllMyBids->area_id)->where('advisor_id','!=',$user->id)->first();
+                    if($dataLost){
                         $show_status = "Lost";
-                    }else{
-                        $show_status = "Live Leads";    
                     }
                 }
-                
             }
-            $advice_area[$key]->show_status = $show_status;
+            // $show_status = "Live Leads"; 
+            // if(!empty($bidDetailsStatus)) {
+            //     $checkStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','!=',$user->id)->where('status',1)->where('advisor_status',1)->count();
+            //     if($checkStatus!=0){
+            //         $show_status = "Lost";
+            //         $advice_area[$key]->is_bided = 1;
+            //     }else{
+            //         $advice_area[$key]->is_bided = 0;
+            //         if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
+            //             $show_status = "Accepted";
+            //         }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
+            //             $show_status = "Completed"; 
+            //         }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
+            //             $show_status = "Hired"; 
+            //         }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
+            //             $show_status = "Lost";
+            //         }else{
+            //             $show_status = "Live Leads";    
+            //         }
+            //     }
+                
+            // }
+            // $show_status = "Accepted";
+            // if($advice_area[$key]->area_status==1){
+            //     $show_status = "Accepted";
+            // }else if($advice_area[$key]->area_status==2){
+            //     $show_status = "Hired"; 
+            // }else if($advice_area[$key]->area_status==3){
+            //     $show_status = "Completed"; 
+            // }else if($advice_area[$key]->area_status==4){
+            //     $show_status = "Lost";
+            // }else if($advice_area[$key]->area_status==5){
+            //     $show_status = "No Response";
+            // }
+            $advice_area[$key]->show_status = (isset($show_status))?$show_status:'';
             $channelIds = array(-1);
             $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
             foreach ($channelID as $chanalesR) {

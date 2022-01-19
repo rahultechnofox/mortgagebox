@@ -184,10 +184,10 @@ class Advice_area extends Model
                 for($i=0;$i<count($search['mortgage_value']);$i++){
                     $explode = explode("_",$search['mortgage_value'][$i]);
                     if($explode[0]>0){
-                        $explode[0] = $explode[0]."000";
+                        $explode[0] = (int)$explode[0]."000";
                     }
                     if($explode[1]>0){
-                        $explode[1] = $explode[1]."000";
+                        $explode[1] = (int)$explode[1]."000";
                     }
                     
                     $ad = Advice_area::where('size_want','>',$explode[0])->where('size_want','<=',$explode[1])->get();
@@ -197,7 +197,6 @@ class Advice_area extends Model
                         }
                     }
                 }
-                // echo json_encode($mortgageValueIds);
                 if(count($advisorAreaArr)>0){
                     $advisorAreaArr = array_intersect($advisorAreaArr, $mortgageValueIds);
                 }else{
@@ -209,7 +208,7 @@ class Advice_area extends Model
                 $datesAreaIds = array(-1);
                 foreach($search['lead_submitted'] as $item){
                     if($item=='today'){
-                        $today = Advice_area::where('created_at', Carbon::today())->get();
+                        $today = Advice_area::where('created_at', '>=',Carbon::today())->get();
                         if(count($today)){
                             foreach($today as $today_data){
                                 array_push($datesAreaIds,$today_data->id);
@@ -217,7 +216,7 @@ class Advice_area extends Model
                         }
                     }
                     if($item=='yesterday'){
-                        $yesterday = Advice_area::where('created_at', Carbon::yesterday())->get();
+                        $yesterday = Advice_area::where('created_at','>=', Carbon::yesterday())->where('created_at', '<=',Carbon::today())->get();
                         if(count($yesterday)){
                             foreach($yesterday as $yesterday_data){
                                 array_push($datesAreaIds,$yesterday_data->id);
@@ -225,7 +224,7 @@ class Advice_area extends Model
                         }
                     }
                     if($item=='last_hour'){
-                        $last_hour = Advice_area::where('created_at', date("Y-m-d H:i:s", strtotime('-1 hour')))->get();
+                        $last_hour = Advice_area::where('created_at','>=' ,date("Y-m-d H:i:s", strtotime('-1 hour')))->get();
                         if(count($last_hour)){
                             foreach($last_hour as $last_hour_data){
                                 array_push($datesAreaIds,$last_hour_data->id);
@@ -249,8 +248,7 @@ class Advice_area extends Model
                         }
                     }
                 }
-                
-                
+               // echo json_encode($datesAreaIds);exit;
                 if(count($advisorAreaArr)>0){
                     $advisorAreaArr = array_intersect($advisorAreaArr, $datesAreaIds);
                 }else{
@@ -302,7 +300,6 @@ class Advice_area extends Model
                     $advisorAreaArr = array_unique($statusIds);
                 }
             }
-            
             if(isset($search['promotion']) && count($search['promotion'])){
                 $promotionIds = array(-1);
                 foreach($search['promotion'] as $item){
@@ -339,19 +336,15 @@ class Advice_area extends Model
                         }
                     }
                 }
-                
-                
                 if(count($advisorAreaArr)>0){
                     $advisorAreaArr = array_intersect($advisorAreaArr, $promotionIds);
                 }else{
                     $advisorAreaArr = array_unique($promotionIds);
                 }
             }
-    
             if(count($advisorAreaArr)){
                 $query = $query->whereIn('id',$advisorAreaArr);
             }
-
             $data = $query->with('service')->orderBy('id','DESC')->paginate();
             if(count($data)){
                 foreach($data as $key=> $item) {
@@ -413,7 +406,6 @@ class Advice_area extends Model
                                 $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
                                 $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
                             }
-                            
                         }
                     }
                     $lead_value = "";
@@ -432,6 +424,45 @@ class Advice_area extends Model
                 }
             }
             return $data;
+        }catch (\Exception $e) {
+            // echo json_encode($e->getMessage());exit;
+            return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
+        }
+    }
+
+    public static function getAcceptedLeads($search){
+        try {
+            $query = new Self;
+            if(isset($search['lead']) && $search['lead']!=''){
+                if($search['lead']=='live_leads'){
+                    $query = $query->where('advice_areas.area_status',1);
+                }else if($search['lead']=='hired'){
+                    $query = $query->where('advice_areas.area_status',2);
+                }else if($search['lead']=='completed'){
+                    $query = $query->where('advice_areas.area_status',3);
+                }else if($search['lead']=='lost'){
+                    $query = $query->where('advice_areas.area_status',4);
+                }
+            }
+            if(isset($search['time']) && $search['time']!=''){
+                if($search['time']=='this_month'){
+                    $query = $query->where('advice_areas.created_at','>',Carbon::today()->subDays(30));
+                }else if($search['time']=='quarter'){
+                    $query = $query->where('advice_areas.created_at','>',Carbon::today()->subDays(183));
+                }else if($search['time']=='year'){
+                    $query = $query->where('advice_areas.created_at','>',Carbon::today()->subDays(365));
+                }
+            }
+            $advice_area =  $query->select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
+            ->join('users', 'advice_areas.user_id', '=', 'users.id')
+            ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
+            ->where('advisor_bids.advisor_status', '=', 1)
+            ->where('advisor_bids.advisor_id', '=',$search['user_id'])
+            ->with('total_bid_count')
+            ->with('service')
+            ->orderBy('id','DESC')
+            ->paginate();
+            return $advice_area;
         }catch (\Exception $e) {
             // echo json_encode($e->getMessage());exit;
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

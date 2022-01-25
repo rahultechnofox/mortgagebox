@@ -107,7 +107,9 @@ class AdvisorProfile extends Model
                 $query = $query->where('postcode',$search['post_code']);
             }
             if(isset($search['gender']) && $search['gender']!=''){
-                $query = $query->where('gender',$search['gender']);
+                if($search['gender']!='Any'){
+                    $query = $query->where('gender',$search['gender']);
+                }
             }
             if(isset($search['language']) && $search['language']!=''){
                 $query = $query->where('language',$search['language']);
@@ -155,14 +157,19 @@ class AdvisorProfile extends Model
             if(isset($search['mortgage_value']) && count($search['mortgage_value'])){
                 $mortgageValueIds = array(-1);
                 for($i=0;$i<count($search['mortgage_value']);$i++){
-                    $explode = explode("_",$search['mortgage_value'][$i]);
-                    if($explode[0]>0){
-                        $explode[0] = $explode[0]."000";
+                    if($search['mortgage_value'][$i]==1000){
+                        $val = $search['mortgage_value'][$i]."000";
+                        $ad = AdvisorProfile::where('mortgage_max_size','>',$val)->get();
+                    }else{
+                        $explode = explode("_",$search['mortgage_value'][$i]);
+                        if($explode[0]>0){
+                            $explode[0] = $explode[0]."000";
+                        }
+                        if($explode[1]>0){
+                            $explode[1] = $explode[1]."000";
+                        }
+                        $ad = AdvisorProfile::where('mortgage_min_size','>',$explode[0])->where('mortgage_max_size','<=',$explode[1])->get();
                     }
-                    if($explode[1]>0){
-                        $explode[1] = $explode[1]."000";
-                    }
-                    $ad = AdvisorProfile::where('mortgage_min_size','>',$explode[0])->where('mortgage_max_size','<=',$explode[1])->get();
                     if(count($ad)){
                         foreach($ad as $ad_data){
                             if(!in_array($ad_data->advisorId,$mortgageValueIds)){

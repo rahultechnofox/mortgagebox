@@ -77,7 +77,7 @@ class CompanyController extends Controller
      */
     public function show($id) {
         $data['company_detail'] = companies::getCompanyDetail($id);
-        // echo json_encode($data['company_detail']);exit;
+        echo json_encode($data['company_detail']);exit;
         return view('company.show',$data);
     }
     /**

@@ -143,7 +143,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Name:</h6>
-                                        <small>{{isset($company_detail->adviser) ? $company_detail->adviser->display_name : '--' }}</small>
+                                        <small>{{isset($company_detail->company_data) ? $company_detail->company_data->display_name : '--' }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -151,7 +151,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Contact No.:</h6>
-                                        <small>{{isset($company_detail->adviser) ? $company_detail->adviser->phone_number : '--' }}</small>
+                                        <small>{{isset($company_detail->company_data) ? $company_detail->company_data->phone_number : '--' }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -160,7 +160,7 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">Email:</h6>
-                                        <small>{{isset($company_detail->adviser) ? $company_detail->adviser->email : '--' }}</small>
+                                        <small>{{isset($company_detail->company_data) ? $company_detail->company_data->email : '--' }}</small>
                                     </div>
                                 </div>
                             </div>

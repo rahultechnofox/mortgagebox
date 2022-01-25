@@ -80,6 +80,7 @@ class companies extends Model
             foreach($data as $row){
                 $success_per = 0;
                 $team_arr = array(-1);
+                $row->company_admin_data = AdvisorProfile::where('id',$row->company_admin)->first();
                 $admin = CompanyTeamMembers::where('company_id',$row->id)->where('isCompanyAdmin',1)->first();
                 if($admin){
                     $ad_user = AdvisorProfile::where('email',$admin->email)->first();

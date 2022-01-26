@@ -3236,11 +3236,12 @@ class ApiController extends Controller
     }
 
     public function getAllServiceType() {
+        $user = JWTAuth::parseToken()->authenticate();
         $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
         if(!empty($result)) {
             foreach($result as $row){
-
                 $row->value = 0;
+                $row->service_count = Advice_area::where('service_type_id',$row->id)->count();
             }
             return response()->json([
                 'status' => true,
@@ -3506,6 +3507,7 @@ class ApiController extends Controller
                     if($advice_read_data_ad){
                         $advice_read_data->advisor_data = $advice_read_data_ad;
                     }
+                    $advice_read_data->adviser_count = AdvisorBids::where('advisor_id',$advice_read_data->id)->count();
                 }
             }
             return response()->json([
@@ -3815,6 +3817,151 @@ class ApiController extends Controller
         // $id = $user->id;
         
         // echo json_encode($data);exit;
+        return view('advisor.invoice',$data);
+    }
+
+    /**
+     * Show Invoice
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function getCountFilter(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        $aStatus = array(-1);
+        if($user) {
+            $data['read'] = AdviceAreaRead::where('adviser_id',$user->id)->count();
+            $data['unread'] = 0;
+            $area = AdviceAreaRead::where('adviser_id',$user->id)->get();
+            if(count($area)){
+                foreach($area as $default_data){
+                    array_push($aStatus,$default_data->area_id);
+                }
+            }
+            if(count($aStatus)){
+                $data['unread'] = Advice_area::whereNotIn('id',$aStatus)->count();
+            }
+            $data['not_intrest'] = AdvisorBids::where('advisor_id',$user->id)->where('advisor_status',2)->count();
+            $data['none'] = AdvisorBids::where('is_discounted', 0)->count();
+            $data['third'] = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Third cycle")->count();
+            $data['half'] = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Second cycle")->count();
+            $data['free'] = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Fourth cycle")->count();
+            $data['today'] = Advice_area::where('created_at', '>=',Carbon::today())->count();
+            $data['anytime'] = Advice_area::count();
+            $data['yesterday'] = Advice_area::where('created_at','>=', Carbon::yesterday())->where('created_at', '<=',Carbon::today())->count();
+            $data['last_hour'] = Advice_area::where('created_at','>=' ,date("Y-m-d H:i:s", strtotime('-1 hour')))->count();
+            $data['three_days'] = Advice_area::where('created_at', '>', Carbon::today()->subDays(3))->count();
+            $data['one_week'] = Advice_area::where('created_at', '>', Carbon::today()->subDays(7))->count();
+            $data['preference'] = Advice_area::where('fees_preference',0)->where('status',1)->count();
+            $data['preference_no'] = Advice_area::where('fees_preference',1)->where('status',1)->count();
+            return response()->json([
+                'status' => true,
+                'message' => 'Count fetched successfully',
+                'data'=> $data
+            ], Response::HTTP_OK);          
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+        $user = JWTAuth::parseToken()->authenticate();
+        // $id = $user->id;
+        
+        // echo json_encode($data);exit;
+        return view('advisor.invoice',$data);
+    }
+
+    public function getCountAcceptedFilter(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        $aStatus = array(-1);
+        if($user) {
+            $data['unread'] = 0;
+            $data['unread'] = ChatModel::where('from_user_id',$user->id)->where('to_user_id_seen',0)->count();
+            $data['accepted'] = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->count();
+            $data['hired'] = AdvisorBids::where('advisor_id',$user->id)->where('status',1)->count();
+            $data['completed'] = AdvisorBids::where('advisor_id',$user->id)->where('status',2)->where('advisor_status',1)->count();
+            $data['no_response'] = Advice_area::where('advisor_id',0)->count();
+            $data['lost'] = 0;
+            $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
+            if(count($AllMyBids)){
+                foreach($AllMyBids as $bids){
+                    $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->first();
+                    if($dataLost){
+                        $data['lost'] = $data['lost'] + 1;
+                    }
+                }
+            }
+            $data['three_month'] = Advice_area::where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 3 month")))->count();
+            $data['six_month'] = Advice_area::where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 6 month")))->count();
+            $data['last_year'] = Advice_area::where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 12 month")))->count();
+            $data['this_year'] = Advice_area::where('advice_areas.created_at','>=',date("Y").'-01-01')->count();
+            $data['anytime'] = Advice_area::count();
+            return response()->json([
+                'status' => true,
+                'message' => 'Count fetched successfully',
+                'data'=> $data
+            ], Response::HTTP_OK);          
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
+        return view('advisor.invoice',$data);
+    }
+
+    public function getMortgageSize(Request $request) {
+        $user = JWTAuth::parseToken()->authenticate();
+        $mortgage_size = array();
+        if($user) {
+            $mortgage_size[0]['key'] = '0_74';
+            $mortgage_size[0]['value'] = '0_74';
+            $mortgage_size[0]['name'] = '£0-£75k';
+
+            $mortgage_size[1]['key'] = '75_249';
+            $mortgage_size[1]['value'] = '75_249';
+            $mortgage_size[1]['name'] = '£75-£249k';
+
+            $mortgage_size[2]['key'] = '250_499';
+            $mortgage_size[2]['value'] = '250_499';
+            $mortgage_size[2]['name'] = '£250-£499k';
+
+            $mortgage_size[3]['key'] = '500_999';
+            $mortgage_size[3]['value'] = '500_999';
+            $mortgage_size[3]['name'] = '£500-£900k';
+
+            $mortgage_size[4]['key'] = '1000';
+            $mortgage_size[4]['value'] = '1000';
+            $mortgage_size[4]['name'] = '£1m+';
+            for($i=0;$i<count($mortgage_size);$i++){
+                if($mortgage_size[$i]['key']==1000){
+                    $explode = $mortgage_size[$i]['key']."000";                    
+                    $mortgage_size[$i]['size_count'] = Advice_area::where('size_want','>',$explode)->count();
+                }else{
+                    $explode = explode("_",$mortgage_size[$i]['key']);
+                    if($explode[0]>0){
+                        $explode[0] = (int)$explode[0]."000";
+                    }
+                    if($explode[1]>0){
+                        $explode[1] = (int)$explode[1]."000";
+                    }
+                    $mortgage_size[$i]['size_count'] = Advice_area::where('size_want','>',$explode[0])->where('size_want','<=',$explode[1])->count();
+                }
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Mortagage size fetched successfully',
+                'data'=> $mortgage_size
+            ], Response::HTTP_OK);          
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Token Expired.',
+                'data'=> []
+            ], Response::HTTP_OK);
+        }
         return view('advisor.invoice',$data);
     }
     

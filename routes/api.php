@@ -60,6 +60,9 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('startChat/',  [ApiController::class, 'startChat']);
     Route::post('sendMessage/',  [ApiController::class, 'sendMessage']);
     Route::get('advisorAcceptedLeads/',  [ApiController::class, 'advisorAcceptedLeads']);
+    Route::get('getCountFilter/',  [ApiController::class, 'getCountFilter']);
+    Route::get('getCountAcceptedFilter/',  [ApiController::class, 'getCountAcceptedFilter']);
+    Route::get('getMortgageSize/',  [ApiController::class, 'getMortgageSize']);
     Route::post('getTeamMember/',  [ApiController::class, 'getTeamMember']);
     Route::post('updateCompanyAdmin/',  [ApiController::class, 'updateCompanyAdmin']);
 

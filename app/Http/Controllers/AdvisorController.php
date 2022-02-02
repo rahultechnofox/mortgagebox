@@ -1236,6 +1236,8 @@ class AdvisorController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $post = $request->all();
         $userDetails = User::where('id', '=', $request->advisor_id)->first();
+        $advisor = AdvisorProfile::where('advisorId', $request->advisor_id)->first();
+
        
 
             $ltv_max  = ($request->prop_value)/$request->mortgage_required;
@@ -1263,6 +1265,19 @@ class AdvisorController extends Controller
             if($service){
                 $service_name = $service->name;
             }
+            $newArr = array(
+                'name'=>$request->name,
+                'recevier_name'=>$advisor->display_name,
+                'email'=>$request->email,
+                'mortgage_required' => number_format($post['mortgage_required'],0),
+                'prop_value' => number_format($post['prop_value'],0),
+                'combined_income' => number_format($post['combined_income'],0),
+                'how_soon' => $post['how_soon'],
+                'post_code' => $post['post_code'],
+                'anything_else' => $post['anything_else'],
+            );
+            $c = \Helpers::sendEmail('emails.enquiry',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – New Enquiry from '.$request->name,'','');
+
             $this->saveNotification(array(
                 'type'=>'9', // 1:
                 'message'=>$request->name.' has directly contacted you regarding a '.$request->mortgage_required.' '.$service_name.' mortgage need',// 1:
@@ -1272,105 +1287,7 @@ class AdvisorController extends Controller
                 'area_id'=>$advice_area->id,// 1:
                 'notification_to'=>1
             ));
-            
         
-        // $msg = "";
-        // $msg .= "<table>"; 
-
-
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "Name";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->name;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>"; 
-
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "Email";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->email;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>";
-        
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "Mortgage Required";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->mortgage_required;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>";
-
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "Property Value";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->prop_value;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>";
-
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "Combined Income";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->combined_income;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>";
-
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "How soon do you need the mortgage?";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->how_soon;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>";
-
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "Postcode";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->post_code;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>";
-        
-        // $msg .= "<tr>"; 
-        // $msg .= "<th>"; 
-        // $msg .= "Is there anything else you feel is important?";
-        // $msg .= "</th>"; 
-        // $msg .= "<td>"; 
-        // $msg .= $request->anything_else;
-        // $msg .= "</td>"; 
-        // $msg .= "</tr>";
-
-        // $msg .= "</table>"; 
-
-        // $userDetails = User::where('id', '=', $request->advisor_id)->first();
-
-        // $headers = "From: mbox@technofox.co.in\r\n";
-        // $headers .= "Reply-To: mbox@technofox.co.in\r\n";
-        // $headers .= "MIME-Version: 1.0\r\n";
-        // $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-        // mail($userDetails->email, "New Enquiry", $msg,$headers);
-        //for discussion
-        $newArr = array(
-            'name'=>$request->name,
-            'email'=>$request->email,
-            'mortgage_required' => $post['mortgage_required'],
-            'prop_value' => $post['prop_value'],
-            'combined_income' => $post['combined_income'],
-            'how_soon' => $post['how_soon'],
-            'post_code' => $post['post_code'],
-            'anything_else' => $post['anything_else'],
-        );
-        $c = \Helpers::sendEmail('emails.enquiry',$newArr ,$request->email,$request->name,'Mortgagebox.co.uk – New Enquiry from '.$request->name,'','');
 
         return response()->json([
             'status' => true,
@@ -1382,18 +1299,35 @@ class AdvisorController extends Controller
         $userDetails = JWTAuth::parseToken()->authenticate();
         $userData = AdvisorProfile::where('advisorId',$userDetails->id)->first();
         if($userData){
+            $userData->profile_percent = 15;
+            if($userData->image!=''){
+                $userData->profile_percent = $userData->profile_percent + 20;
+            }
+            if($userData->short_description!=''){
+                $company = companies::where('id',$userData->company_id)->first();
+                if($company){
+                    if($company->company_about!=''){
+                        $userData->profile_percent = $userData->profile_percent + 15;
+                    }
+                }
+            }
+            $offer_data = AdvisorOffers::where('advisor_id', '=', $userData->id)->get();
+            if(count($offer_data)){
+                $userData->profile_percent = $user->profile_percent + 30;
+                $userData->offer = 1;
+            }else{
+                $userData->offer = 0;
+            }
+            if($userData->web_address!=''){
+                $userData->profile_percent = $userData->profile_percent + 20;
+            }
             if($userData->short_description!=''){
                 $company = companies::where('id',$userData->company_id)->first();
                 if($company){
                     $userData->company_about = $company->company_about;
                 }
             }
-            $offer_data = AdvisorOffers::where('advisor_id', '=', $userDetails->id)->get();
-            if(count($offer_data)){
-                $userData->offer = 1;
-            }else{
-                $userData->offer = 0;
-            }
+            
         }
         
         $matched_last_hour = DB::table('advice_areas')

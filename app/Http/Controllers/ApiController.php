@@ -977,7 +977,7 @@ class ApiController extends Controller
         $advice_area->unread_message_count = $unread_count_total[0]->count_message;
 
         if ($advice_area) {
-            // $advice_area->created_at = date("Y-m-d H:i A",strtotime($advice_area->created_at));
+            $advice_area->created_at_need = date("d-m-Y H:i",strtotime($advice_area->created_at));
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -1224,7 +1224,13 @@ class ApiController extends Controller
         $discount='';
         $ltv_max = $userPreferenceCustomer->ltv_max;
         $lti_max = $userPreferenceCustomer->lti_max;
+        $self = 0;
+        $non_uk_citizen = 0;
+        $adverse = 0;
         if(!empty($userPreferenceCustomer)) {
+            $self = $userPreferenceCustomer->self_employed;
+            $non_uk_citizen = $userPreferenceCustomer->non_uk_citizen;
+            $adverse = $userPreferenceCustomer->adverse_credit;
             if($userPreferenceCustomer->asap == 1) {
                 $requestTime[] = "as soon as possible";
             }
@@ -1340,22 +1346,24 @@ class ApiController extends Controller
         $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('area_status',0)->where(function($query) use ($userPreferenceCustomer){
-                if(!empty($userPreferenceCustomer)) {
-                    if($userPreferenceCustomer->self_employed == 1){
-                        $query->orWhere('advice_areas.self_employed','=',$userPreferenceCustomer->self_employed);
-                    }
-                    if($userPreferenceCustomer->non_uk_citizen == 1){
-                        $query->orWhere('advice_areas.non_uk_citizen','=',$userPreferenceCustomer->non_uk_citizen);
-                    }
-                    if($userPreferenceCustomer->adverse_credit == 1){
-                        $query->orWhere('advice_areas.adverse_credit','=',$userPreferenceCustomer->adverse_credit);
-                    }
-                    if($userPreferenceCustomer->fees_preference == 1){
-                        $query->orWhere('advice_areas.fees_preference','=',$userPreferenceCustomer->fees_preference);
-                    }
-                }
-        })->where(function($query) use ($requestTime){
+            ->where('area_status',0)->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)
+            // ->where(function($query) use ($userPreferenceCustomer){
+            //     if(!empty($userPreferenceCustomer)) {
+            //         if($userPreferenceCustomer->self_employed == 1){
+            //             $query->orWhere('advice_areas.self_employed','=',$userPreferenceCustomer->self_employed);
+            //         }
+            //         if($userPreferenceCustomer->non_uk_citizen == 1){
+            //             $query->orWhere('advice_areas.non_uk_citizen','=',$userPreferenceCustomer->non_uk_citizen);
+            //         }
+            //         if($userPreferenceCustomer->adverse_credit == 1){
+            //             $query->orWhere('advice_areas.adverse_credit','=',$userPreferenceCustomer->adverse_credit);
+            //         }
+            //         if($userPreferenceCustomer->fees_preference == 1){
+            //             $query->orWhere('advice_areas.fees_preference','=',$userPreferenceCustomer->fees_preference);
+            //         }
+            //     }
+        // })
+        ->where(function($query) use ($requestTime){
                 // if($requestTime != ""){
                 //     $query->where('advice_areas.request_time','=',$requestTime);
                 // }
@@ -1759,7 +1767,7 @@ class ApiController extends Controller
             $status_arr = array(-1);
             foreach($request->status as $status_data){
                 if($status_data=='accepted'){
-                    $status_need = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
+                    $status_need = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->where('advisor_status',1)->get();
                     if(count($status_need)){
                         foreach($status_need as $status_need_data){
                             array_push($status_arr,$status_need_data->area_id);
@@ -2523,7 +2531,7 @@ class ApiController extends Controller
             // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
             
             $advice_area[$key]->lead_address = $address;
-            $show_status = "Accepted"; 
+            // $show_status = "Accepted"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             if($bidDetailsStatus){
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){

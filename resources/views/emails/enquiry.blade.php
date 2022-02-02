@@ -65,7 +65,7 @@ table[class="table750"] {width: 100% !important;}
              <tr>
                 <td align="left" valign="top">
                    <font face="'Source Sans Pro', sans-serif" color="#1a1a1a" style="font-size: 45px; line-height: 45px; font-weight: 300; letter-spacing: -1.5px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #1a1a1a; font-size: 38px; line-height: 38px; font-weight: 300; letter-spacing: -1.5px;">Hey {{$name}},</span>
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #1a1a1a; font-size: 38px; line-height: 38px; font-weight: 300; letter-spacing: -1.5px;">Hey {{$recevier_name}},</span>
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">

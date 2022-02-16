@@ -1105,7 +1105,7 @@ class ApiController extends Controller
                 'email_verified_at' => Date('Y-m-d H:i:s'),
             ]);
         }
-        return redirect()->away(config('constants.urls.host_url')."?type=Activate");
+        return redirect()->away(config('constants.urls.host_url')."/adviser?type=Activate");
     }
     // MARK: Function for forgot password
     public function forgotPassword(Request $request)

@@ -158,19 +158,19 @@ class AdvisorController extends Controller
                 if($post['status']==1){
                     $postData['FCA_verified'] = date("Y-m-d H:i:s");
                     $postData['invalidate_fca'] = 0;
-                }else{
-                    $postData['FCA_verified'] = null;
-                    $postData['invalidate_fca'] = 1;
                     $advisor = AdvisorProfile::where('id',$post['id'])->first();
                     Notifications::create(array(
                         'type'=>'10', // 1:
                         'message'=>'Update your FCA Number', // 1:
-                        'read_unread'=>'0', // 1:
+                        'read_unread'=>'1', // 1:
                         'user_id'=>1,// 1:
                         'advisor_id'=>$advisor->advisorId, // 1:
                         'area_id'=>0,// 1:
                         'notification_to'=>1
                     ));
+                }else{
+                    $postData['FCA_verified'] = null;
+                    $postData['invalidate_fca'] = 1;
                 }
                 $user = AdvisorProfile::where('id',$post['id'])->update($postData);
                 if($user){
@@ -336,8 +336,20 @@ class AdvisorController extends Controller
     public function getAdvisorLinks()
     {
         $id = JWTAuth::parseToken()->authenticate();
-        $advisor_data = AdvisorProfile::select('web_address', 'facebook', 'twitter', 'linkedin_link', 'updated_at')->where('advisorId', '=', $id->id)->first();
+        $advisor_data = AdvisorProfile::select('web_address', 'facebook', 'twitter', 'linkedin_link', 'updated_at','web_address_update','fb_update','twitter_update','linkedin_update')->where('advisorId', '=', $id->id)->first();
         if ($advisor_data) {
+            if($advisor_data->web_address_update!=null){
+                $advisor_data->web_address_update = date("d-m-Y H:i A",strtotime($advisor_data->web_address_update));
+            }
+            if($advisor_data->fb_update!=null){
+                $advisor_data->fb_update = date("d-m-Y H:i A",strtotime($advisor_data->fb_update));
+            }
+            if($advisor_data->twitter_update!=null){
+                $advisor_data->twitter_update = date("d-m-Y H:i A",strtotime($advisor_data->twitter_update));
+            }
+            if($advisor_data->linkedin_update!=null){
+                $advisor_data->linkedin_update = date("d-m-Y H:i A",strtotime($advisor_data->linkedin_update));
+            }
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -365,7 +377,7 @@ class AdvisorController extends Controller
                 }
             }else{
                 $update_arr['web_address'] = $post['web_address'];
-                $update_arr['web_address_update'] = date("Y-m-d H:i:s");
+                // $update_arr['web_address_update'] = date("Y-m-d H:i:s");
             }
         }
         if(isset($post['facebook']) && $post['facebook']!=''){
@@ -376,7 +388,7 @@ class AdvisorController extends Controller
                 }
             }else{
                 $update_arr['facebook'] = $post['facebook'];
-                $update_arr['fb_update'] = date("Y-m-d H:i:s");
+                // $update_arr['fb_update'] = date("Y-m-d H:i:s");
             }
         }
         if(isset($post['twitter']) && $post['twitter']!=''){
@@ -387,7 +399,7 @@ class AdvisorController extends Controller
                 }
             }else{
                 $update_arr['twitter'] = $post['twitter'];
-                $update_arr['twitter_update'] = date("Y-m-d H:i:s");
+                // $update_arr['twitter_update'] = date("Y-m-d H:i:s");
             }
         }
         if(isset($post['linkedin_link']) && $post['linkedin_link']!=''){
@@ -398,7 +410,7 @@ class AdvisorController extends Controller
                 }
             }else{
                 $update_arr['linkedin_link'] = $post['linkedin_link'];
-                $update_arr['linkedin_update'] = date("Y-m-d H:i:s");
+                // $update_arr['linkedin_update'] = date("Y-m-d H:i:s");
             }
         }
         $advisorDetails = AdvisorProfile::where('id', '=',$advisor_data->id)->update($update_arr);
@@ -1298,6 +1310,38 @@ class AdvisorController extends Controller
     function advisorDashboard() {
         $userDetails = JWTAuth::parseToken()->authenticate();
         $userData = AdvisorProfile::where('advisorId',$userDetails->id)->first();
+        $requestTime = [];
+        $discount='';
+        $ltv_max = 0;
+        $lti_max = 0;
+        $self = 0;
+        $non_uk_citizen = 0;
+        $adverse = 0;
+        $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id',$userDetails->id)->first();
+        if(!empty($userPreferenceCustomer)) {
+            $ltv_max = $userPreferenceCustomer->ltv_max;
+            $lti_max = $userPreferenceCustomer->lti_max;
+            $self = $userPreferenceCustomer->self_employed;
+            $non_uk_citizen = $userPreferenceCustomer->non_uk_citizen;
+            $adverse = $userPreferenceCustomer->adverse_credit;
+            if($userPreferenceCustomer->asap == 1) {
+                $requestTime[] = "as soon as possible";
+            }
+            if($userPreferenceCustomer->next_3_month == 1) {
+                $requestTime[] = "in the next 3 months";
+            }
+            if($userPreferenceCustomer->more_3_month == 1) {
+                $requestTime[] = "in more than 3 months";
+            }
+        }
+        $userPreferenceProduct = AdviserProductPreferences::where('adviser_id',$userDetails->id)->get();
+        $service_type = array();
+        if(!empty($userPreferenceProduct)) {
+            foreach($userPreferenceProduct as $userPreferenceProduct_data){
+                array_push($service_type,$userPreferenceProduct_data->service_id);
+            }
+            
+        }
         if($userData){
             $userData->profile_percent = 15;
             if($userData->image!=''){
@@ -1306,14 +1350,15 @@ class AdvisorController extends Controller
             if($userData->short_description!=''){
                 $company = companies::where('id',$userData->company_id)->first();
                 if($company){
+                    $userData->company_about = $company->company_about;
                     if($company->company_about!=''){
                         $userData->profile_percent = $userData->profile_percent + 15;
                     }
                 }
             }
-            $offer_data = AdvisorOffers::where('advisor_id', '=', $userData->id)->get();
+            $offer_data = AdvisorOffers::where('advisor_id', '=', $userDetails->id)->get();
             if(count($offer_data)){
-                $userData->profile_percent = $user->profile_percent + 30;
+                $userData->profile_percent = $userData->profile_percent + 30;
                 $userData->offer = 1;
             }else{
                 $userData->offer = 0;
@@ -1321,21 +1366,15 @@ class AdvisorController extends Controller
             if($userData->web_address!=''){
                 $userData->profile_percent = $userData->profile_percent + 20;
             }
-            if($userData->short_description!=''){
-                $company = companies::where('id',$userData->company_id)->first();
-                if($company){
-                    $userData->company_about = $company->company_about;
-                }
-            }
-            
         }
         
         $matched_last_hour = DB::table('advice_areas')
             ->where('created_at', '>=',DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)'))
-            ->count();
-        $matched_last_today = Advice_area::whereDate('created_at', Carbon::today())->count();
-        $matched_last_yesterday = Advice_area::whereDate('created_at', Carbon::yesterday())->count();
-        $less_than_3_days = Advice_area::where('created_at', '>', Carbon::yesterday()->subDays(3))->where('created_at', '<', Carbon::today())->count();
+            ->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
+            // orWhereIn('request_time',$requestTime)->
+        $matched_last_today = Advice_area::where('created_at','>=', Carbon::today())->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
+        $matched_last_yesterday = Advice_area::where('created_at','>=', Carbon::yesterday())->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
+        $less_than_3_days = Advice_area::where('created_at','>=', Carbon::today()->subDays(3))->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
         // $remortgage = Advice_area::where('service_type', '=', 'remortgage')->count();
         // $next_time_buyer = Advice_area::where('service_type', '=', 'first time buyer')->count();
         // $first_time_buyer = Advice_area::where('service_type', '=', 'next time buyer')->count();
@@ -1344,7 +1383,7 @@ class AdvisorController extends Controller
         
         $service = ServiceType::where('parent_id','!=',0)->where('status',1)->limit(4)->orderBy('sequence','ASC')->get();
         foreach($service as $service_data){
-            $service_data->service_data_count = Advice_area::where('service_type_id', '=', $service_data->id)->count();
+            $service_data->service_data_count = Advice_area::where('service_type_id', '=', $service_data->id)->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->count();
         }
         $service_arr = array();
         if(count($service)){    
@@ -1477,7 +1516,7 @@ class AdvisorController extends Controller
                     $advisorDetaultPercent = $services->value;
                 }
                 $lead_value = ($main_value)*($advisorDetaultPercent);
-                $estimated = number_format($lead_value,0);
+                $estimated = round($lead_value,0);
             }
             
         }
@@ -1520,15 +1559,15 @@ class AdvisorController extends Controller
                     'lost'=>$lost_leads_year,
                 ),
                 'performance'=>array(
-                    'conversion_rate'=>round($conversion_rate, 2),
-                    'cost_of_leads'=>round($accepted_leads, 2),
-                    'estimated_revenue'=>$estimated,
+                    'conversion_rate'=>number_format(round($conversion_rate),2),
+                    'cost_of_leads'=>number_format(round($accepted_leads),2),
+                    'estimated_revenue'=>number_format($estimated,0),
                 ),
                 'message_unread_count'=>$unread_count_total[0]->count_message,
                 'notification_unread_count'=>0,
                 'promotions'=>$promotion,
                 'userDetails'=>$userData,
-                'total_invoice'=>round($total_due,2)
+                'total_invoice'=>number_format(round($total_due),2)
             ]
         ], Response::HTTP_OK);
     }

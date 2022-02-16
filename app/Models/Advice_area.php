@@ -54,6 +54,9 @@ class Advice_area extends Model
             if(isset($search['created_at']) && $search['created_at']!=''){
                 $query = $query->whereDate('advice_areas.created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
             }
+            if(isset($search['area_id']) && count($search['area_id'])){
+                $query = $query->whereIn('advice_areas.id',$search['area_id']);
+            }
             $advice_area = $query->select('advice_areas.*','users.name','users.email')->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->with('service')->orderBy('id','DESC')->paginate($perpage);
             $count = 0;
@@ -446,7 +449,7 @@ class Advice_area extends Model
                         }
                     }
                 }else if($search['lead']=='hired'){
-                    $accepted = AdvisorBids::where('status',1)->where('advisor_status',1)->where('advisor_id','=',$search['user_id'])->get();
+                    $accepted = AdvisorBids::where('status',1)->where('advisor_id',$search['user_id'])->get();
                     if(count($accepted)){
                         foreach($accepted as $accepted_data){
                             if(!in_array($accepted_data->area_id,$advice_arr)){
@@ -476,19 +479,24 @@ class Advice_area extends Model
             }
             if(isset($search['time']) && $search['time']!=''){
                 if($search['time']=='this_month'){
-                    $query = $query->where('advice_areas.created_at','>',Carbon::today()->subDays(30));
+                    $query = $query->where('advice_areas.created_at','>=',Carbon::today()->subDays(30));
                 }else if($search['time']=='quarter'){
-                    $query = $query->where('advice_areas.created_at','>',Carbon::today()->subDays(183));
+                    $query = $query->where('advice_areas.created_at','>=',Carbon::today()->subDays(183));
                 }else if($search['time']=='year'){
-                    $query = $query->where('advice_areas.created_at','>',Carbon::today()->subDays(365));
+                    $query = $query->where('advice_areas.created_at','>=',Carbon::today()->subDays(365));
                 }
             }
-            $advice_area =  $query->select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
+            $query =  $query->select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
             ->join('users', 'advice_areas.user_id', '=', 'users.id')
             ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
             ->where('advisor_bids.advisor_status', '=', 1)
-            ->where('advisor_bids.advisor_id', '=',$search['user_id'])
-            ->with('total_bid_count')
+            ->where('advisor_bids.advisor_id', '=',$search['user_id']);
+
+            if(count($advice_arr)>0){
+                $query = $query->whereIn('advice_areas.id',$advice_arr);
+            }
+
+            $advice_area =  $query->with('total_bid_count')
             ->with('service')
             ->orderBy('id','DESC')
             ->paginate();

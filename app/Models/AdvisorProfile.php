@@ -89,7 +89,6 @@ class AdvisorProfile extends Model
                 $AdviceAreaIds = array(-1);
                 // AdviserProductPreferences
                 // $default = DefaultPercent::whereIn('service_id',$search['advice_area'])->where('status',1)->get();
-
                 $default = AdviserProductPreferences::whereIn('service_id',$search['advice_area'])->get();
                 if(count($default)){
                     foreach($default as $default_data){
@@ -157,19 +156,8 @@ class AdvisorProfile extends Model
             if(isset($search['mortgage_value']) && count($search['mortgage_value'])){
                 $mortgageValueIds = array(-1);
                 for($i=0;$i<count($search['mortgage_value']);$i++){
-                    if($search['mortgage_value'][$i]==1000){
-                        $val = $search['mortgage_value'][$i]."000";
-                        $ad = AdvisorProfile::where('mortgage_max_size','>',$val)->get();
-                    }else{
-                        $explode = explode("_",$search['mortgage_value'][$i]);
-                        if($explode[0]>0){
-                            $explode[0] = $explode[0]."000";
-                        }
-                        if($explode[1]>0){
-                            $explode[1] = $explode[1]."000";
-                        }
-                        $ad = AdvisorProfile::where('mortgage_min_size','>',$explode[0])->where('mortgage_max_size','<=',$explode[1])->get();
-                    }
+                    $val = (int)$search['mortgage_value'][$i]."000";
+                    $ad = AdvisorProfile::where('mortgage_min_size','<=',$val)->where('mortgage_max_size','>=',$val)->get();
                     if(count($ad)){
                         foreach($ad as $ad_data){
                             if(!in_array($ad_data->advisorId,$mortgageValueIds)){

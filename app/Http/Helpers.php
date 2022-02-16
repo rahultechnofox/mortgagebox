@@ -382,6 +382,7 @@ class Helpers
      */
     public static function generateOtp($length = 6)
     {
+        
         $chars = "1234567890";
         $otp = substr(str_shuffle($chars), 0, $length);
         return $otp;
@@ -855,5 +856,49 @@ class Helpers
             $month_name = "December";
         }
         return $month_name;
+    }
+
+    /**
+     * Generate otp
+     * @param int $length
+     * @return string
+     */
+    public static function getMonthRange($month)
+    {
+        $m = $month;
+        if($m=="04" || $m=="06" || $m=="09" || $m=="11"){
+            $day = "30";
+        }else if($m=="02"){
+            $day = "28";
+        }else{
+            $day = "31";
+        }
+
+        $year = date("Y");
+        $invoicedate = $day."-".$m."-".$year;
+
+        if(date("Y-m-d",strtotime($invoicedate))>date("Y-m-d")){
+            if($m=="01"){
+                $m = "12";
+                $year = $year - 1;
+            }else{
+                $m = $m - 1;
+            }
+
+            if($m<10){
+                $m = "0".$m;
+            }
+        }
+
+        if($m=="04" || $m=="06" || $m=="09" || $m=="11"){
+            $day = "30";
+        }else if($m=="02"){
+            $day = "28";
+        }else{
+            $day = "31";
+        }
+        $invoicedate =  $year."-".$m."-".$day;
+        $get_date_range = "01 ".date("M",$month)." ".$year." - ".$day." ".date("M",$month)." ".$year;
+        return $get_date_range;
     }
 }

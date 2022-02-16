@@ -306,13 +306,55 @@
                                     <tbody>
                                         @if(isset($userDetails) && $userDetails!='')
                                             <tr>
-                                                <td>{{isset($userDetails->accepted_leads) ? $userDetails->accepted_leads : '--'}}</td>
-                                                <td>{{isset($userDetails->closed) ? $userDetails->closed : '--'}}</td>
-                                                <td>{{isset($userDetails->live_leads) ? $userDetails->live_leads : '--'}}</td>
-                                                <td>{{isset($userDetails->hired_leads) ? $userDetails->hired_leads : '--'}}</td>
-                                                <td>{{isset($userDetails->completed_leads) ? $userDetails->completed_leads : '--'}}</td>
-                                                <td>{{isset($userDetails->not_proceed) ? $userDetails->not_proceed : '--'}}</td>
-                                                <td>{{isset($userDetails->lost_leads) ? $userDetails->lost_leads : '--'}}</td>
+                                                <td>
+                                                    @if(isset($userDetails->accepted_leads) && $userDetails->accepted_leads>0) 
+                                                        <a href="{{ url('admin/need') }}?advisor_id={{$userDetails->id}}&area_status=active">{{isset($userDetails->accepted_leads) ? $userDetails->accepted_leads : '--'}}</a> 
+                                                    @else 
+                                                        {{isset($userDetails->accepted_leads) ? $userDetails->accepted_leads : '--'}} 
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if(isset($userDetails->closed) && $userDetails->closed>0)
+                                                        <a href="{{ url('admin/need') }}?advisor_id={{$userDetails->id}}&area_status=closed">{{isset($userDetails->closed) ? $userDetails->closed : '--'}}</a>
+                                                    @else 
+                                                        {{isset($userDetails->closed) ? $userDetails->closed : '--'}} 
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if(isset($userDetails->live_leads) && $userDetails->live_leads>0)
+                                                        <a href="{{ url('admin/need') }}?advisor_id={{$userDetails->id}}&area_status=live">{{isset($userDetails->live_leads) ? $userDetails->live_leads : '--'}}</a>
+                                                    @else 
+                                                        {{isset($userDetails->live_leads) ? $userDetails->live_leads : '--'}} 
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if(isset($userDetails->hired_leads) && $userDetails->hired_leads>0)
+                                                        <a href="{{ url('admin/need') }}?advisor_id={{$userDetails->id}}&area_status=hired">{{isset($userDetails->hired_leads) ? $userDetails->hired_leads : '--'}}</a>
+                                                    @else 
+                                                        {{isset($userDetails->hired_leads) ? $userDetails->hired_leads : '--'}} 
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if(isset($userDetails->completed_leads) && $userDetails->completed_leads>0)
+                                                        <a href="{{ url('admin/need') }}?advisor_id={{$userDetails->id}}&area_status=completed">{{isset($userDetails->completed_leads) ? $userDetails->completed_leads : '--'}}</a>
+                                                    @else 
+                                                        {{isset($userDetails->completed_leads) ? $userDetails->completed_leads : '--'}} 
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if(isset($userDetails->not_proceed) && $userDetails->not_proceed>0)
+                                                        <a href="{{ url('admin/need') }}?advisor_id={{$userDetails->id}}&area_status=not_proceeding">{{isset($userDetails->not_proceed) ? $userDetails->not_proceed : '--'}}</a>
+                                                    @else 
+                                                        {{isset($userDetails->not_proceed) ? $userDetails->not_proceed : '--'}} 
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if(isset($userDetails->lost_leads) && $userDetails->lost_leads>0)
+                                                        <a href="{{ url('admin/need') }}?advisor_id={{$userDetails->id}}&area_status=lost">{{isset($userDetails->lost_leads) ? $userDetails->lost_leads : '--'}}</a>
+                                                    @else 
+                                                        {{isset($userDetails->lost_leads) ? $userDetails->lost_leads : '--'}} 
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @else
                                             <tr>

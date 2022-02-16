@@ -34,22 +34,22 @@
                                 <td><a href="{{ route('admin/advisors/show',$users_data->advisorId) }}">{{$users_data->display_name}}</a></td>
                                 <td>{{$users_data->role != "" ? $users_data->role : '--' }}</td>
                                 <td>
+                                    @if($users_data->email_verified_at!='')
+                                        <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
+                                    @else
+                                        <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
+                                    @endif
+                                </td>
+                                <td>
                                     @if($users_data->invalidate_fca==1)
                                         <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">Invalid</span>
                                     @else
-                                        @if($users_data->email_verified_at!='')
+                                        @if($users_data->FCA_verified != "")  
                                             <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
                                         @else
                                             <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
                                         @endif
                                     @endif
-                                </td>
-                                <td>
-                                @if($users_data->FCA_verified != "")  
-                                    <span class="badge rounded-pill badge-light-success me-1" style="margin-bottom: 10px;">Yes</span>
-                                @else
-                                    <span class="badge rounded-pill badge-light-danger me-1" style="margin-bottom: 10px;">No</span>
-                                @endif
                                 </td>
                                 <td>{{$users_data->accepted_leads}}</td>
                                 <td>{{$users_data->live_leads}}</td>

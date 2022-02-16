@@ -972,12 +972,13 @@ class ApiController extends Controller
     public function getAdviceAreaById($id)
     {
         JWTAuth::parseToken()->authenticate();
-        $advice_area = Advice_area::where('id', '=', $id)->with('service')->first();
+        $advice_area = Advice_area::where('id',$id)->with('service')->first();
         $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $advice_area->id AND m.to_user_id_seen = 0");
         $advice_area->unread_message_count = $unread_count_total[0]->count_message;
 
         if ($advice_area) {
             $advice_area->created_at_need = date("d-m-Y H:i",strtotime($advice_area->created_at));
+            $advice_area->offer_count = AdvisorBids::where('area_id',$id)->count();
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -1105,7 +1106,7 @@ class ApiController extends Controller
                 'email_verified_at' => Date('Y-m-d H:i:s'),
             ]);
         }
-        return redirect()->away(config('constants.urls.host_url')."?type=Activate");
+        return redirect()->away(config('constants.urls.host_url')."/adviser?type=Activate");
     }
     // MARK: Function for forgot password
     public function forgotPassword(Request $request)
@@ -1279,35 +1280,24 @@ class ApiController extends Controller
             $timeArr = array(-1);
             if($timeVal!='') {
                 if($timeVal=='last_hour'){
-                    $last = Advice_area::where('advice_areas.created_at','>=',DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)'))->get();
+                    $last = Advice_area::where('created_at','>=',DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)'))->get();
                     foreach($last as $last_data){
-                        if(!in_array($last_data->id,$timeArr)){
-                            array_push($timeArr,$last_data->id);
-                        }
+                        array_push($timeArr,$last_data->id);
                     }
-                }
-                if($timeVal=='today'){
-                    $today = Advice_area::where('advice_areas.created_at',Carbon::today());
+                }else if($timeVal=='today'){
+                    $today = Advice_area::where('created_at','>=',Carbon::today())->get();
                     foreach($today as $today_data){
-                        if(!in_array($today_data->id,$timeArr)){
-                            array_push($timeArr,$today_data->id);
-                        }
+                        array_push($timeArr,$today_data->id);
                     }
-                }
-                if($timeVal=='yesterday'){
-                    $yesterday = Advice_area::where('advice_areas.created_at',Carbon::yesterday());
+                }else if($timeVal=='yesterday'){
+                    $yesterday = Advice_area::where('created_at','>=',Carbon::yesterday())->get();
                     foreach($yesterday as $yesterday_data){
-                        if(!in_array($yesterday_data->id,$timeArr)){
-                            array_push($timeArr,$yesterday_data->id);
-                        }
+                        array_push($timeArr,$yesterday_data->id);
                     }
-                }
-                if($timeVal=='less_than_3_days'){
-                    $less_3 = Advice_area::where('advice_areas.created_at', '>', Carbon::today()->subDays(3))->where('created_at', '<', Carbon::today());
+                }else if($timeVal=='less_than_3_days'){
+                    $less_3 = Advice_area::where('created_at','>=', Carbon::today()->subDays(3))->get();
                     foreach($less_3 as $less_3_data){
-                        if(!in_array($less_3_data->id,$timeArr)){
-                            array_push($timeArr,$less_3_data->id);
-                        }
+                        array_push($timeArr,$less_3_data->id);
                     }
                 }
             }
@@ -1326,44 +1316,38 @@ class ApiController extends Controller
             }
             
         }
-        $advice_area_arr = array();
-        $advice = Advice_area::where('inquiry_adviser_id','!=',0)->where('inquiry_adviser_id','!=',$user->id)->where('inquiry_match_me',1)->where('area_status',0)->get();
+        $advice_area_arr = array(-1);
+        $advice_meQ = Advice_area::where('inquiry_adviser_id',$user->id);
+        if(count($discountArr)>0){
+            $advice_meQ = $advice_meQ->whereIn('id',$discountArr);
+        }
+        $advice_me = $advice_meQ->get();
+        foreach($advice_me as $advice_me_data){
+            array_push($advice_area_arr,$advice_me_data->id);
+        }
+
+        $adviceQ = Advice_area::where('inquiry_adviser_id','!=',0)->where('inquiry_adviser_id','!=',$user->id)->where('inquiry_match_me',1)->where('area_status',0);
+        if(count($discountArr)>0){
+            $adviceQ = $adviceQ->whereIn('id',$discountArr);
+        }
+        $advice = $adviceQ->get();
         foreach($advice as $advice_data){
             $bid = AdvisorBids::where('area_id',$advice_data->id)->count();
-            if($bid<5){
-                array_push($advice_area_arr,$advice_data->id);
+            if($bid<3){
+                if(!in_array($advice_data->id,$advice_area_arr)){
+                    array_push($advice_area_arr,$advice_data->id);
+                }
             }
         }
         if(count($advice_area_arr)){
-            if(count($discountArr)>0){
-                $discountArr = array_intersect($discountArr, $advice_area_arr);
-            }else{
-                $discountArr = array_unique($advice_area_arr);
-            }
+            $advice_area_arr = array_unique($advice_area_arr);
         }
         //this is code of search area id array
-        // whereIn('advice_areas.id',$discountArr)->
-        $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
+        // 
+        $advice_areaQuery =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('area_status',0)->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)
-            // ->where(function($query) use ($userPreferenceCustomer){
-            //     if(!empty($userPreferenceCustomer)) {
-            //         if($userPreferenceCustomer->self_employed == 1){
-            //             $query->orWhere('advice_areas.self_employed','=',$userPreferenceCustomer->self_employed);
-            //         }
-            //         if($userPreferenceCustomer->non_uk_citizen == 1){
-            //             $query->orWhere('advice_areas.non_uk_citizen','=',$userPreferenceCustomer->non_uk_citizen);
-            //         }
-            //         if($userPreferenceCustomer->adverse_credit == 1){
-            //             $query->orWhere('advice_areas.adverse_credit','=',$userPreferenceCustomer->adverse_credit);
-            //         }
-            //         if($userPreferenceCustomer->fees_preference == 1){
-            //             $query->orWhere('advice_areas.fees_preference','=',$userPreferenceCustomer->fees_preference);
-            //         }
-            //     }
-        // })
-        ->where(function($query) use ($requestTime){
+            ->where('area_status',0)->where('inquiry_adviser_id',0)->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->where(function($query) use ($requestTime){
                 // if($requestTime != ""){
                 //     $query->where('advice_areas.request_time','=',$requestTime);
                 // }
@@ -1401,7 +1385,13 @@ class ApiController extends Controller
             }
         })->whereNotIn('advice_areas.id',function($query) use ($user){
             $query->select('area_id')->from('advisor_bids')->where('advisor_id','=',$user->id);
-        })->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
+        });
+
+        if(count($discountArr)>0){
+            $advice_areaQuery = $advice_areaQuery->whereIn('advice_areas.id',$discountArr);
+        }
+
+        $advice_area = $advice_areaQuery->orWhereIn('advice_areas.id',$advice_area_arr)->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
         ->groupBy('advice_areas.'.'user_id')
         ->groupBy('advice_areas.'.'service_type')
         ->groupBy('advice_areas.'.'request_time')
@@ -1457,41 +1447,59 @@ class ApiController extends Controller
             $time1 = Date('Y-m-d H:i:s');
             $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
             $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
+            $costOfLeadsStrWithCostOflead = "";
             $costOfLeadsStr = "";
             $costOfLeadsDropStr = "";
+            $leadSummary = "";
             $amount = number_format((float)$costOfLead, 2, '.', '');
             if($hourdiff < 24) {
-                $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                $costOfLeadsStr = " ".$item->size_want_currency.$amount;
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$amount;
+                $leadSummary = "This lead will cost ".$item->size_want_currency.$amount;
+
                 $in = 24-$hourdiff;
                 $hrArr = explode(".",$in);
                 $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
             }
             if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = " ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
                 $in = 48-$hourdiff;
                 $newAmount = (75 / 100) * $amount;
                 $hrArr = explode(".",$in);
+                $leadSummary = "This lead will cost ".$item->size_want_currency.($amount/2);
+
                 $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
             }
             if($hourdiff > 48 && $hourdiff < 72) {
                 $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = "".($amount-$newAmount)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = " ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
+                $leadSummary = "This lead will cost ".$item->size_want_currency.($amount-$newAmount);
+
                 $in = 72-$hourdiff;
                 $hrArr = explode(".",$in);
                 $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
             }
             if($hourdiff > 72) {
                 $costOfLeadsStr = ""."Free";
+                $costOfLeadsStrWithCostOflead = "Cost of lead "."Free";
+                $leadSummary = "This lead will cost Free";
+
                 $costOfLeadsDropStr = "";
             }
             if($user->free_promotions>0){
-                $costOfLeadsStr = "".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = " ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
+                $leadSummary = "This lead will cost Free introduction";
             }
             $advice_area[$key]->is_accepted = 0;
             
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
+            $advice_area[$key]->cost_of_lead_with_cost = $costOfLeadsStrWithCostOflead;
+
             $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
-            $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+            $advice_area[$key]->lead_summary = $leadSummary;
 
             $area_owner_details = User::where('id',$item->user_id)->first();
             $address = "";
@@ -1726,18 +1734,6 @@ class ApiController extends Controller
     }
 
     function searchAcceptedNeeds(Request $request){
-        // try{
-        //     $user = JWTAuth::parseToken()->authenticate();
-        //     $post = $request->all();
-        //     $post['user_id'] = $user->id;
-        //     // $advice_area = Advice_area::getMatchNeedFilter($post);
-        //     return response()->json([
-        //         'status' => true,
-        //         'data' => $post,
-        //     ], Response::HTTP_OK);
-        // }catch (\Exception $e) {
-        //     return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];
-        // }
         $user = JWTAuth::parseToken()->authenticate();
         $message = $request->message;
         $status = $request->status;
@@ -1752,7 +1748,7 @@ class ApiController extends Controller
             $advisorAreaArr = array(-1);
             foreach($request->message as $messages){
                 if($messages=='unread'){
-                    $chat = ChatModel::where('from_user_id',$user->id)->where('to_user_id_seen',0)->get();
+                    $chat = ChatModel::where('to_user_id',$user->id)->where('to_user_id_seen',0)->get();
                     foreach($chat as $chat_data){
                         $channel = ChatChannel::where('id',$chat_data->channel_id)->first();
                         if($channel){
@@ -1765,9 +1761,35 @@ class ApiController extends Controller
 
         if(isset($request->status) && count($request->status)>0){
             $status_arr = array(-1);
+            $no_res = array();
+            $lost = array();
+            $accept = array();
+            $response = Advice_area::where('advisor_id',0)->get();
+            foreach($response as $response_data){
+                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->count();
+                $hired = AdvisorBids::where('area_id',$response_data->id)->where('status',1)->count();
+                if($accepted>0 && $hired==0){
+                    array_push($no_res,$response_data->id);
+                }
+            }
+            $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
+            if(count($AllMyBids)){
+                foreach($AllMyBids as $bids){
+                    $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->first();
+                    if($dataLost){
+                        array_push($lost,$bids->area_id);
+                    }
+                }
+            }
+            $status_need = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->where('advisor_status',1)->get();
+            if(count($status_need)){
+                foreach($status_need as $status_need_data){
+                    array_push($accept,$status_need_data->area_id);
+                }
+            }
             foreach($request->status as $status_data){
                 if($status_data=='accepted'){
-                    $status_need = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->where('advisor_status',1)->get();
+                    $status_need = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->where('advisor_status',1)->whereNotIn('area_id',$no_res)->whereNotIn('area_id',$lost)->get();
                     if(count($status_need)){
                         foreach($status_need as $status_need_data){
                             array_push($status_arr,$status_need_data->area_id);
@@ -1791,15 +1813,17 @@ class ApiController extends Controller
                     }
                 }
                 if($status_data=='no_response'){
-                    $no_response = Advice_area::where('advisor_id',0)->get();
-                    if(count($no_response)){
-                        foreach($no_response as $no_response_data){
-                            array_push($status_arr,$no_response_data->id);
+                    $response = Advice_area::where('advisor_id',0)->whereNotIn('id',$accept)->whereNotIn('id',$lost)->get();
+                    foreach($response as $response_data){
+                        $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->count();
+                        $hired = AdvisorBids::where('area_id',$response_data->id)->where('status',1)->count();
+                        if($accepted>0 && $hired==0){
+                            array_push($status_arr,$response_data->id);
                         }
                     }
                 }
                 if($status_data=='lost'){
-                    $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
+                    $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->whereNotIn('area_id',$accept)->whereNotIn('area_id',$no_res)->where('status',0)->get();
                     if(count($AllMyBids)){
                         foreach($AllMyBids as $bids){
                             $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->first();
@@ -1833,14 +1857,6 @@ class ApiController extends Controller
             }
         }
 
-        // if($message_arr && $adviser_arr && $status_arr){
-        //     $message_arr = array_intersect($message_arr, $adviser_arr, $status_arr);
-        // }else if(!$message_arr && !$adviser_arr && $status_arr){
-        //     $message_arr = $status_arr;
-        // }else if(!$message_arr && $adviser_arr && !$status_arr){
-        //     $message_arr = $adviser_arr;
-        // }
-
         $advice_area =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advice_areas.advisor_id')
         ->join('users', 'advice_areas.user_id', '=', 'users.id')
         ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
@@ -1870,27 +1886,6 @@ class ApiController extends Controller
                 });
             }
         });
-        // ->where(function($query) use ($prospect){
-        //     if(!empty($prospect)) {
-        //         $query->where(function($q) use ($prospect) {
-        //             foreach($prospect as $item){
-        //                 if($item=="yesterday"){
-        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 1 day")));
-        //                 }else if($item=="less_four_week") {
-        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 4 week")));
-        //                 }else if($item=="less_three_days") {
-        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 3 day")));
-        //                 }else if($item=="less_two_week") {
-        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 2 week")));
-        //                 }else if($item=="less_one_week") {
-        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d",strtotime("- 1 week")));
-        //                 }else if($item=="today") {
-        //                     $q->where('area_status',2)->orWhere('area_status',1)->where('advice_areas.created_at',date("Y-m-d"));
-        //                 }                      
-        //             }
-        //         });
-        //     }
-        // });
         if(count($advisorAreaArr)){
             $advice_area = $advice_area->whereIn('advice_areas.id',$advisorAreaArr);
         }
@@ -1952,7 +1947,6 @@ class ApiController extends Controller
                 if(!empty($addressDetails)) {
                     if($addressDetails->Country != ""){
                         $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
-                        // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
                         $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
                         $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
                     }
@@ -1992,40 +1986,26 @@ class ApiController extends Controller
             $advice_area[$key]->lead_address = $address;
             $lead_value = ($main_value)*($AdvisorPreferencesDefault->$advisorDetaultValue);
             $advice_area[$key]->lead_value = $item->size_want_currency.number_format($lead_value,0);
-            // $show_status = "Live Leads"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
-            // if(!empty($bidDetailsStatus)) {
-            //     if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
-            //         $show_status = "Not Proceeding"; 
-            //     }else if($bidDetailsStatus->status>0 && $bidDetailsStatus->advisor_status==1) {
-            //         $show_status = "Hired"; 
-            //     }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
-            //         $show_status = "Lost"; 
-            //     }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-            //         $show_status = "Closed"; 
-            //     }else{
-            //         $show_status = "Live Leads";     
-            //     }
-            // }else{
-            //     $show_status = "Live Leads";     
-            // }
-            $show_status = "Accepted"; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             if($bidDetailsStatus){
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Accepted";
-                }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
+                }
+                if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Hired"; 
-                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
+                }
+                if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Completed"; 
                 }
-                $no_response = Advice_area::where('id',$item->id)->where('advisor_id',0)->get();
-                if(count($no_response)){
+                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->where('status',0)->count();
+                $hired = AdvisorBids::where('area_id',$item->id)->where('status',1)->count();
+                if($accepted>0 && $hired==0){
                     $show_status = "No Response";
                 }
-                $AllMyBids = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->where('status',0)->first();
-                if($AllMyBids){
-                    $dataLost = Advice_area::where('id',$AllMyBids->area_id)->where('advisor_id','!=',$user->id)->first();
+                $checkBid = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->count();
+                if($checkBid>0){
+                    $dataLost = Advice_area::where('id',$item->id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
                     if($dataLost){
                         $show_status = "Lost";
                     }
@@ -2052,11 +2032,6 @@ class ApiController extends Controller
                     }else{
                         $chat->show_name = $chat->from_user->name;
                     }
-                    // if($chat->to_user_id==$user->id){
-                    //     if(isset($chat->to_user) && $chat->to_user){
-                    //         $chat->from_user->show_name = $chat->from_user->name;
-                    //     }
-                    // }
                      if(date('Y-m-d')==date("Y-m-d",strtotime($chat->created_at))){
                         $chat->date_time = date("H:i",strtotime($chat->created_at));
                     }else{
@@ -2148,7 +2123,7 @@ class ApiController extends Controller
                         'advisor_id' => $request->advisor_id,
                         'area_id' => $request->area_id,
                         'advisor_status' => $request->advisor_status,
-                        'cost_leads'=>$costOfLead,
+                        'cost_leads'=>$amount,
                         'cost_discounted'=>$discounted_price,
                         'free_introduction'=>$free_into,
                         'bid_created_date'=>$advisorAreaDetails->created_at
@@ -2207,6 +2182,7 @@ class ApiController extends Controller
     public function inviteUsers(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
+        $adviser = AdvisorProfile::where('advisorId',$user->id)->first();
         if (isset($request->emails) && !empty($request->emails)) {
             foreach($request->emails as $email_id){
                 $invitedUrl = "";
@@ -2224,7 +2200,7 @@ class ApiController extends Controller
                     'email'=>$email_id,
                     'url' => $invitedUrl
                 );
-                $c = \Helpers::sendEmail('emails.invitation',$newArr ,$email_id,$user->name,'MortgageBox Invitation','','');
+                $c = \Helpers::sendEmail('emails.invitation',$newArr ,$email_id,$user->name,'Mortgagebox.co.uk – '.$adviser->display_name.' has invited you to join','','');
             }
             return response()->json([
                 'status' => true,
@@ -2444,8 +2420,75 @@ class ApiController extends Controller
             $advice_area[$key]->total_bids_count = count($item->total_bid_count);
             $advice_area[$key]->is_accepted = 1;
             $costOfLead = ($item->size_want/100)*0.006;
-            $time1 = Date('Y-m-d H:i:s');
+            $costOfLeadsStr = "";
+            $costOfLeadsDropStr = "";
+            $MyBid = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->first();
+            // if($MyBid){
+            //     if($MyBid->discount_cycle=='First cycle'){
+            //         $costOfLeadsStr = "".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($MyBid->cost_leads/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            //     }
+            //     if($MyBid->discount_cycle=='Second cycle'){
+            //         $costOfLeadsStr = "".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($MyBid->cost_leads/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            //     }
+            //     if($MyBid->discount_cycle=='Third cycle'){
+            //         $costOfLeadsStr = "".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($MyBid->cost_leads/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            //     }
+            //     if($MyBid->discount_cycle=='Fourth cycle'){
+            //         $costOfLeadsStr = "".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($MyBid->cost_leads/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            //     }
+            //     if($MyBid->discount_cycle=='Free Introduction'){
+            //         $costOfLeadsStr = "".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$MyBid->cost_leads;
+            //         $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($MyBid->cost_leads/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            //     }
+            // }
+            // if($hourdiff < 24) {
+            //     $costOfLeadsStr = " ".$item->size_want_currency.$amount;
+            //     $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$amount;
+
+            //     $in = 24-$hourdiff;
+            //     $hrArr = explode(".",$in);
+            //     $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            // }
+            // if($hourdiff > 24 && $hourdiff < 48) {
+            //     $costOfLeadsStr = " ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+            //     $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+            //     $in = 48-$hourdiff;
+            //     $newAmount = (75 / 100) * $amount;
+            //     $hrArr = explode(".",$in);
+            //     $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            // }
+            // if($hourdiff > 48 && $hourdiff < 72) {
+            //     $newAmount = (75 / 100) * $amount;
+            //     $costOfLeadsStr = " ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
+            //     $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
+
+            //     $in = 72-$hourdiff;
+            //     $hrArr = explode(".",$in);
+            //     $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+            // }
+            // if($hourdiff > 72) {
+            //     $costOfLeadsStr = ""."Free";
+            //     $costOfLeadsStrWithCostOflead = "Cost of lead "."Free";
+
+            //     $costOfLeadsDropStr = "";
+            // }
+            // if($user->free_promotions>0){
+            //     $costOfLeadsStr = " ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
+            //     $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
+
+            // }
+
             $time2 = Date('Y-m-d H:i:s',strtotime($item->created_at));
+            $time1 = Date('Y-m-d H:i:s',strtotime($item->bid_created_date));
             $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
             $costOfLeadsStr = "";
             $costOfLeadsDropStr = "";
@@ -2455,28 +2498,37 @@ class ApiController extends Controller
                 $in = 24-$hourdiff;
                 $hrArr = explode(".",$in);
                 $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$amount;
             }
             if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
                 $in = 48-$hourdiff;
                 $newAmount = (75 / 100) * $amount;
                 $hrArr = explode(".",$in);
                 $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount/2)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
             }
             if($hourdiff > 48 && $hourdiff < 72) {
                 $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = "".($amount-$newAmount)." (Saved 75%, was ".$item->size_want_currency.$amount.")";
                 $in = 72-$hourdiff;
                 $hrArr = explode(".",$in);
                 $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount-$newAmount)." (Saved 75%, was ".$item->size_want_currency.$amount.")";
             }
             if($hourdiff > 72) {
                 $costOfLeadsStr = ""."Free";
                 $costOfLeadsDropStr = "";
+                $costOfLeadsStrWithCostOflead = "Cost of lead Free";
+            }
+            if($MyBid->discount_cycle=='Free Introduction'){
+                $costOfLeadsStr = " ".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.$amount.")";
             }
             
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
             $advice_area[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+            $advice_area[$key]->cost_of_lead_with_cost = $costOfLeadsStrWithCostOflead;
             $area_owner_details = User::where('id',$item->user_id)->first();
             $address = "";
             if(!empty($area_owner_details)) {
@@ -2503,90 +2555,34 @@ class ApiController extends Controller
             }
             $lead_value = ($main_value)*($advisorDetaultPercent);
             $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)$lead_value,0);
-            // if($item->service_type=="remortgage") {
-            //     $advisorDetaultValue = "remortgage";
-            // }else if($item->service_type=="first time buyer") {
-            //     $advisorDetaultValue = "first_buyer";
-            // }else if($item->service_type=="next time buyer") {
-            //     $advisorDetaultValue = "next_buyer";
-            // }else if($item->service_type=="buy to let") {
-            //     $advisorDetaultValue = "but_let";
-            // }else if($item->service_type=="equity release") {
-            //     $advisorDetaultValue = "equity_release";
-            // }else if($item->service_type=="overseas") {
-            //     $advisorDetaultValue = "overseas";
-            // }else if($item->service_type=="self build") {
-            //     $advisorDetaultValue = "self_build";
-            // }else if($item->service_type=="mortgage protection") {
-            //     $advisorDetaultValue = "mortgage_protection";
-            // }else if($item->service_type=="secured loan") {
-            //     $advisorDetaultValue = "secured_loan";
-            // }else if($item->service_type=="bridging loan") {
-            //     $advisorDetaultValue = "bridging_loan";
-            // }else if($item->service_type=="commercial") {
-            //     $advisorDetaultValue = "commercial";
-            // }else if($item->service_type=="something else") {
-            //     $advisorDetaultValue = "something_else";
-            // }   
-            // $AdvisorPreferencesDefault = AdvisorPreferencesDefault::where('advisor_id','=',$user->id)->first();
-            
+                        
             $advice_area[$key]->lead_address = $address;
             // $show_status = "Accepted"; 
-            $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
+            $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->first();
             if($bidDetailsStatus){
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Accepted";
-                }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
+                }
+                if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Hired"; 
-                }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
+                }
+                if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Completed"; 
                 }
-                $no_response = Advice_area::where('id',$item->id)->where('advisor_id',0)->get();
-                if(count($no_response)){
+                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->where('status',0)->count();
+                $hired = AdvisorBids::where('area_id',$item->id)->where('status',1)->count();
+                if($accepted>0 && $hired==0){
                     $show_status = "No Response";
                 }
-                $AllMyBids = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->where('status',0)->first();
-                if($AllMyBids){
-                    $dataLost = Advice_area::where('id',$AllMyBids->area_id)->where('advisor_id','!=',$user->id)->first();
+                $checkBid = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->count();
+                if($checkBid>0){
+                    $dataLost = Advice_area::where('id',$item->id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
                     if($dataLost){
                         $show_status = "Lost";
                     }
                 }
             }
-            // $show_status = "Live Leads"; 
-            // if(!empty($bidDetailsStatus)) {
-            //     $checkStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','!=',$user->id)->where('status',1)->where('advisor_status',1)->count();
-            //     if($checkStatus!=0){
-            //         $show_status = "Lost";
-            //         $advice_area[$key]->is_bided = 1;
-            //     }else{
-            //         $advice_area[$key]->is_bided = 0;
-            //         if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1) {
-            //             $show_status = "Accepted";
-            //         }else if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1) {
-            //             $show_status = "Completed"; 
-            //         }else if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1) {
-            //             $show_status = "Hired"; 
-            //         }else if($bidDetailsStatus->status==3 && $bidDetailsStatus->advisor_status==1) {
-            //             $show_status = "Lost";
-            //         }else{
-            //             $show_status = "Live Leads";    
-            //         }
-            //     }
-                
-            // }
-            // $show_status = "Accepted";
-            // if($advice_area[$key]->area_status==1){
-            //     $show_status = "Accepted";
-            // }else if($advice_area[$key]->area_status==2){
-            //     $show_status = "Hired"; 
-            // }else if($advice_area[$key]->area_status==3){
-            //     $show_status = "Completed"; 
-            // }else if($advice_area[$key]->area_status==4){
-            //     $show_status = "Lost";
-            // }else if($advice_area[$key]->area_status==5){
-            //     $show_status = "No Response";
-            // }
+            
             $advice_area[$key]->show_status = (isset($show_status))?$show_status:'';
             $channelIds = array(-1);
             $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
@@ -2923,9 +2919,11 @@ class ApiController extends Controller
             $newArr = array(
                 'name'=>$advisor->display_name,
                 'email'=>$advisor->email,
-                'message_text' => 'Congratulations, you have been selected by '.$user->name.' to arrange their '.$advice_area->size_want.' '.$service->name.' mortgage. This is required '.$advice_area->request_time
+                'message_text' => 'Congratulations, you have been selected by '.$user->name.' to arrange their £'.number_format($advice_area->size_want).' '.$service->name.' mortgage. This is required '.$advice_area->request_time,
+                'url'=>config('constants.urls.host_url')."/adviser?type=Login",
+                'btn_text'=>'Respond'
             );
-            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – '.$advice_area->size_want.' Lead won from '.$user->name,'','');
+            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – £'.number_format($advice_area->size_want).' Lead won from '.$user->name,'','');
         }else{
             $message = "Offer declined";
             $this->saveNotification(array(
@@ -3131,6 +3129,24 @@ class ApiController extends Controller
          $intent = null;
             try {
                 \Stripe\Stripe::setApiKey('sk_test_51J904DSD18gBSiDIJxuDFBCwwNmhwgTXiU2SPAWDt20XaL7htbtnHKBkqfzu9tTJxPaDBcKrK6KCfxQO0MJcdcGX00zusc4Lug');
+                // $advisorDetails = User::where('id','=',$user->id)->first();
+                // $responseData = \Stripe\Customer::create([
+                //     'name'=>($advisorDetails->name) ? $advisorDetails->name : '',
+                //     'email'=>($advisorDetails->email) ? $advisorDetails->email : '',
+                //     'address[city]'=>($advisorDetails->city) ? $advisorDetails->city : '',
+                //     'address[country]'=>'',
+                //     'address[line1]'=>($advisorDetails->address_line1) ? $advisorDetails->address_line1: '',
+                //     'address[line2]'=>($advisorDetails->address_line2) ? $advisorDetails->address_line2: '',
+                //     'address[postal_code]'=>($advisorDetails->postal_code)?$advisorDetails->postal_code:'',
+                //     'address[state]'=>'',
+                //   ]);
+                //   $customerDetails = json_decode($responseData,true);
+                //   $customer_id = $responseData['id'];
+                //   if($customer_id != "") {
+                //     AdvisorProfile::where('advisorId','=',$user->id)->update([
+                //         'stripe_customer_id' => $customer_id
+                //     ]);
+                //   }
                   # Create the PaymentIntent
                   $intent = \Stripe\PaymentIntent::create([
                     'payment_method_types' => ['card'],
@@ -3148,8 +3164,6 @@ class ApiController extends Controller
                         'city' => ($advisorDetails->city) ? $advisorDetails->city : '',
                         'state' => 'us',
                         'country' => 'us',
-                        
-                       
                      ],
                     ],
                
@@ -3669,21 +3683,54 @@ class ApiController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         if($user) {
             $post = $request->all();
+            $summary = "";
             if(isset($post) && !empty($post)){
                 $data['adviser'] = User::getAdvisorDetail($user->id);
                 $data['site_address'] = DB::table('app_settings')->where('key','site_address')->first();
                 $data['site_name'] = DB::table('app_settings')->where('key','mail_from_name')->first();
+                $data['billing'] = DB::table('billing_addresses')->where('advisor_id',$user->id)->first();
+                if($data['billing']){
+                    $data['billing']->value = $data['billing']->address_one; 
+                    if($data['billing']->address_two!=null){
+                        $data['billing']->value .= ", ".$data['billing']->address_two;
+                    }
+                    if($data['billing']->city!=null){
+                        $data['billing']->value .= ", ".$data['billing']->city;
+                    }
+                    if($data['billing']->post_code!=null){
+                        $data['billing']->value .= ", ".$data['billing']->post_code;
+                    }
+                }
                 $data['new_fees'] = array();
                 $data['discount_credits'] = array();
                 // $data['invoice']->discount_credit_arr = array();
                 $spam_total = 0;
                 if($data['adviser']){
-                    $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->first();
+                    if(isset($post['date']) && $post['date']!=''){
+                        $explode = explode('/',$post['date']);
+                        $searchmonth = $explode[0];
+                        $searchyear = $explode[1];
+                        $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->where('month',$searchmonth)->where('year',$searchyear)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                    }else{
+                        $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                    }
+                    
                     if($data['invoice']){
+                        $m = $data['invoice']->month;
+                        if($m==4 || $m==6 || $m==9 || $m==11){
+                            $day = 30;
+                        }else if($m==2){
+                            $day = 28;
+                        }else{
+                            $day = 31;
+                        }
+                        $data['invoice']->month_check = $m;
+                        $summary = "01 ".date("M",strtotime((int)$data['invoice']->month))." ".date("Y")." - ".$day." ".date("M",strtotime((int)$data['invoice']->month))." ".date("Y");
+                        $data['invoice']->summary = $summary;
                         $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
-                        $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
-                        $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid',1)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
-                        $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->get(); 
+                        $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','ASC')->get(); 
                         foreach($data['invoice']->month_data as $month_data){
                             $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
                         }
@@ -3691,6 +3738,7 @@ class ApiController extends Controller
                         // ->where('is_discounted',0)
                         if(count($data['invoice']->new_fees_arr)){
                             foreach($data['invoice']->new_fees_arr as $new_bid){
+                                $new_bid->cost_leads = number_format($new_bid->cost_leads,2);
                                 if(isset($new_bid->area) && $new_bid->area){
                                     $new_bid->area->user->advisor_profile = null;
                                     if(isset($new_bid->area->user) && $new_bid->area->user){
@@ -3715,6 +3763,7 @@ class ApiController extends Controller
                         $discount_cre = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
                         if(count($discount_cre)){
                             foreach($discount_cre as $discount_bid){
+                                $discount_bid->cost_leads = number_format($discount_bid->cost_leads,2);
                                 $address = "";
                                 if($discount_bid->area){
                                     if(!empty($discount_bid->area->user)) {
@@ -3798,7 +3847,8 @@ class ApiController extends Controller
                                 }
                             }
                         }
-                        $data['invoice']->discount_subtotal = $data['invoice']->discount_subtotal + $spam_total;
+                        $discount_subtotal_to = $data['invoice']->discount_subtotal + $spam_total;
+                        $data['invoice']->discount_subtotal = number_format($discount_subtotal_to,2);
                         $data['invoice']->discount_credit_arr = $data['discount_credits'];
                     }
                 }
@@ -3885,11 +3935,20 @@ class ApiController extends Controller
         $aStatus = array(-1);
         if($user) {
             $data['unread'] = 0;
-            $data['unread'] = ChatModel::where('from_user_id',$user->id)->where('to_user_id_seen',0)->count();
+            $data['unread'] = ChatModel::where('to_user_id',$user->id)->where('to_user_id_seen',0)->count();
             $data['accepted'] = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->count();
             $data['hired'] = AdvisorBids::where('advisor_id',$user->id)->where('status',1)->count();
             $data['completed'] = AdvisorBids::where('advisor_id',$user->id)->where('status',2)->where('advisor_status',1)->count();
-            $data['no_response'] = Advice_area::where('advisor_id',0)->count();
+            $data['no_response'] = 0;
+            $response = Advice_area::where('advisor_id',0)->get();
+            foreach($response as $response_data){
+                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->count();
+                $hired = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',1)->count();
+                if($accepted>0 && $hired==0){
+                    $data['no_response'] = $data['no_response'] + 1;
+                }
+            }
+            // $data['no_response'] = Advice_area::where('advisor_id',$user->id)->where('advisor_id',0)->count();
             $data['lost'] = 0;
             $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
             if(count($AllMyBids)){

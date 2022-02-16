@@ -31,7 +31,73 @@ class NeedController extends Controller
      */
     public function index(Request $request){
         $post = $request->all();
+        $live_arr = array();
+        $closedArr = array();
+        if(isset($post['advisor_id']) && $post['advisor_id']!=''){
+            if(isset($post['area_status']) && $post['area_status']!=''){
+                if($post['area_status']=='active'){
+                    $accepted_leads = AdvisorBids::where('advisor_id',$post['advisor_id'])->get();
+                    foreach($accepted_leads as $accepted_leads_data){
+                        array_push($live_arr,$accepted_leads_data->area_id);
+                    }
+                }else if($post['area_status']=='closed'){
+                    $closed = AdvisorBids::where('advisor_id',$post['advisor_id'])->where('advisor_status', '=', 1)->get();
+                    if(isset($closed) && count($closed)){
+                        foreach($closed as $closed_data){
+                            // array_push($live_arr,$closed_data->area_id);
+                            array_push($closedArr,$closed_data->area_id);
+                        }
+                    }
+                    if(isset($closedArr) && count($closedArr)){
+                        $closed_count = Advice_area::whereIn('id',$closedArr)->where('status',2)->get();
+                        if(count($closed_count)){
+                            foreach($closed_count as $closed_count_data){
+                                array_push($live_arr,$closed_count_data->id);
+                            }
+                        }
+                    }
+                }else if($post['area_status']=='live'){
+                    $live_leads = AdvisorBids::where('advisor_id',$post['advisor_id'])->where('status', '=', 0)->where('advisor_status', '=', 1)->get();
+                    foreach($live_leads as $live_leads_data){
+                        array_push($live_arr,$live_leads_data->area_id);
+                    }
+                }else if($post['area_status']=='hired'){
+                    $hired_leads = AdvisorBids::where('advisor_id',$post['advisor_id'])->where('status', '=', 1)->where('advisor_status', '=', 1)->get();
+                    foreach($hired_leads as $hired_leads_data){
+                        array_push($live_arr,$hired_leads_data->area_id);
+                    }
+                }else if($post['area_status']=='completed'){
+                    $completed_leads = AdvisorBids::where('advisor_id',$post['advisor_id'])->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
+                    foreach($completed_leads as $completed_leads_data){
+                        array_push($live_arr,$completed_leads_data->area_id);
+                    }
+                }else if($post['area_status']=='not_proceeding'){
+                    $get_not_proceed = AdvisorBids::where('advisor_id',$post['advisor_id'])->get();
+                    if(isset($get_not_proceed) && count($get_not_proceed)){
+                        foreach($get_not_proceed as $not_proceed_data){
+                            $check_proceed = AdvisorBids::where('area_id',$not_proceed_data->id)->where('status', '=', 0)->where('advisor_status', '=', 1)->get();
+                            if(count($check_proceed)){
+                                foreach($check_proceed as $check_proceed_data){
+                                    array_push($live_arr,$check_proceed_data->area_id);
+                                }
+                            }
+                        }
+                    }
+                }else if($post['area_status']=='lost'){
+                    $lost_leads = AdvisorBids::where('advisor_id',$post['advisor_id'])->where('status', '=', 3)->where('advisor_status', '=', 1)->get();
+                    // echo json_encode($lost_leads);exit;
+                    foreach($lost_leads as $lost_leads_data){
+                        array_push($live_arr,$lost_leads_data->area_id);
+                    }
+                }
+            }
+        }
+
+        if(isset($live_arr) && count($live_arr)){
+            $post['area_id'] = $live_arr;
+        }
         $advice_area = Advice_area::getNeedList($post);
+        // echo count($advice_area->data);exit;
         $data = $advice_area;   
         $data['services'] = ServiceType::where('parent_id','!=',0)->where('status',1)->get();
         $data['entry_count'] = config('constants.paginate.num_per_page');

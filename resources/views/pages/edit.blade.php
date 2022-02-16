@@ -36,7 +36,7 @@
                                     @csrf
                                     <input type="hidden" name="id" value="{{$row->id}}">
                                     <div class="row">
-                                        <div class="col-md-12">
+                                        <!-- <div class="col-md-12">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Page Name</label>
                                                 <select class="form-control" name="type" id="type">
@@ -45,8 +45,13 @@
                                                     <option value="customer" <?php if(isset($row) && $row!=''){ if($row->type=='customer'){ echo "selected"; } } ?>>Customer</option>
                                                 </select>
                                                 <!-- <input type="text" class="form-control " placeholder="Page Title" value="{{$row->page_name}}" name="page_name" id="page_name" /> -->
-                                            </div>
-                                        </div>
+                                            <!-- </div> -->
+                                        <!-- </div> --> 
+                                        <?php if(isset($_GET['type']) && $_GET['type']!=''){ ?>
+                                            <input type="hidden" value="{{$_GET['type']}}" name="type" id="type" />
+                                        <?php }else{ ?>
+                                            <input type="hidden" value="@if(isset($row) && $row!=''){{$row->type}}@else{{$_GET['type']}}@endif" name="type" id="type" />
+                                        <?php }?>
                                         <div class="col-md-12">
                                             <div class="mb-1">
                                                 <label class="form-label" for="name">Page Name</label>

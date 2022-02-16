@@ -65,17 +65,21 @@ table[class="table750"] {width: 100% !important;}
              <tr>
                 <td align="left" valign="top">
                    <font face="'Source Sans Pro', sans-serif" color="#1a1a1a" style="font-size: 45px; line-height: 45px; font-weight: 300; letter-spacing: -1.5px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #1a1a1a; font-size: 38px; line-height: 38px; font-weight: 300; letter-spacing: -1.5px;">Hey {{$name}},</span>
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #1a1a1a; font-size: 38px; line-height: 38px; font-weight: 300; letter-spacing: -1.5px;">Hey,</span>
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">{{$name}} invites you to join MortgageBox.</span>
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">You’ve been invited to join mortgagebox.co.uk</span>
+                   </font>
+                   <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
+                   <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Connect with borrowers actively looking for a mortgage</span>
                    </font>
 				   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100% !important; max-width: 100%; min-width: 100%; border-radius: 4px;">
                       <tr>
                          <td align="center" valign="middle" height="55">
                             <a href="{{$url}}" target="_blank" style="display: inline-block; width: 120px; height: 55px; font-family: 'Source Sans Pro', Arial, Verdana, Tahoma, Geneva, sans-serif; color: #ffffff; font-size: 20px; line-height: 55px; text-decoration: none; white-space: nowrap; font-weight: 600; background: #427af1; border-radius:5px; padding:0 15px;">
-                                  <span style="font-family: 'Source Sans Pro', Arial, Verdana, Tahoma, Geneva, sans-serif; color: #ffffff; font-size: 20px; line-height: 55px; text-decoration: none; white-space: nowrap; width:120px; margin: auto; font-weight: 600;">Accept Invitation</span>
+                                  <span style="font-family: 'Source Sans Pro', Arial, Verdana, Tahoma, Geneva, sans-serif; color: #ffffff; font-size: 20px; line-height: 55px; text-decoration: none; white-space: nowrap; margin: auto; font-weight: 600;">Accept Invitation</span>
                             </a>
                          </td>
                       </tr>

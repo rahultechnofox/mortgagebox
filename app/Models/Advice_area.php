@@ -370,34 +370,56 @@ class Advice_area extends Model
                     $hourdiff = round((strtotime($time1) - strtotime($time2))/3600, 1);
                     $costOfLeadsStr = "";
                     $costOfLeadsDropStr = "";
+                    $leadSummary = "";
                     $amount = number_format((float)$costOfLead, 2, '.', '');
                     if($hourdiff < 24) {
-                        $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                        $costOfLeadsStr = " ".$item->size_want_currency.$amount;
+                        $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$amount;
+                        $leadSummary = "This lead will cost ".$item->size_want_currency.$amount;
+
                         $in = 24-$hourdiff;
                         $hrArr = explode(".",$in);
                         $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
                     }
                     if($hourdiff > 24 && $hourdiff < 48) {
-                        $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                        $costOfLeadsStr = " ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                        $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
                         $in = 48-$hourdiff;
                         $newAmount = (75 / 100) * $amount;
                         $hrArr = explode(".",$in);
+                        $leadSummary = "This lead will cost ".$item->size_want_currency.($amount/2);
+
                         $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
                     }
                     if($hourdiff > 48 && $hourdiff < 72) {
                         $newAmount = (75 / 100) * $amount;
-                        $costOfLeadsStr = "".($amount-$newAmount)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                        $costOfLeadsStr = " ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
+                        $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
+                        $leadSummary = "This lead will cost ".$item->size_want_currency.($amount-$newAmount);
+
                         $in = 72-$hourdiff;
                         $hrArr = explode(".",$in);
                         $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
                     }
                     if($hourdiff > 72) {
                         $costOfLeadsStr = ""."Free";
+                        $costOfLeadsStrWithCostOflead = "Cost of lead "."Free";
+                        $leadSummary = "This lead is free";
+
                         $costOfLeadsDropStr = "";
                     }
+                    if($user->free_promotions>0){
+                        $costOfLeadsStr = " ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
+                        $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
+                        $leadSummary = "This lead is free";
+                    }
+                    $data[$key]->is_accepted = 0;
                     
                     $data[$key]->cost_of_lead = $costOfLeadsStr;
+                    $data[$key]->cost_of_lead_with_cost = $costOfLeadsStrWithCostOflead;
+
                     $data[$key]->cost_of_lead_drop = $costOfLeadsDropStr;
+                    $data[$key]->lead_summary = $leadSummary;
                     $area_owner_details = User::where('id',$item->user_id)->first();
                     $address = "";
                     if(!empty($area_owner_details)) {

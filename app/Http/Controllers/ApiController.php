@@ -1453,29 +1453,29 @@ class ApiController extends Controller
             $leadSummary = "";
             $amount = number_format((float)$costOfLead, 2, '.', '');
             if($hourdiff < 24) {
-                $costOfLeadsStr = " ".$item->size_want_currency.$amount;
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$amount;
-                $leadSummary = "This lead will cost ".$item->size_want_currency.$amount;
+                $costOfLeadsStr = " ".$item->size_want_currency.round($amount);
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.round($amount);
+                $leadSummary = "This lead will cost ".$item->size_want_currency.round($amount);
 
                 $in = 24-$hourdiff;
                 $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.(round($amount/2))." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
             }
             if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = " ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount/2)." (Save 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = " ".$item->size_want_currency.(round($amount/2))." (Save 50%, was ".$item->size_want_currency.round($amount).")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.(round($amount/2))." (Save 50%, was ".$item->size_want_currency.round($amount).")";
                 $in = 48-$hourdiff;
                 $newAmount = (75 / 100) * $amount;
                 $hrArr = explode(".",$in);
-                $leadSummary = "This lead will cost ".$item->size_want_currency.($amount/2);
+                $leadSummary = "This lead will cost ".$item->size_want_currency.(round($amount/2));
 
-                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsDropStr = "Cost of lead drops to ".(round($amount-$newAmount))." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
             }
             if($hourdiff > 48 && $hourdiff < 72) {
                 $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = " ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount-$newAmount)." (Save 75%, was ".$item->size_want_currency.$amount.")";
-                $leadSummary = "This lead will cost ".$item->size_want_currency.($amount-$newAmount);
+                $costOfLeadsStr = " ".$item->size_want_currency.(round($amount-$newAmount))." (Save 75%, was ".$item->size_want_currency.round($amount).")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.(round($amount-$newAmount))." (Save 75%, was ".$item->size_want_currency.round($amount).")";
+                $leadSummary = "This lead will cost ".$item->size_want_currency.(round($amount-$newAmount));
 
                 $in = 72-$hourdiff;
                 $hrArr = explode(".",$in);
@@ -1484,14 +1484,14 @@ class ApiController extends Controller
             if($hourdiff > 72) {
                 $costOfLeadsStr = ""."Free";
                 $costOfLeadsStrWithCostOflead = "Cost of lead "."Free";
-                $leadSummary = "This lead will cost Free";
+                $leadSummary = "This lead is free";
 
                 $costOfLeadsDropStr = "";
             }
             if($user->free_promotions>0){
                 $costOfLeadsStr = " ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.$amount.")";
-                $leadSummary = "This lead will cost Free introduction";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Save 100%, was ".$item->size_want_currency.round($amount).")";
+                $leadSummary = "This lead is free";
             }
             $advice_area[$key]->is_accepted = 0;
             
@@ -1526,7 +1526,7 @@ class ApiController extends Controller
                 }
             }
             $lead_value = ($main_value)*($advisorDetaultPercent);
-            $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)$lead_value,0);
+            $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)round($lead_value),0);
             // if($item->service_type=="remortgage") {
             //     $advisorDetaultValue = "remortgage";
             // }else if($item->service_type=="first time buyer") {
@@ -2494,27 +2494,27 @@ class ApiController extends Controller
             $costOfLeadsDropStr = "";
             $amount = number_format((float)$costOfLead, 2, '.', '');
             if($hourdiff < 24) {
-                $costOfLeadsStr = "".$item->size_want_currency.$amount;
+                $costOfLeadsStr = "".$item->size_want_currency.round($amount);
                 $in = 24-$hourdiff;
                 $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.($amount/2)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.$amount;
+                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.(round($amount/2))." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.round($amount);
             }
             if($hourdiff > 24 && $hourdiff < 48) {
-                $costOfLeadsStr = "".$item->size_want_currency.($amount/2)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = "".$item->size_want_currency.(round($amount/2))." (Saved 50%, was ".$item->size_want_currency.round($amount).")";
                 $in = 48-$hourdiff;
                 $newAmount = (75 / 100) * $amount;
                 $hrArr = explode(".",$in);
-                $costOfLeadsDropStr = "Cost of lead drops to ".($amount-$newAmount)." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount/2)." (Saved 50%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsDropStr = "Cost of lead drops to ".(round($amount-$newAmount))." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.(round($amount/2))." (Saved 50%, was ".$item->size_want_currency.round($amount).")";
             }
             if($hourdiff > 48 && $hourdiff < 72) {
                 $newAmount = (75 / 100) * $amount;
-                $costOfLeadsStr = "".($amount-$newAmount)." (Saved 75%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = "".(round($amount-$newAmount))." (Saved 75%, was ".$item->size_want_currency.round($amount).")";
                 $in = 72-$hourdiff;
                 $hrArr = explode(".",$in);
                 $costOfLeadsDropStr = "Cost of lead drops to Free in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.($amount-$newAmount)." (Saved 75%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency.(round($amount-$newAmount))." (Saved 75%, was ".$item->size_want_currency.round($amount).")";
             }
             if($hourdiff > 72) {
                 $costOfLeadsStr = ""."Free";
@@ -2522,8 +2522,8 @@ class ApiController extends Controller
                 $costOfLeadsStrWithCostOflead = "Cost of lead Free";
             }
             if($MyBid->discount_cycle=='Free Introduction'){
-                $costOfLeadsStr = " ".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.$amount.")";
-                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.$amount.")";
+                $costOfLeadsStr = " ".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.round($amount).")";
+                $costOfLeadsStrWithCostOflead = "Cost of lead ".$item->size_want_currency."0 - free introduction (Saved 100%, was ".$item->size_want_currency.round($amount).")";
             }
             
             $advice_area[$key]->cost_of_lead = $costOfLeadsStr;
@@ -2554,7 +2554,7 @@ class ApiController extends Controller
                 }
             }
             $lead_value = ($main_value)*($advisorDetaultPercent);
-            $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)$lead_value,0);
+            $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)round($lead_value),0);
                         
             $advice_area[$key]->lead_address = $address;
             // $show_status = "Accepted"; 
@@ -3045,13 +3045,10 @@ class ApiController extends Controller
             $responseData = \Stripe\Customer::create([
                 'name'=>($advisorDetails->name) ? $request->name : '',
                 'email'=>($advisorDetails->email) ? $advisorDetails->email : '',
-                'address[city]'=>($request->city) ? $request->city : '',
-                'address[country]'=>'',
-                'address[line1]'=>($request->address_line1) ? $request->address_line1: '',
-                'address[line2]'=>($request->address_line2) ? $request->address_line2: '',
-                'address[postal_code]'=>($request->postal_code)?$request->postal_code:'',
-                'address[state]'=>'',
-              ]);
+                "address" => [
+                    "city" => ($request->city) ? $request->city : '', "country" => '', "line1" => ($request->address_line1) ? $request->address_line1: '', "line2" => "", "postal_code" =>($request->postal_code)?$request->postal_code:'', "state" => ''
+                ],
+            ]);
               $customerDetails = json_decode($responseData,true);
               $customer_id = $responseData['id'];
               if($customer_id != "") {
@@ -3683,7 +3680,7 @@ class ApiController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         if($user) {
             $post = $request->all();
-            $summary = "";
+            
             if(isset($post) && !empty($post)){
                 $data['adviser'] = User::getAdvisorDetail($user->id);
                 $data['site_address'] = DB::table('app_settings')->where('key','site_address')->first();
@@ -3716,6 +3713,7 @@ class ApiController extends Controller
                     }
                     
                     if($data['invoice']){
+                        $summary = "";
                         $m = $data['invoice']->month;
                         if($m==4 || $m==6 || $m==9 || $m==11){
                             $day = 30;
@@ -3730,7 +3728,7 @@ class ApiController extends Controller
                         $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
                         $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
                         $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
-                        $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','ASC')->get(); 
+                        $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->get(); 
                         foreach($data['invoice']->month_data as $month_data){
                             $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
                         }
@@ -3847,8 +3845,8 @@ class ApiController extends Controller
                                 }
                             }
                         }
-                        $discount_subtotal_to = $data['invoice']->discount_subtotal + $spam_total;
-                        $data['invoice']->discount_subtotal = number_format($discount_subtotal_to,2);
+                        // $discount_subtotal_to = $data['invoice']->discount_subtotal + $spam_total;
+                        // $data['invoice']->discount_subtotal = number_format($discount_subtotal_to,2);
                         $data['invoice']->discount_credit_arr = $data['discount_credits'];
                     }
                 }

@@ -56,7 +56,7 @@
                                 <td>{{$users_data->hired_leads}}</td>
                                 <td>{{$users_data->completed_leads}}</td>
                                 <td>{{$users_data->success_percent}}%</td>
-                                <td>{{$users_data->c}}</td>
+                                <td>{{$users_data->estimated_lead_value}}</td>
                                 <td>{{$users_data->cost_of_lead_final}}</td>
                                 <td>
                                     @if($users_data->user_status==1)

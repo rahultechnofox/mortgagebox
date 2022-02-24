@@ -2320,17 +2320,17 @@ class ApiController extends Controller
                 );
             }
         }
-        $newArr = array(
-            'name'=>$user->name,
-            'email'=>$user->email,
-            'message_text' => "You have received the following message from ".$user->name
-        );
-        $display_name = "";
-        $advisor_data = AdvisorProfile::where('advisorId',$user->id)->first();
-        if($advisor_data){
-            $display_name = $advisor_data->display_name;
-        }
-        $c = \Helpers::sendEmail('emails.information',$newArr ,$user->email,$display_name,'Mortgagebox.co.uk – Message received from '.$user->name,'','');
+        // $newArr = array(
+        //     'name'=>$user->name,
+        //     'email'=>$user->email,
+        //     'message_text' => "You have received the following message from ".$user->name
+        // );
+        // $display_name = "";
+        // $advisor_data = AdvisorProfile::where('advisorId',$user->id)->first();
+        // if($advisor_data){
+        //     $display_name = $advisor_data->display_name;
+        // }
+        // $c = \Helpers::sendEmail('emails.information',$newArr ,$user->email,$display_name,'Mortgagebox.co.uk – Message received from '.$user->name,'','');
         return response()->json([
             'status' => true,
             'channel' => ['channel_id' => $channel_id, 'channel_name' => $channel_name],

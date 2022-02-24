@@ -1703,6 +1703,13 @@ class AdvisorController extends Controller
             $subtotal_of_discount_and_credit = $total_this_month_discount_subtotal+$total_this_month_free_intro;
             $total_dues = $total_this_month_cost_of_leads_subtotal-$subtotal_of_discount_and_credit;
             $total_amount = 0;
+            $taxableAmount =  (1 + (20/100));
+            $new_taxable_amount = $total_this_month_cost_of_leads_subtotal;
+            $withoutTaxamount_new_taxable =  $new_taxable_amount / $taxableAmount;
+            $tax_on_this_invoice_subtotal = $new_taxable_amount - $withoutTaxamount_new_taxable;
+
+            $total_amount_final_subtotal = $new_taxable_amount - $tax_on_this_invoice_subtotal;
+            $vat_on_this_invoice_subtotal = $tax_on_this_invoice_subtotal;
             // $tax_on_this_invoice = (5/100)*$total_dues;
             // $vat_on_this_invoice = (20/100)*$total_dues;
 
@@ -1710,7 +1717,7 @@ class AdvisorController extends Controller
             // $withoutTaxamount =  $data['result']->amount / $taxableAmount;
             // $finalTaxAmount = $data['result']->amount - $withoutTaxamount;
 
-            $taxableAmount =  (1 + (20/100));
+            // $taxableAmount =  (1 + (20/100));
             $withoutTaxamount =  $total_dues / $taxableAmount;
             $tax_on_this_invoice = $total_dues - $withoutTaxamount;
 
@@ -1831,6 +1838,9 @@ class AdvisorController extends Controller
                         'total_current_invoice'=>number_format((float)($total_dues),2,'.',''),
                         'total_due'=>$total_dues,
                         'invoice_number'=>$invoice_number,
+                        'new_taxable_amount'=>number_format((float)($new_taxable_amount),2,'.',''),
+                        'vat_amount'=>number_format((float)($vat_on_this_invoice_subtotal),2,'.',''),
+                        'sub_total_without_tax'=>number_format((float)($total_amount_final_subtotal),2,'.',''),
                         'month'=>$month,
                         'year'=>$year,
                         'is_paid'=>0,
@@ -1849,6 +1859,9 @@ class AdvisorController extends Controller
                             'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
                             'discount_credit_data'=>$discountAndCreditArr,
                             'discount_credit_total'=>$total_this_month_discount_subtotal,
+                            'new_taxable_amount'=>number_format((float)($new_taxable_amount),2,'.',''),
+                            'vat_amount'=>number_format((float)($vat_on_this_invoice_subtotal),2,'.',''),
+                            'sub_total_without_tax'=>number_format((float)($total_amount_final_subtotal),2,'.',''),
                             'invoice_number'=>$invoice_number,
                             'seller_address'=>'MortgageBox\n\n123 High Street, Imaginary town\nSurrey TW12 2AA, United Kingdom\n\nThis is not a payment address\nVAT Number: GB1234567890\nCompany number 12345678',
                             'bill_to_address'=>$bill_to_address,
@@ -1933,6 +1946,9 @@ class AdvisorController extends Controller
                     'total_current_invoice'=>number_format((float)($total_dues),2,'.',''),
                     'vat'=>number_format((float)($vat_on_this_invoice),2,'.',''),
                     'total_taxable_amount'=>$total_amount_final,
+                    'new_taxable_amount'=>number_format((float)($new_taxable_amount),2,'.',''),
+                    'vat_amount'=>number_format((float)($vat_on_this_invoice_subtotal),2,'.',''),
+                    'sub_total_without_tax'=>number_format((float)($total_amount_final_subtotal),2,'.',''),
                     'total_due'=>$total_dues,
                     'month'=>$month,
                     'year'=>$year,
@@ -1952,6 +1968,9 @@ class AdvisorController extends Controller
                     'new_fees_total'=>$total_this_month_cost_of_leads_subtotal,
                     'discount_credit_data'=>$discountAndCreditArr,
                     'discount_credit_total'=>$total_this_month_discount_subtotal,
+                    'new_taxable_amount'=>number_format((float)($new_taxable_amount),2,'.',''),
+                    'vat_amount'=>number_format((float)($vat_on_this_invoice_subtotal),2,'.',''),
+                    'sub_total_without_tax'=>number_format((float)($total_amount_final_subtotal),2,'.',''),
 
                     'seller_address'=>'MortgageBox\n\n123 High Street, Imaginary town\nSurrey TW12 2AA, United Kingdom\n\nThis is not a payment address\nVAT Number: GB1234567890\nCompany number 12345678',
                     'bill_to_address'=>$bill_to_address,

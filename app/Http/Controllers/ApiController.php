@@ -1894,6 +1894,7 @@ class ApiController extends Controller
 
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
+            $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
                 $bidCountArr[] = ($bid->status == 3)? 0:1;
@@ -2415,6 +2416,7 @@ class ApiController extends Controller
         $advice_area =  Advice_area::getAcceptedLeads($post);
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
+            $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
                 $bidCountArr[] = ($bid->status == 3)? 0:1;
@@ -2653,6 +2655,13 @@ class ApiController extends Controller
         $chatData = ChatModel::where('from_user_id',$user->id)->orWhere('to_user_id',$user->id)->with('from_user')->with('to_user')->orderBy('id','DESC')->groupBy('channel_id')->get();
         
         foreach($chatData as $chatData_data){
+            $channel_data = ChatChannel::where('id',$chatData_data->channel_id)->first();
+            if($channel_data){
+                $chatData_data->area_data = Advice_area::where('id',$channel_data->advicearea_id)->with('service')->first();
+                if($chatData_data->area_data){
+                    $chatData_data->area_data->size_want = number_format($chatData_data->area_data->size_want,0);
+                }
+            }
             $chatData_data->showChats = ChatModel::where('channel_id', '=', $chatData_data->channel_id)->orderBy('id', 'DESC')->first();
             if($chatData_data->showChats!=''){
                 $chatData_data->lastMessage = $chatData_data->showChats->text;

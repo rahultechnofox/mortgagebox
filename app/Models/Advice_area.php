@@ -351,6 +351,7 @@ class Advice_area extends Model
             $data = $query->with('service')->orderBy('id','DESC')->paginate();
             if(count($data)){
                 foreach($data as $key=> $item) {
+                    $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
                     $bidCountArr = array();
                     $user = User::where('id',$item->user_id)->first();
                     if($user){

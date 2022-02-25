@@ -1436,7 +1436,7 @@ class ApiController extends Controller
         //dd(end($lastquery));
         //echo '<pre>=';print_r($advice_area);die;
         foreach($advice_area as $key=> $item) {
-
+            $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
                 $bidCountArr[] = ($bid->status == 3)? 0:1;
@@ -2285,9 +2285,18 @@ class ApiController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $chatData = array();
         $channel_id  = 0;
-        $channel_name = "channel" . "-" . $request->advicearea_id . "-" . $request->from_user_id . "-" . $request->to_user_id;
-        $channelDetails =  ChatChannel::where('advicearea_id',$request->advicearea_id)->where('from_user_id', '=', $request->from_user_id)->where('to_user_id', '=', $request->to_user_id)->first();
-        $channelExist =  ChatChannel::where('advicearea_id',$request->advicearea_id)->where('from_user_id', '=', $request->to_user_id)->where('to_user_id', '=', $request->from_user_id)->first();
+        if(!isset($request->advicearea_id)){
+            $channel_name = "channel" . "-" .$request->from_user_id . "-" . $request->to_user_id;
+            $channelDetails =  ChatChannel::where('id',$request->channel_id)->first();
+            // $getchatDetail = ChatChannel::where('from_user_id', $request->from_user_id)->where('to_user_id', $request->to_user_id)->get();
+            // $channelDetails = $getchatDetail[0];
+            // $channelExist =  ChatChannel::where('from_user_id', $request->to_user_id)->where('to_user_id', '=', $request->from_user_id)->first();
+        }else{
+            $channel_name = "channel" . "-" . $request->advicearea_id . "-" . $request->from_user_id . "-" . $request->to_user_id;
+            $channelDetails =  ChatChannel::where('advicearea_id',$request->advicearea_id)->where('from_user_id', '=', $request->from_user_id)->where('to_user_id', '=', $request->to_user_id)->orderBy('id','DESC')->first();
+            $channelExist =  ChatChannel::where('advicearea_id',$request->advicearea_id)->where('from_user_id', '=', $request->to_user_id)->where('to_user_id', '=', $request->from_user_id)->first();
+        }
+        
         if (empty($channelDetails) && empty($channelExist)) {
             $channel = ChatChannel::create([
                 'from_user_id' => $request->from_user_id,
@@ -3714,16 +3723,17 @@ class ApiController extends Controller
                     
                     if($data['invoice']){
                         $summary = "";
+                        $monthArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         $m = $data['invoice']->month;
                         if($m==4 || $m==6 || $m==9 || $m==11){
                             $day = 30;
                         }else if($m==2){
-                            $day = 28;
+                            $day = 28;  
                         }else{
                             $day = 31;
                         }
                         $data['invoice']->month_check = $m;
-                        $summary = "01 ".date("M",strtotime((int)$data['invoice']->month))." ".date("Y")." - ".$day." ".date("M",strtotime((int)$data['invoice']->month))." ".date("Y");
+                        $summary = "01 ".$monthArr[$m-1]." ".date("Y")." - ".$day." ".$monthArr[$m-1]." ".date("Y");
                         $data['invoice']->summary = $summary;
                         $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
                         $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');

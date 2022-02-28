@@ -35,6 +35,7 @@ Route::get('login/{provider}', 'Auth\LoginController@redirectToProvider');
 Route::get('login/{provider}/callback', 'Auth\LoginController@handleProviderCallback');
 Route::get('/generateInvoiceCron', '\App\Http\Controllers\AdvisorController@invoice');
 Route::get('/matchLeadsSummaryCron', '\App\Http\Controllers\AdvisorController@matchLeadsSummaryCron');
+Route::get('/download-invoice/{id}/{date}', '\App\Http\Controllers\AdvisorController@downloadInvoice');
 Route::get("/verify-success",function(){
     return "your account has been verified!";
 });

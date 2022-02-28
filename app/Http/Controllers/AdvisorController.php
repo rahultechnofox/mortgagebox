@@ -23,6 +23,9 @@ use App\Models\ReviewRatings;
 use App\Models\Notifications;
 use App\Models\Invoice;
 use App\Models\ReviewSpam;
+use App\Models\AdviceAreaSpam;
+use App\Models\NeedSpam;
+use PDF;
 use JWTAuth;
 use App\Models\User;
 use App\Models\UserNotes;
@@ -38,6 +41,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Models\AppSettings;
 use App\Models\AdviserProductPreferences;
+
 
 
 class AdvisorController extends Controller
@@ -64,6 +68,190 @@ class AdvisorController extends Controller
         // echo json_encode($data);exit;
         $data['invoice'] = DB::table('invoices')->where('advisor_id',$id)->where('month',date('m'))->first();
         return view('advisor.show',$data);
+    }
+
+    public function downloadInvoice($id,$date) {
+        $post = array();
+        $post['date'] = $date;
+        $user = User::where('id',$id)->first();
+        $data['adviser'] = User::getAdvisorDetail($user->id);
+        $data['site_address'] = DB::table('app_settings')->where('key','site_address')->first();
+        $data['site_name'] = DB::table('app_settings')->where('key','mail_from_name')->first();
+        $data['billing'] = DB::table('billing_addresses')->where('advisor_id',$user->id)->first();
+        if($data['billing']){
+            $data['billing']->value = $data['billing']->address_one; 
+            if($data['billing']->address_two!=null){
+                $data['billing']->value .= ", ".$data['billing']->address_two;
+            }
+            if($data['billing']->city!=null){
+                $data['billing']->value .= ", ".$data['billing']->city;
+            }
+            if($data['billing']->post_code!=null){
+                $data['billing']->value .= ", ".$data['billing']->post_code;
+            }
+        }
+        $data['new_fees'] = array();
+        $data['discount_credits'] = array();
+        // $data['invoice']->discount_credit_arr = array();
+        $spam_total = 0;
+        if($data['adviser']){
+            if(isset($post['date']) && $post['date']!=''){
+                $explode = explode('-',$post['date']);
+                $searchmonth = $explode[0];
+                $searchyear = $explode[1];
+                $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->where('month',$searchmonth)->where('year',$searchyear)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+            }else{
+                $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+            }
+            
+            if($data['invoice']){
+                $summary = "";
+                $monthArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                $m = $data['invoice']->month;
+                if($m==4 || $m==6 || $m==9 || $m==11){
+                    $day = 30;
+                }else if($m==2){
+                    $day = 28;  
+                }else{
+                    $day = 31;
+                }
+                $fmonth = $m+1;
+                $data['invoice']->month_check = $m;
+                $summary = "01 ".$monthArr[$m-1]." ".date("Y")." - ".$day." ".$monthArr[$m-1]." ".date("Y");
+                $data['invoice']->summary = $summary;
+                $data['invoice']->show_date_month = $monthArr[$m-1]." ".date("Y");
+                $data['invoice']->issued_date = "01/".$fmonth."/".date("Y");
+                $data['invoice']->due_date = "14/".$fmonth."/".date("Y");
+                $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
+                $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->get(); 
+                foreach($data['invoice']->month_data as $month_data){
+                    $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
+                }
+                $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->with('area')->with('adviser')->get();
+                // ->where('is_discounted',0)
+                if(count($data['invoice']->new_fees_arr)){
+                    foreach($data['invoice']->new_fees_arr as $new_bid){
+                        $new_bid->cost_leads = number_format($new_bid->cost_leads,2);
+                        if(isset($new_bid->area) && $new_bid->area){
+                            $new_bid->area->user->advisor_profile = null;
+                            if(isset($new_bid->area->user) && $new_bid->area->user){
+                                $new_bid->area->user->advisor_profile = AdvisorProfile::where('advisorId',$new_bid->area->user->id)->first();
+                            }
+                        }
+                        $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
+                        if($new_bid->status==0){
+                            $new_bid->status_type = "Live Lead";
+                        }else if($new_bid->status==1){
+                            $new_bid->status_type = "Hired";
+                        }else if($new_bid->status==2){
+                            $new_bid->status_type = "Completed";
+                        }else if($new_bid->status==3){
+                            $new_bid->status_type = "Lost";
+                        }else if($new_bid->advisor_status==2){
+                            $new_bid->status_type = "Not Proceeding";
+                        }
+                    }
+                }
+                
+                $discount_cre = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                if(count($discount_cre)){
+                    foreach($discount_cre as $discount_bid){
+                        $discount_bid->cost_leads = number_format($discount_bid->cost_leads,2);
+                        $address = "";
+                        if($discount_bid->area){
+                            if(!empty($discount_bid->area->user)) {
+                                $addressDetails = PostalCodes::where('Postcode',$discount_bid->area->user->post_code)->first();
+                                if(!empty($addressDetails)) {
+                                    if($addressDetails->Country != ""){
+                                        $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                                        $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                                        $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                                    }
+                                    
+                                }
+                            }
+                        }
+                        $discount_bid->area->address = $address;
+                        // if(isset($discount_bid->area) && $discount_bid->area){
+                        //     $discount_bid->area->user->advisor_profile = null;
+                        //     if(isset($discount_bid->area->user) && $discount_bid->area->user){
+                        //         $discount_bid->area->user->advisor_profile = AdvisorProfile::where('advisorId',$discount_bid->area->user->id)->first();
+                        //     }
+                        // }
+                        $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
+                        if($discount_bid->status==0){
+                            $discount_bid->status_type = "Live Lead";
+                        }else if($discount_bid->status==1){
+                            $discount_bid->status_type = "Hired";
+                        }else if($discount_bid->status==2){
+                            $discount_bid->status_type = "Completed";
+                        }else if($discount_bid->status==3){
+                            $discount_bid->status_type = "Lost";
+                        }else if($discount_bid->advisor_status==2){
+                            $discount_bid->status_type = "Not Proceeding";
+                        }
+                        array_push($data['discount_credits'],$discount_bid);
+                    }
+                }
+
+                $spam_refund = AdviceAreaSpam::where('user_id',$data['invoice']->advisor_id)->where('spam_status',1)->with('area')->get();
+                foreach($spam_refund as $spam_refund_data){
+                    $spam_refund_need = NeedSpam::where('adviser_id',$spam_refund_data->user_id)->where('area_id',$spam_refund_data->area_id)->first();
+                    if($spam_refund_need){
+                        $spam_bid = AdvisorBids::where('id',$spam_refund_need->bid_id)->with('area')->first();
+                        if($spam_bid){
+                            $baddress = "";
+                            if($spam_bid->area){
+                                if(!empty($spam_bid->area->user)) {
+                                    $addressDetails = PostalCodes::where('Postcode',$spam_bid->area->user->post_code)->first();
+                                    if(!empty($addressDetails)) {
+                                        if($addressDetails->Country != ""){
+                                            $baddress = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                                            $baddress .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                                            $baddress .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                                        }
+                                        
+                                    }
+                                }
+                            }
+                            $spam_bid->area->address = $baddress;
+                            if($spam_bid->status==0){
+                                $spam_bid->status_type = "Live Lead";
+                            }else if($spam_bid->status==1){
+                                $spam_bid->status_type = "Hired";
+                            }else if($spam_bid->status==2){
+                                $spam_bid->status_type = "Completed";
+                            }else if($spam_bid->status==3){
+                                $spam_bid->status_type = "Lost";
+                            }else if($spam_bid->advisor_status==2){
+                                $spam_bid->status_type = "Not Proceeding";
+                            }
+                            $spam_bid->discount_cycle = "Refund";
+                            $spam_bid->cost_leads = number_format($spam_bid->cost_leads,2);
+                            $spam_bid->cost_discounted = number_format($spam_bid->cost_discounted,2);
+                            // array_push($data['discount_credits'],$spam_bid);
+                            $spam_bid->date = date("d-M-Y H:i",strtotime($spam_bid->created_at));
+                            array_push($data['discount_credits'],$spam_bid);
+                            if($spam_refund_need->cost_of_lead_discounted!=0){
+                                $spam_total = $spam_total + $spam_refund_need->cost_of_lead_discounted;
+                            }else{
+                                $spam_total = $spam_total + $spam_refund_need->cost_of_lead;
+                            }
+                        }
+                    }
+                }
+                // $discount_subtotal_to = $data['invoice']->discount_subtotal + $spam_total;
+                // $data['invoice']->discount_subtotal = number_format($discount_subtotal_to,2);
+                $data['invoice']->discount_credit_arr = $data['discount_credits'];
+            }
+        }
+        $pdf = PDF::loadView('invoice.pdf_html_front.invoice-pdf', $data);
+    
+        return $pdf->download('invoice-'.$post['date'].'.pdf');
+        // echo json_encode($data);exit;
+        // return view('invoice.pdf_html_front.invoice-pdf',$data);
     }
     /**
      * Display Invoice

@@ -81,6 +81,9 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('getReviewRating',  [AdvisorController::class, 'getReviewRating']);
     Route::get('selectOrDeclineOffer/{bid_id}/{status}', [ApiController::class, 'selectOrDeclineOffer']);
 
+    Route::post('downloadInvoice/',  [ApiController::class, 'downloadInvoice']);
+
+
     // for advisor route
 
     Route::get('getAdvisorLinks/', [AdvisorController::class, 'getAdvisorLinks']);

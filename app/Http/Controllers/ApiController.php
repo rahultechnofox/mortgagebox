@@ -1813,16 +1813,7 @@ class ApiController extends Controller
                         }
                     }
                 }
-                if($status_data=='no_response'){
-                    $response = Advice_area::where('advisor_id',0)->whereNotIn('id',$accept)->whereNotIn('id',$lost)->get();
-                    foreach($response as $response_data){
-                        $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->count();
-                        $hired = AdvisorBids::where('area_id',$response_data->id)->where('status',1)->count();
-                        if($accepted>0 && $hired==0){
-                            array_push($status_arr,$response_data->id);
-                        }
-                    }
-                }
+
                 if($status_data=='lost'){
                     $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->whereNotIn('area_id',$accept)->whereNotIn('area_id',$no_res)->where('status',0)->get();
                     if(count($AllMyBids)){
@@ -1834,6 +1825,26 @@ class ApiController extends Controller
                         }
                     }
                 }
+                if($status_data=='no_response'){
+
+                    $response = Advice_area::where('advisor_id',0)->where('created_at','<',date("Y-m-d H:i:s",strtotime("- 14 days")))->get();
+                    foreach($response as $response_data){
+                        $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->where('advisor_status',1)->count();
+                        $hired = AdvisorBids::where('area_id',$response_data->id)->where('status',1)->count();
+                        
+                        $channelIds = array(-1);
+                        $channelID = ChatChannel::where('advicearea_id',$response_data->id)->orderBy('id','DESC')->get();
+                        foreach ($channelID as $chanalesR) {
+                            array_push($channelIds, $chanalesR->id);
+                        }                    
+                        $chatCount = ChatModel::whereIn('channel_id',$channelIds)->count();;
+
+                        if($chatCount==0 && $hired==0 && $accepted>0){
+                            array_push($status_arr,$response_data->id);
+                        }
+                    }
+                }
+                
             }
             if(count($advisorAreaArr)>0){
                 $advisorAreaArr = array_intersect($advisorAreaArr, $status_arr);
@@ -1990,6 +2001,7 @@ class ApiController extends Controller
             $advice_area[$key]->lead_value = $item->size_want_currency.number_format($lead_value,0);
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
+            $show_status = 'Accepted';
             if($bidDetailsStatus){
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Accepted";
@@ -2000,11 +2012,7 @@ class ApiController extends Controller
                 if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Completed"; 
                 }
-                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->where('status',0)->count();
-                $hired = AdvisorBids::where('area_id',$item->id)->where('status',1)->count();
-                if($accepted>0 && $hired==0){
-                    $show_status = "No Response";
-                }
+                
                 $checkBid = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->count();
                 if($checkBid>0){
                     $dataLost = Advice_area::where('id',$item->id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
@@ -2012,8 +2020,23 @@ class ApiController extends Controller
                         $show_status = "Lost";
                     }
                 }
+
+                if($item->created_at<date("Y-m-d H:i:s",strtotime("- 14 days")) && ($show_status=='Accepted' || $show_status=='')){
+                    $channelIds = array(-1);
+                    $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
+                    foreach ($channelID as $chanalesR) {
+                        array_push($channelIds, $chanalesR->id);
+                    }                    
+                    $chatCount = ChatModel::whereIn('channel_id',$channelIds)->count();;
+                    if($chatCount==0){
+                        $show_status = "No Response";
+                    }
+                }
             }
-            $advice_area[$key]->show_status = $show_status;
+            if(isset($advice_area[$key])){
+                if(isset($advice_area[$key]->show_status))
+                    $advice_area[$key]->show_status = (isset($show_status))?$show_status:'';
+            }
 
             $channelIds = array(-1);
             $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
@@ -2569,7 +2592,7 @@ class ApiController extends Controller
             $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)round($lead_value),0);
                         
             $advice_area[$key]->lead_address = $address;
-            // $show_status = "Accepted"; 
+            $show_status = ""; 
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->first();
             if($bidDetailsStatus){
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
@@ -2581,16 +2604,24 @@ class ApiController extends Controller
                 if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Completed"; 
                 }
-                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->where('status',0)->count();
-                $hired = AdvisorBids::where('area_id',$item->id)->where('status',1)->count();
-                if($accepted>0 && $hired==0){
-                    $show_status = "No Response";
-                }
+
                 $checkBid = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->count();
                 if($checkBid>0){
                     $dataLost = Advice_area::where('id',$item->id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
                     if($dataLost){
                         $show_status = "Lost";
+                    }
+                }
+
+                if($item->created_at<date("Y-m-d H:i:s",strtotime("- 14 days")) && ($show_status=='Accepted' || $show_status=='') ){
+                    $channelIds = array(-1);
+                    $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
+                    foreach ($channelID as $chanalesR) {
+                        array_push($channelIds, $chanalesR->id);
+                    }                    
+                    $chatCount = ChatModel::whereIn('channel_id',$channelIds)->count();
+                    if($chatCount==0){
+                        $show_status = "No Response";
                     }
                 }
             }
@@ -3722,11 +3753,21 @@ class ApiController extends Controller
                 // $data['invoice']->discount_credit_arr = array();
                 $spam_total = 0;
                 if($data['adviser']){
+                    $data['month_data'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->get(); 
+                    foreach($data['month_data'] as $month_data){
+                        $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
+                    }
                     if(isset($post['date']) && $post['date']!=''){
                         $explode = explode('/',$post['date']);
                         $searchmonth = $explode[0];
                         $searchyear = $explode[1];
-                        $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->where('month',$searchmonth)->where('year',$searchyear)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                        $data_invoice = DB::table('invoices')->where('advisor_id',$user->id)->where('month',$searchmonth)->where('year',$searchyear)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                        if($data_invoice){
+                            $data['invoice'] = $data_invoice;
+                        }else{
+                            $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                        }
+                        
                     }else{
                         $data['invoice'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
                     }
@@ -3748,10 +3789,7 @@ class ApiController extends Controller
                         $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
                         $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
                         $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
-                        $data['invoice']->month_data = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->get(); 
-                        foreach($data['invoice']->month_data as $month_data){
-                            $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
-                        }
+                        
                         $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->with('area')->with('adviser')->get();
                         // ->where('is_discounted',0)
                         if(count($data['invoice']->new_fees_arr)){
@@ -3958,14 +3996,23 @@ class ApiController extends Controller
             $data['hired'] = AdvisorBids::where('advisor_id',$user->id)->where('status',1)->count();
             $data['completed'] = AdvisorBids::where('advisor_id',$user->id)->where('status',2)->where('advisor_status',1)->count();
             $data['no_response'] = 0;
-            $response = Advice_area::where('advisor_id',0)->get();
+            $response = Advice_area::where('advisor_id',0)->where('created_at','<',date("Y-m-d H:i:s",strtotime("- 14 days")))->get();
             foreach($response as $response_data){
-                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->count();
-                $hired = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',1)->count();
-                if($accepted>0 && $hired==0){
+                $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->where('advisor_status',1)->count();
+                $hired = AdvisorBids::where('area_id',$response_data->id)->where('status',1)->count();
+                
+                $channelIds = array(-1);
+                $channelID = ChatChannel::where('advicearea_id',$response_data->id)->orderBy('id','DESC')->get();
+                foreach ($channelID as $chanalesR) {
+                    array_push($channelIds, $chanalesR->id);
+                }                    
+                $chatCount = ChatModel::whereIn('channel_id',$channelIds)->count();;
+
+                if($chatCount==0 && $hired==0 && $accepted>0){
                     $data['no_response'] = $data['no_response'] + 1;
                 }
             }
+
             // $data['no_response'] = Advice_area::where('advisor_id',$user->id)->where('advisor_id',0)->count();
             $data['lost'] = 0;
             $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();

@@ -878,9 +878,10 @@ class ApiController extends Controller
         // $advice_area = Advice_area::where('user_id', '=', $id->id)->get();
         $advice_area = Advice_area::where('user_id', '=', $id->id)->orderBy('id', 'DESC')->with('service')->get();
         // ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.id')
-
+        
         // $advice_area =  DB::select('SELECT advice_areas.*,advisor_bids.status as bid_status FROM advice_areas  LEFT JOIN advisor_bids ON advice_areas.id = advisor_bids.area_id where user_id ='.$id->id.'');
         foreach ($advice_area as $key => $item) {
+            $reviewed = 0;
             // $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->id AND m.to_user_id != $id->id AND m.to_user_id_seen = 0");
             $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->id AND m.to_user_id = $id->id AND m.to_user_id_seen = 0");
             // $channelDetails = ChatChannel::where('advicearea_id',$item->id)->where('to_user_id',$id->id)->first();
@@ -955,6 +956,17 @@ class ApiController extends Controller
                 $show_status = "Closed";
             }
             $advice_area[$key]->show_status = $show_status;
+            $reviewed = 0;
+            if($show_status == "Completed"){
+                $review = ReviewRatings::where('user_id',$id->id)->where('area_id',$item->id)->first();
+                if($review){
+                    $reviewed = 1;
+                }
+            }
+            $advice_area[$key]->reviewed = $reviewed;
+            // 'user_id' => $userDetails->id,
+            // 'advisor_id' => $request->advisor_id,
+            // $review_arr['area_id'] = $request->area_id;
         }
         if ($advice_area) {
             return response()->json([

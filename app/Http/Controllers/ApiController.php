@@ -964,9 +964,6 @@ class ApiController extends Controller
                 }
             }
             $advice_area[$key]->reviewed = $reviewed;
-            // 'user_id' => $userDetails->id,
-            // 'advisor_id' => $request->advisor_id,
-            // $review_arr['area_id'] = $request->area_id;
         }
         if ($advice_area) {
             return response()->json([
@@ -1357,10 +1354,24 @@ class ApiController extends Controller
         }
         //this is code of search area id array
         // 
-        $advice_areaQuery =  Advice_area::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
+        $queryModel = 'App\Models\Advice_area';
+        if($self!=0 && $non_uk_citizen!=0 && $adverse!=0){
+            if($self==1){
+                $queryModel::where('self_employed',1);
+            }
+            if($non_uk_citizen==1){
+                $queryModel::where('non_uk_citizen',1);
+            }
+            if($adverse_credit==1){
+                $queryModel::where('adverse_credit',1);
+            }
+            // $queryModel::where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse);
+        }
+        $advice_areaQuery =  $queryModel::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('area_status',0)->where('inquiry_adviser_id',0)->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->where(function($query) use ($requestTime){
+            ->where('area_status',0)->where('inquiry_adviser_id',0)->where(function($query) use ($requestTime){
+                // ->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)
                 // if($requestTime != ""){
                 //     $query->where('advice_areas.request_time','=',$requestTime);
                 // }

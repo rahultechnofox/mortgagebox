@@ -3328,7 +3328,7 @@ class ApiController extends Controller
     }
 
     public function getAllServiceType() {
-        $user = JWTAuth::parseToken()->authenticate();
+        // $user = JWTAuth::parseToken()->authenticate();
         $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
         if(!empty($result)) {
             foreach($result as $row){

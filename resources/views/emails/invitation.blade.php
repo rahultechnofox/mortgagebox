@@ -64,16 +64,12 @@ table[class="table750"] {width: 100% !important;}
           <table cellpadding="0" cellspacing="0" border="0" width="88%" style="width: 88% !important; min-width: 88%; max-width: 88%;">
              <tr>
                 <td align="left" valign="top">
-                   <font face="'Source Sans Pro', sans-serif" color="#1a1a1a" style="font-size: 45px; line-height: 45px; font-weight: 300; letter-spacing: -1.5px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #1a1a1a; font-size: 38px; line-height: 38px; font-weight: 300; letter-spacing: -1.5px;">Hey,</span>
+                   <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Connect with borrowers actively looking for a mortgage.</span>
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">You’ve been invited to join mortgagebox.co.uk</span>
-                   </font>
-                   <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
-                   <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Connect with borrowers actively looking for a mortgage</span>
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">See all leads as they are listed. Review the ones that look interesting and then decide if you want to be introduced. There are no fixed costs and you only pay a small fee for the leads you want. A maximum of five mortgage advisers are connected.</span>
                    </font>
 				   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100% !important; max-width: 100%; min-width: 100%; border-radius: 4px;">
                       <tr>

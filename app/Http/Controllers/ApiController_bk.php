@@ -2401,7 +2401,7 @@ class ApiController extends Controller
             'email'=>$advisor_user->email,
             'message_text' => $message
         );
-        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'MortgageBox New Message','','');
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'New message receiveds from '.$user->name,'','');
         return response()->json([
             'status' => true,
             'channel' => $request->channel_id,

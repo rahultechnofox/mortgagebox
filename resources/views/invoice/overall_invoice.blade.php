@@ -272,7 +272,7 @@
 													<td class="py-1"> <span class="fw-bold">{{$discount_credits_data->date}}</span> </td>
                                                     <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->area->user->name}}</span> </td>
 													<td class="py-1"> <span class="fw-bold">{{$discount_credits_data->area->property}}</span> </td>
-                                                    <td class="py-1"> <span class="fw-bold">{{$discount_credits_data->area->service->name}}</span> </td>
+                                                    <td class="py-1"> <span class="fw-bold">@if(isset($discount_credits_data->area->service) && $discount_credits_data->area->service!=''){{$discount_credits_data->area->service->name}}@else -- @endif</span> </td>
 													<td class="py-1"> <span class="fw-bold">{{\Helpers::currency($discount_credits_data->cost_leads)}}</span> </td>
                                                 </tr>
                                             @endforeach

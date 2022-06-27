@@ -69,7 +69,7 @@ table[class="table750"] {width: 100% !important;}
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
-                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Mortgagebox is the smart and cost effective way for finding new customers actively looking for mortgages based on your specialities and preferences. We let you focus on what you do best ... arranging great mortgages for your customers rather than scrambling around for leads</span>
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">Mortgagebox is the smart and cost effective way for finding new customers actively looking for mortgages based on your specialities and preferences. We let you focus on what you do best ... arranging great mortgages for your customers rather than scrambling around for leads.</span>
                    </font>
                    <div style="height: 20px; line-height: 20px; font-size: 18px;">&nbsp;</div>
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 24px; line-height: 32px;">

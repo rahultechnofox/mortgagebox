@@ -349,7 +349,7 @@ class AdvisorController extends Controller
                     $advisor = AdvisorProfile::where('id',$post['id'])->first();
                     Notifications::create(array(
                         'type'=>'10', // 1:
-                        'message'=>'Update your FCA Number', // 1:
+                        'message'=>'FCA number has been confirmed. You are now able to see and buy leads', // 1:
                         'read_unread'=>'1', // 1:
                         'user_id'=>1,// 1:
                         'advisor_id'=>$advisor->advisorId, // 1:
@@ -1010,6 +1010,9 @@ class AdvisorController extends Controller
             $arr['company_name'] = $request->company_name;
         }
         $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($arr);
+        if ($request->email != "" && $request->email != "null") {
+            User::where('id',$id->id)->update(['email'=>$request->email]);
+        }
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         // echo json_encode($advisor_data);exit;
         if(isset($request->company_name) && $request->company_name!=''){

@@ -18,6 +18,7 @@ use App\Models\UserNotes;
 use App\Models\AppSettings;
 use App\Models\AdviceAreaSpam;
 use App\Models\NeedSpam;
+use App\Models\Notifications;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -97,7 +98,7 @@ class NeedController extends Controller
             $post['area_id'] = $live_arr;
         }
         $advice_area = Advice_area::getNeedList($post);
-        // echo count($advice_area->data);exit;
+        // echo json_encode($advice_area);exit;
         $data = $advice_area;   
         $data['services'] = ServiceType::where('parent_id','!=',0)->where('status',1)->get();
         $data['entry_count'] = config('constants.paginate.num_per_page');
@@ -171,6 +172,27 @@ class NeedController extends Controller
                 $needDetails->lead_value = $needDetails->size_want_currency.round($lead_value,2);
             }else{
                 $needDetails->lead_value = 0;
+            }
+
+            $needDetails->selected_pro = AdvisorBids::where('area_id',$needDetails->id)->where('advisor_bids.advisor_status',1)->where('advisor_bids.status','!=',0)->leftJoin('users', 'advisor_bids.advisor_id', '=', 'users.id')->select('advisor_bids.*','users.name as advisor_name')->first();
+            if($needDetails->close_type!=0){
+                if($needDetails->close_type==1){
+                    $needDetails->close_type="Someone not on Mortgagebox";
+                }else if($needDetails->close_type==12){
+                    $needDetails->close_type="In the end I didn’t need a mortgage adviser";
+                }else{
+                    $needDetails->close_type="--";
+                }
+            }else if($needDetails->advisor_id!=0){
+                $user = AdvisorProfile::where('advisorId',$needDetails->advisor_id)->first();
+                if($user){
+                    $needDetails->close_type=$user->display_name;
+                }else{
+                    $needDetails->close_type="--";
+                }
+                
+            }else{
+                $needDetails->close_type="--";
             }
             // $advisorDetaultPercent = 0;
             // if($item->service_type_id!=0){
@@ -419,6 +441,33 @@ class NeedController extends Controller
                         }
                     }
                 }
+                $need = AdviceAreaSpam::where('id',$post['id'])->first();
+                if($need){
+                    $area = Advice_area::where('id',$need->area_id)->first();
+                    if($area){
+                        $userdata = User::where('id',$area->user_id)->first();
+                        if($userdata){
+                            $adviser = AdvisorProfile::where('advisorId',$need->user_id)->first();
+                            if($adviser){
+                                if($post['spam_status']==1){
+                                    $newArr = array(
+                                        'name'=>$adviser->display_name,
+                                        'email'=>$adviser->email,
+                                        'message_text' => 'Admin is agree with your spam marked request.'
+                                    );
+                                }else{
+                                    $newArr = array(
+                                        'name'=>$adviser->display_name,
+                                        'email'=>$adviser->email,
+                                        'message_text' => 'Admin is disagree with your spam marked request.'
+                                    );
+                                }
+                                
+                                $c = \Helpers::sendEmail('emails.information',$newArr ,$adviser->email,$adviser->display_name,'Mortgagebox.co.uk – '.$adviser->display_name,'','');
+                            }
+                        }
+                    }
+                }
                 if($user){
                     return response(\Helpers::sendSuccessAjaxResponse('Status updated successfully.',$user));
                 }else{
@@ -427,6 +476,15 @@ class NeedController extends Controller
             }
         } catch (\Exception $ex) {
             return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
+    }
+
+    public function saveNotification($data) {
+        $notification = Notifications::create($data);
+        if($notification) {
+            return true;
+        }else {
+            return false;
         }
     }
 }

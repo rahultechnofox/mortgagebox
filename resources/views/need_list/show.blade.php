@@ -215,6 +215,25 @@
                                 </div>
                             </div>
                             <hr>
+                            <div class="col-md-6 mb-1">
+                                <div class="d-flex">
+                                    <div class="transaction-percentage">
+                                        <h6 class="transaction-title">{{ __('Selected Pro:') }}</h6>
+                                        <small> 
+                                            @if(isset($needDetails->selected_pro) && $needDetails->selected_pro!=''){{\Helpers::checkNull($needDetails->selected_pro->advisor_name)}}@else -- @endif
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-1">
+                                <div class="d-flex">
+                                    <div class="transaction-percentage">
+                                        <h6 class="transaction-title">{{ __('Final Pro:') }}</h6>
+                                        <small>@if(isset($needDetails->close_type) && $needDetails->close_type!=''){{\Helpers::checkNull($needDetails->close_type)}}@else -- @endif</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
                             <div class="col-md-12 mb-1">
                                 <div class="transaction-percentage">
                                     <h6 class="transaction-title">{{ __('Notes:') }}</h6>

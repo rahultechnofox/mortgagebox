@@ -194,16 +194,18 @@ class UserController extends Controller
         ));
         $advisor = AdvisorProfile::where('advisorId',$request->advisor_id)->first();
         $userReviewd = User::where('id',$userDetails->id)->first();
-
-            $newArr = array(
-                'name'=>$advisor->display_name,
-                'email'=>$advisor->email,
-                'message_text' => 'You have received a new review from '.$userReviewd->name,
-                'url' =>config('constants.urls.host_url')."/adviser?type=Review",
-                'btn_text' => 'Reply'
-            );
-            $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – New Review from '.$userReviewd->name,'','');
-        
+        if(isset($advisor) && $advisor!=''){
+            if(isset($userReviewd) && $userReviewd!=''){
+                $newArr = array(
+                    'name'=>$advisor->display_name,
+                    'email'=>$advisor->email,
+                    'message_text' => 'You have received a new review from '.$userReviewd->name,
+                    'url' =>config('constants.urls.host_url')."/adviser?type=Review",
+                    'btn_text' => 'Reply'
+                );
+                $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – New Review from '.$userReviewd->name,'','');
+            }
+        }
         return response()->json([
             'status' => true,
             'message' => 'Rating added successfully',

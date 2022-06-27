@@ -34,7 +34,7 @@ class ReviewSpam extends Model
             // if(isset($search['name']) && $search['name']!=''){
             //     $query = $query->where('question', 'like', '%' .strtolower($search['name']). '%');
             // }
-            $data = $query->orderBy('id','DESC')->with('adviser')->with('review')->paginate(config('constants.paginate.num_per_page'));
+            $data = $query->orderBy('created_at','DESC')->with('adviser')->with('review')->paginate(config('constants.paginate.num_per_page'));
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

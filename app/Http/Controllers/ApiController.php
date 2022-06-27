@@ -1115,8 +1115,14 @@ class ApiController extends Controller
                 'email_status' => 1,
                 'email_verified_at' => Date('Y-m-d H:i:s'),
             ]);
+            if($userDetails->user_role==0){
+                return redirect()->away(config('constants.urls.host_url')."?type=Activate");
+            }else{
+                return redirect()->away(config('constants.urls.host_url')."/adviser?type=Activate");
+            }
+            
         }
-        return redirect()->away(config('constants.urls.host_url')."/adviser?type=Activate");
+        
     }
     // MARK: Function for forgot password
     public function forgotPassword(Request $request)
@@ -2248,7 +2254,11 @@ class ApiController extends Controller
                     'email'=>$email_id,
                     'url' => $invitedUrl
                 );
-                $c = \Helpers::sendEmail('emails.invitation',$newArr ,$email_id,$user->name,'Mortgagebox.co.uk – '.$adviser->display_name.' has invited you to join','','');
+                if($adviser){
+                    $c = \Helpers::sendEmail('emails.invitation',$newArr ,$email_id,$user->name,$adviser->display_name.' has invited you to join Mortgagebox.co.uk','','');
+                }else{
+                    $c = \Helpers::sendEmail('emails.invitation',$newArr ,$email_id,$user->name,$user->name.' has invited you to join Mortgagebox.co.uk','','');
+                }
             }
             return response()->json([
                 'status' => true,
@@ -2434,15 +2444,16 @@ class ApiController extends Controller
         if($advisor){
             $display_name = $advisor->display_name;
         }else{
-            $display_name = $advisor_user->display_name;
+            $display_name = $advisor_user->name;
 
         }
         $newArr = array(
             'name'=>$display_name,
+            // 'name'=>$display_name,
             'email'=>$advisor_user->email,
             'message_text' => $message
         );
-        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'MortgageBox New Message','','');
+        $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'New message received from '.$user->name,'','');
         return response()->json([
             'status' => true,
             'channel' => $request->channel_id,
@@ -3476,7 +3487,24 @@ class ApiController extends Controller
                     'spam_status' => -1,
                     'created_at' => date("Y-m-d H:i:s")
                 );
-                AdviceAreaSpam::insertGetId($postData);
+                $id = AdviceAreaSpam::insertGetId($postData);
+                if($id){
+                    $area = Advice_area::where('id',$postData['area_id'])->first();
+                    if($area){
+                        $userdata = User::where('id',$area->user_id)->first();
+                        if($userdata){
+                            $adviser = AdvisorProfile::where('advisorId',$user->id)->first();
+                            if($adviser){
+                                $newArr = array(
+                                    'name'=>$userdata->name,
+                                    'email'=>$userdata->email,
+                                    'message_text' => $adviser->display_name.' has marked your need as spam.'
+                                );
+                                $c = \Helpers::sendEmail('emails.information',$newArr ,$userdata->email,$userdata->name,'Mortgagebox.co.uk – '.$userdata->name,'','');
+                            }
+                        }
+                    }
+                }
                 return response()->json([
                     'status' => true,
                     'message' => 'Your spam request has been submited successfully.',

@@ -10,13 +10,14 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
 class AdviceController extends Controller
 {
     public function addAdviceArea(Request $request) {
         if($request->user_id == 0 || $request->user_id == "") {
-            
+            $credentials = $request->only('email', 'password');
             $data = $request->only('name', 'email', 'password');
             $validator = Validator::make($data, [
                 'name' => 'required|string',
@@ -104,11 +105,95 @@ class AdviceController extends Controller
             'advisor_preference_gender' => $request->advisor_preference_gender,
         ]);
         //User created, return success response
+
+        $user =  USER::where('email', '=', $request->email)->where('status',"!=",2)->first();
+        if($user){
+            if (!$token = JWTAuth::attempt($credentials)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Login credentials are invalid.',
+                ], 400);
+            }
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Login credentials are invalid.'
+            ]);
+        }
+
+        $user->profile_percent = 15;
+        if($user->user_role == 1) {
+            $userDetails =  AdvisorProfile::where('advisorId', '=', $user->id)->first(); 
+            if($userDetails){
+                if($userDetails->image!=''){
+                    $user->profile_percent = $user->profile_percent + 20;
+                }
+                if($userDetails->short_description!=''){
+                    $company = companies::where('id',$userDetails->company_id)->first();
+                    if($company){
+                        if($company->company_about!=''){
+                            $user->profile_percent = $user->profile_percent + 15;
+                        }
+                    }
+                }
+                $offer_data = AdvisorOffers::where('advisor_id', '=', $user->id)->get();
+                if(count($offer_data)){
+                    $user->profile_percent = $user->profile_percent + 30;
+                    $user->offer = 1;
+                }else{
+                    $user->offer = 0;
+                }
+                if($userDetails->web_address!=''){
+                    $user->profile_percent = $user->profile_percent + 20;
+                }
+                $team_member = CompanyTeamMembers::where('email',$userDetails->email)->first();
+                // $userDetails->is_admin = $team_member;
+                if($team_member){
+                    if($team_member->isCompanyAdmin==1){
+                        $user->is_admin = 1;
+                    }else{
+                        $user->is_admin = 0;
+                    }
+                }else{
+                    $user->is_admin = 2;
+                }
+            }
+            $user->userDetails = $userDetails;
+        }else{
+            $user->userDetails = [];
+        }
+        $user->slug = $this->getEncryptedId($user->id);
+        $user->is_invoice_remaining = 0;
+        $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',date('m'))->where('advisor_id',$user->id)->get();
+        if(count($unpaid_prevoius_invoice)){
+            // return response()->json(['user' => $unpaid_prevoius_invoice]);
+            $user->is_invoice_remaining = 1;
+        }else{
+            $unpaid_prevoius_invoice_check = DB::table('invoices')->where('is_paid',0)->where('month',date('m'))->where('advisor_id',$user->id)->first();
+            
+            if($unpaid_prevoius_invoice_check){
+                $unpaid_prevoius_invoice_check->current = date('Y-m-d H:i:s');
+                $unpaid_prevoius_invoice_check->after = date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)));
+
+                if(date('Y-m-d H:i:s') >= date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)))){
+                    $user->is_invoice_remaining = 1;
+                }
+            }
+            // return response()->json(['user' => $unpaid_prevoius_invoice_check]);
+        }
+        User::where('id',$user->id)->update(['last_active'=>date('Y-m-d H:i:s')]);
+        //Token created, return with success response and jwt token
         return response()->json([
-            'success' => true,
-            'message' => 'Advice area added successfully',
-            'data' => $user
+            'status' => true,
+            'token' => $token,
+            'data' => $user,
+            'message' => 'Advice area created successfully',
         ], Response::HTTP_OK);
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'Advice area added successfully',
+        //     'data' => $user
+        // ], Response::HTTP_OK);
     }
     function getEncryptedId($id) {
 		// Store the cipher method 

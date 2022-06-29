@@ -617,6 +617,16 @@ class AdvisorController extends Controller
         JWTAuth::parseToken()->authenticate();
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id)->first();
         if($advisor_data){
+            $advisor_data->is_make_enquiry_visible = 1;
+            $avisor_bids_check = AdvisorBids::where('advisor_id',$id)->where('status',1)->first();
+            if($avisor_bids_check){
+                $area = Advice_area::where('id',$avisor_bids_check->area_id)->first();
+                if($area){
+                    if($area->advisor_id==$id && $area->area_status<3){
+                        $advisor_data->is_make_enquiry_visible = 0;
+                    }
+                }
+            }
             $advisor_data->profile_percent = 15;
             if($advisor_data->image!=''){
                 $advisor_data->profile_percent = $advisor_data->profile_percent + 20;
@@ -1659,22 +1669,55 @@ class AdvisorController extends Controller
         ->where('created_at', '>', Carbon::today()->subDays(365))
         ->count();
 
-        $lost_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
-            ->where('status', '=', 3)
-            ->where('advisor_status', '=', 1)
-            ->where('created_at', '>', Carbon::today()->subDays(30))
-            ->count();
-        $lost_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 3)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(90))
-        ->count();
+        $lost_leads_months = 0;
+        $checkBidMonth= AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(30))->get();
+        if(count($checkBidMonth)){
+            foreach($checkBidMonth as $checkBidMonth_data){
+                $dataLostMonth = Advice_area::where('id',$checkBidMonth_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+                if($dataLostMonth){
+                    $lost_leads_months = $lost_leads_months + 1;
+                }
+            }
+        }
 
-        $lost_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 3)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(365))
-        ->count();
+        $lost_leads_quarter = 0;
+        $checkBidQuarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(90))->get();
+        if(count($checkBidQuarter)){
+            foreach($checkBidQuarter as $checkBidQuarter_data){
+                $dataLostQuarter = Advice_area::where('id',$checkBidQuarter_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+                if($dataLostQuarter){
+                    $lost_leads_quarter = $lost_leads_quarter + 1;
+                }
+            }
+        }
+
+        $lost_leads_year = 0;
+        $checkBidYear = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(365))->get();
+        if(count($checkBidYear)){
+            foreach($checkBidYear as $checkBidYear_data){
+                $dataLostYear = Advice_area::where('id',$checkBidYear_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+                if($dataLostYear){
+                    $lost_leads_year = $lost_leads_year + 1;
+                }
+            }
+        }
+
+        // $lost_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 3)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $lost_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 3)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
+
+        // $lost_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 3)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
 
         // $promotion = User::where('advisor_id','=',$userDetails->id)
         // ->where('status', '=', 2)
@@ -1900,7 +1943,9 @@ class AdvisorController extends Controller
             $tax_on_this_invoice_subtotal = $new_taxable_amount - $withoutTaxamount_new_taxable;
 
             $total_amount_final_subtotal = $new_taxable_amount - $tax_on_this_invoice_subtotal;
-            $vat_on_this_invoice_subtotal = $tax_on_this_invoice_subtotal;
+            // $vat_on_this_invoice_subtotal = $tax_on_this_invoice_subtotal;
+            $vat_on_this_invoice_subtotal = 0;
+
             // $tax_on_this_invoice = (5/100)*$total_dues;
             // $vat_on_this_invoice = (20/100)*$total_dues;
 
@@ -1910,7 +1955,8 @@ class AdvisorController extends Controller
 
             // $taxableAmount =  (1 + (20/100));
             $withoutTaxamount =  $total_dues / $taxableAmount;
-            $tax_on_this_invoice = $total_dues - $withoutTaxamount;
+            // $tax_on_this_invoice = $total_dues - $withoutTaxamount;
+            $tax_on_this_invoice = 0;
 
             $total_amount_final = $total_dues - $tax_on_this_invoice;
             $vat_on_this_invoice = $tax_on_this_invoice;

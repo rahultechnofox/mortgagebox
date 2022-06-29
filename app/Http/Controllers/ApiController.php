@@ -40,7 +40,7 @@ use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
+    use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use PDF;
 
@@ -187,6 +187,24 @@ class ApiController extends Controller
             $user->userDetails = [];
         }
         $user->slug = $this->getEncryptedId($user->id);
+        $user->is_invoice_remaining = 0;
+        $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',date('m'))->where('advisor_id',$user->id)->get();
+        if(count($unpaid_prevoius_invoice)){
+            // return response()->json(['user' => $unpaid_prevoius_invoice]);
+            $user->is_invoice_remaining = 1;
+        }else{
+            $unpaid_prevoius_invoice_check = DB::table('invoices')->where('is_paid',0)->where('month',date('m'))->where('advisor_id',$user->id)->first();
+            
+            if($unpaid_prevoius_invoice_check){
+                $unpaid_prevoius_invoice_check->current = date('Y-m-d H:i:s');
+                $unpaid_prevoius_invoice_check->after = date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)));
+
+                if(date('Y-m-d H:i:s') >= date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)))){
+                    $user->is_invoice_remaining = 1;
+                }
+            }
+            // return response()->json(['user' => $unpaid_prevoius_invoice_check]);
+        }
         User::where('id',$user->id)->update(['last_active'=>date('Y-m-d H:i:s')]);
         //Token created, return with success response and jwt token
         return response()->json([
@@ -283,6 +301,24 @@ class ApiController extends Controller
                 }
             }
             $user->slug = $this->getEncryptedId($user->id);
+            $user->is_invoice_remaining = 0;
+            $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',date('m'))->where('advisor_id',$user->id)->get();
+            if(count($unpaid_prevoius_invoice)){
+                // return response()->json(['user' => $unpaid_prevoius_invoice]);
+                $user->is_invoice_remaining = 1;
+            }else{
+                $unpaid_prevoius_invoice_check = DB::table('invoices')->where('is_paid',0)->where('month',date('m'))->where('advisor_id',$user->id)->first();
+                
+                if($unpaid_prevoius_invoice_check){
+                    $unpaid_prevoius_invoice_check->current = date('Y-m-d H:i:s');
+                    $unpaid_prevoius_invoice_check->after = date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)));
+
+                    if(date('Y-m-d H:i:s') >= date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)))){
+                        $user->is_invoice_remaining = 1;
+                    }
+                }
+                // return response()->json(['user' => $unpaid_prevoius_invoice_check]);
+            }
         }
         return response()->json(['user' => $user]);
     }
@@ -713,6 +749,7 @@ class ApiController extends Controller
         );
         $c = \Helpers::sendEmail('emails.email_verification',$newArr2 ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
+       
         
         return response()->json([
             'status' => true,
@@ -1368,7 +1405,7 @@ class ApiController extends Controller
             if($non_uk_citizen==1){
                 $queryModel::where('non_uk_citizen',1);
             }
-            if($adverse_credit==1){
+            if($adverse==1){
                 $queryModel::where('adverse_credit',1);
             }
             // $queryModel::where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse);
@@ -2276,67 +2313,134 @@ class ApiController extends Controller
     {
         $UserDetails = JWTAuth::parseToken()->authenticate();
         //$advice_area = AdvisorBids::where('area_id', '=', $id)->where('status', '=', $status)->get();
+        if($status!=1){
+            $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
+            ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
+            ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
+            ->where('advisor_bids.area_id',$id)
+            ->whereNotIn('advisor_bids.status',[1,2])
+            // ->where('advisor_bids.advisor_status',1)
+            // ->where('advisor_bids.advisor_status', '=', $status)
+            ->get();
 
-        $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
+            if ($advice_area) {
+                
+                $checkStatus = AdvisorBids::where('area_id',$id)->whereNotIn('status',[1,2])->count();
+                foreach ($advice_area as $key => $item) {
+                    $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
+                
+                    $advice_area[$key]->unread_message_count = $unread_count_total[0]->count_message;
+                    $last_activity = User::select('users.last_active')->where('id', '=', $item->advisor_id)->first();
+                    $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
+                    
+                    ->Where('advisor_status','=',1)
+                    ->Where('advisor_id','=',$item->advisor_id)
+                    ->count();
+                    $advice_area[$key]->used_by = $usedByMortage;
+                    $advice_area[$key]->last_activity = $last_activity->last_active;
+                    $advice_area[$key]->response_time = $this->getAdvisorResponseTime($item->advisor_id);
+                    $rating =  ReviewRatings::select('review_ratings.*')
+                    ->where('review_ratings.advisor_id', '=', $item->advisor_id)
+                    ->where('review_ratings.status', '=', 0)
+                    ->get();
+
+                    $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisor_id)->where('review_ratings.status', '=', 0)->avg('rating');
+
+                    $advice_area[$key]->avarageRating = number_format((float)$averageRating, 2, '.', '');
+                    $advice_area[$key]->rating = [
+                        'total' => count($rating),
+                    ];
+
+                    if($advice_area[$key]->status==1){
+                        $advice_area[$key]->status_name = "Accepted";
+                    }else{
+                        $advice_area[$key]->status_name = "Offer Declined";
+                    }
+                    if($checkStatus!=0){
+                        $advice_area[$key]->is_bided = 1;
+                    }else{
+                        $advice_area[$key]->is_bided = 0;
+                    }
+                    $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisor_id)->count();
+                    $advice_area[$key]->total_completed_bids = $itemComplete;
+                }
+                return response()->json([
+                    'status' => true,
+                    'message' => 'success',
+                    'data' => $advice_area
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Not found',
+                    'data' => []
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+        }else{
+            $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
             ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
             ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
             ->where('advisor_bids.area_id', '=', $id)
-            ->where('advisor_bids.advisor_status', '=', $status)
+            ->where('advisor_bids.status', $status)
+            ->where('advisor_bids.advisor_status',1)
+            // ->where('advisor_bids.advisor_status', '=', $status)
             ->get();
 
-        if ($advice_area) {
-            
-            $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
-            foreach ($advice_area as $key => $item) {
-                $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
-               
-                $advice_area[$key]->unread_message_count = $unread_count_total[0]->count_message;
-                $last_activity = User::select('users.last_active')->where('id', '=', $item->advisor_id)->first();
-                $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
+            if ($advice_area) {
                 
-                ->Where('advisor_status','=',1)
-                ->Where('advisor_id','=',$item->advisor_id)
-                ->count();
-                $advice_area[$key]->used_by = $usedByMortage;
-                $advice_area[$key]->last_activity = $last_activity->last_active;
-                $advice_area[$key]->response_time = $this->getAdvisorResponseTime($item->advisor_id);
-                $rating =  ReviewRatings::select('review_ratings.*')
-                ->where('review_ratings.advisor_id', '=', $item->advisor_id)
-                ->where('review_ratings.status', '=', 0)
-                ->get();
+                $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
+                foreach ($advice_area as $key => $item) {
+                    $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
+                
+                    $advice_area[$key]->unread_message_count = $unread_count_total[0]->count_message;
+                    $last_activity = User::select('users.last_active')->where('id', '=', $item->advisor_id)->first();
+                    $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
+                    
+                    ->Where('advisor_status','=',1)
+                    ->Where('advisor_id','=',$item->advisor_id)
+                    ->count();
+                    $advice_area[$key]->used_by = $usedByMortage;
+                    $advice_area[$key]->last_activity = $last_activity->last_active;
+                    $advice_area[$key]->response_time = $this->getAdvisorResponseTime($item->advisor_id);
+                    $rating =  ReviewRatings::select('review_ratings.*')
+                    ->where('review_ratings.advisor_id', '=', $item->advisor_id)
+                    ->where('review_ratings.status', '=', 0)
+                    ->get();
 
-                $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisor_id)->where('review_ratings.status', '=', 0)->avg('rating');
+                    $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisor_id)->where('review_ratings.status', '=', 0)->avg('rating');
 
-                $advice_area[$key]->avarageRating = number_format((float)$averageRating, 2, '.', '');
-                $advice_area[$key]->rating = [
-                    'total' => count($rating),
-                ];
+                    $advice_area[$key]->avarageRating = number_format((float)$averageRating, 2, '.', '');
+                    $advice_area[$key]->rating = [
+                        'total' => count($rating),
+                    ];
 
-                if($advice_area[$key]->status==1){
-                    $advice_area[$key]->status_name = "Accepted";
-                }else{
-                    $advice_area[$key]->status_name = "Lost";
+                    if($advice_area[$key]->status==1){
+                        $advice_area[$key]->status_name = "Accepted";
+                    }else{
+                        $advice_area[$key]->status_name = "Lost";
+                    }
+                    if($checkStatus!=0){
+                        $advice_area[$key]->is_bided = 1;
+                    }else{
+                        $advice_area[$key]->is_bided = 0;
+                    }
+                    $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisor_id)->count();
+                    $advice_area[$key]->total_completed_bids = $itemComplete;
                 }
-                if($checkStatus!=0){
-                    $advice_area[$key]->is_bided = 1;
-                }else{
-                    $advice_area[$key]->is_bided = 0;
-                }
-                $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisor_id)->count();
-                $advice_area[$key]->total_completed_bids = $itemComplete;
+                return response()->json([
+                    'status' => true,
+                    'message' => 'success',
+                    'data' => $advice_area
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Not found',
+                    'data' => []
+                ], Response::HTTP_UNAUTHORIZED);
             }
-            return response()->json([
-                'status' => true,
-                'message' => 'success',
-                'data' => $advice_area
-            ], Response::HTTP_OK);
-        } else {
-            return response()->json([
-                'status' => false,
-                'message' => 'Not found',
-                'data' => []
-            ], Response::HTTP_UNAUTHORIZED);
         }
+        
     }
 
     public function startChat(Request $request){

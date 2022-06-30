@@ -2313,82 +2313,47 @@ class ApiController extends Controller
     {
         $UserDetails = JWTAuth::parseToken()->authenticate();
         //$advice_area = AdvisorBids::where('area_id', '=', $id)->where('status', '=', $status)->get();
-        if($status!=1){
-            $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
-            ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
-            ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
-            ->where('advisor_bids.area_id',$id)
-            ->whereNotIn('advisor_bids.status',[1,2])
-            // ->where('advisor_bids.advisor_status',1)
-            // ->where('advisor_bids.advisor_status', '=', $status)
-            ->get();
-
-            if ($advice_area) {
-                
-                $checkStatus = AdvisorBids::where('area_id',$id)->whereNotIn('status',[1,2])->count();
-                foreach ($advice_area as $key => $item) {
-                    $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
-                
-                    $advice_area[$key]->unread_message_count = $unread_count_total[0]->count_message;
-                    $last_activity = User::select('users.last_active')->where('id', '=', $item->advisor_id)->first();
-                    $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
-                    
-                    ->Where('advisor_status','=',1)
-                    ->Where('advisor_id','=',$item->advisor_id)
-                    ->count();
-                    $advice_area[$key]->used_by = $usedByMortage;
-                    $advice_area[$key]->last_activity = $last_activity->last_active;
-                    $advice_area[$key]->response_time = $this->getAdvisorResponseTime($item->advisor_id);
-                    $rating =  ReviewRatings::select('review_ratings.*')
-                    ->where('review_ratings.advisor_id', '=', $item->advisor_id)
-                    ->where('review_ratings.status', '=', 0)
+        $area = Advice_area::where('id',$id)->first();
+        if($area){
+            if($area->advisor_id!=0){
+                if($status!=1){
+                    $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
+                    ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
+                    ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
+                    ->where('advisor_bids.area_id',$id)
+                    ->whereNotIn('advisor_bids.status',[1,2])
+                    // ->where('advisor_bids.advisor_status',1)
+                    // ->where('advisor_bids.advisor_status', '=', $status)
                     ->get();
-
-                    $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisor_id)->where('review_ratings.status', '=', 0)->avg('rating');
-
-                    $advice_area[$key]->avarageRating = number_format((float)$averageRating, 2, '.', '');
-                    $advice_area[$key]->rating = [
-                        'total' => count($rating),
-                    ];
-
-                    if($advice_area[$key]->status==1){
-                        $advice_area[$key]->status_name = "Accepted";
-                    }else{
-                        $advice_area[$key]->status_name = "Offer Declined";
-                    }
-                    if($checkStatus!=0){
-                        $advice_area[$key]->is_bided = 1;
-                    }else{
-                        $advice_area[$key]->is_bided = 0;
-                    }
-                    $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisor_id)->count();
-                    $advice_area[$key]->total_completed_bids = $itemComplete;
+                }else{
+                    $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
+                    ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
+                    ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
+                    ->where('advisor_bids.area_id', '=', $id)
+                    ->where('advisor_bids.status', $status)
+                    ->where('advisor_bids.advisor_status',1)
+                    // ->where('advisor_bids.advisor_status', '=', $status)
+                    ->get();
                 }
-                return response()->json([
-                    'status' => true,
-                    'message' => 'success',
-                    'data' => $advice_area
-                ], Response::HTTP_OK);
-            } else {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Not found',
-                    'data' => []
-                ], Response::HTTP_UNAUTHORIZED);
+            }else{
+                $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
+                ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
+                ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
+                ->where('advisor_bids.area_id', '=', $id)
+                ->where('advisor_bids.advisor_status', '=', $status)
+                ->get();
             }
-        }else{
-            $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
-            ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
-            ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
-            ->where('advisor_bids.area_id', '=', $id)
-            ->where('advisor_bids.status', $status)
-            ->where('advisor_bids.advisor_status',1)
-            // ->where('advisor_bids.advisor_status', '=', $status)
-            ->get();
-
-            if ($advice_area) {
+            if (count($advice_area)) {  
+                if($area->advisor_id!=0){
+                    if($status!=1){
+                        $checkStatus = AdvisorBids::where('area_id',$id)->whereNotIn('status',[1,2])->count();
+                    }else{
+                        $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
+                    }
+                }else{
+                    $checkStatus = AdvisorBids::where('area_id',$id)->where('status',$status)->count();
+                }              
                 
-                $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
                 foreach ($advice_area as $key => $item) {
                     $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
                 
@@ -2414,9 +2379,9 @@ class ApiController extends Controller
                         'total' => count($rating),
                     ];
 
-                    if($advice_area[$key]->status==1){
+                    if($advice_area[$key]->status==1 && $area->advisor_id==$advice_area[$key]->advisor_id){
                         $advice_area[$key]->status_name = "Accepted";
-                    }else{
+                    }else if($advice_area[$key]->status==0 && $area->advisor_id!=$advice_area[$key]->advisor_id){
                         $advice_area[$key]->status_name = "Lost";
                     }
                     if($checkStatus!=0){
@@ -2435,11 +2400,144 @@ class ApiController extends Controller
             } else {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Not found',
+                    'message' => 'Area Not found',
                     'data' => []
                 ], Response::HTTP_UNAUTHORIZED);
             }
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Area Not found',
+                'data' => []
+            ], Response::HTTP_UNAUTHORIZED);
         }
+        // if($status!=1){
+        //     $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
+        //     ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
+        //     ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
+        //     ->where('advisor_bids.area_id',$id)
+        //     ->whereNotIn('advisor_bids.status',[1,2])
+        //     // ->where('advisor_bids.advisor_status',1)
+        //     // ->where('advisor_bids.advisor_status', '=', $status)
+        //     ->get();
+
+        //     if ($advice_area) {
+                
+        //         $checkStatus = AdvisorBids::where('area_id',$id)->whereNotIn('status',[1,2])->count();
+        //         foreach ($advice_area as $key => $item) {
+        //             $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
+                
+        //             $advice_area[$key]->unread_message_count = $unread_count_total[0]->count_message;
+        //             $last_activity = User::select('users.last_active')->where('id', '=', $item->advisor_id)->first();
+        //             $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
+                    
+        //             ->Where('advisor_status','=',1)
+        //             ->Where('advisor_id','=',$item->advisor_id)
+        //             ->count();
+        //             $advice_area[$key]->used_by = $usedByMortage;
+        //             $advice_area[$key]->last_activity = $last_activity->last_active;
+        //             $advice_area[$key]->response_time = $this->getAdvisorResponseTime($item->advisor_id);
+        //             $rating =  ReviewRatings::select('review_ratings.*')
+        //             ->where('review_ratings.advisor_id', '=', $item->advisor_id)
+        //             ->where('review_ratings.status', '=', 0)
+        //             ->get();
+
+        //             $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisor_id)->where('review_ratings.status', '=', 0)->avg('rating');
+
+        //             $advice_area[$key]->avarageRating = number_format((float)$averageRating, 2, '.', '');
+        //             $advice_area[$key]->rating = [
+        //                 'total' => count($rating),
+        //             ];
+
+        //             if($advice_area[$key]->status==1){
+        //                 $advice_area[$key]->status_name = "Accepted";
+        //             }else{
+        //                 $advice_area[$key]->status_name = "Offer Declined";
+        //             }
+        //             if($checkStatus!=0){
+        //                 $advice_area[$key]->is_bided = 1;
+        //             }else{
+        //                 $advice_area[$key]->is_bided = 0;
+        //             }
+        //             $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisor_id)->count();
+        //             $advice_area[$key]->total_completed_bids = $itemComplete;
+        //         }
+        //         return response()->json([
+        //             'status' => true,
+        //             'message' => 'success',
+        //             'data' => $advice_area
+        //         ], Response::HTTP_OK);
+        //     } else {
+        //         return response()->json([
+        //             'status' => false,
+        //             'message' => 'Not found',
+        //             'data' => []
+        //         ], Response::HTTP_UNAUTHORIZED);
+        //     }
+        // }else{
+        //     $advice_area =  AdvisorBids::select('advisor_bids.*', 'users.name', 'users.email', 'users.address', 'advisor_profiles.display_name', 'advisor_profiles.tagline', 'advisor_profiles.FCANumber', 'advisor_profiles.company_name', 'advisor_profiles.phone_number', 'advisor_profiles.address_line1', 'advisor_profiles.address_line2', 'advisor_profiles.city', 'advisor_profiles.postcode', 'advisor_profiles.web_address', 'advisor_profiles.facebook', 'advisor_profiles.image', 'advisor_profiles.short_description')
+        //     ->join('users', 'advisor_bids.advisor_id', '=', 'users.id')
+        //     ->join('advisor_profiles', 'advisor_bids.advisor_id', '=', 'advisor_profiles.advisorId')
+        //     ->where('advisor_bids.area_id', '=', $id)
+        //     ->where('advisor_bids.status', $status)
+        //     ->where('advisor_bids.advisor_status',1)
+        //     // ->where('advisor_bids.advisor_status', '=', $status)
+        //     ->get();
+
+        //     if ($advice_area) {
+                
+        //         $checkStatus = AdvisorBids::where('area_id',$id)->where('status',1)->where('advisor_status',1)->count();
+        //         foreach ($advice_area as $key => $item) {
+        //             $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE c.advicearea_id = $item->area_id  AND m.to_user_id_seen = 0 AND m.to_user_id = $UserDetails->id AND m.from_user_id=$item->advisor_id");
+                
+        //             $advice_area[$key]->unread_message_count = $unread_count_total[0]->count_message;
+        //             $last_activity = User::select('users.last_active')->where('id', '=', $item->advisor_id)->first();
+        //             $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
+                    
+        //             ->Where('advisor_status','=',1)
+        //             ->Where('advisor_id','=',$item->advisor_id)
+        //             ->count();
+        //             $advice_area[$key]->used_by = $usedByMortage;
+        //             $advice_area[$key]->last_activity = $last_activity->last_active;
+        //             $advice_area[$key]->response_time = $this->getAdvisorResponseTime($item->advisor_id);
+        //             $rating =  ReviewRatings::select('review_ratings.*')
+        //             ->where('review_ratings.advisor_id', '=', $item->advisor_id)
+        //             ->where('review_ratings.status', '=', 0)
+        //             ->get();
+
+        //             $averageRating = ReviewRatings::where('review_ratings.advisor_id', '=', $item->advisor_id)->where('review_ratings.status', '=', 0)->avg('rating');
+
+        //             $advice_area[$key]->avarageRating = number_format((float)$averageRating, 2, '.', '');
+        //             $advice_area[$key]->rating = [
+        //                 'total' => count($rating),
+        //             ];
+
+        //             if($advice_area[$key]->status==1){
+        //                 $advice_area[$key]->status_name = "Accepted";
+        //             }else{
+        //                 $advice_area[$key]->status_name = "Lost";
+        //             }
+        //             if($checkStatus!=0){
+        //                 $advice_area[$key]->is_bided = 1;
+        //             }else{
+        //                 $advice_area[$key]->is_bided = 0;
+        //             }
+        //             $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisor_id)->count();
+        //             $advice_area[$key]->total_completed_bids = $itemComplete;
+        //         }
+        //         return response()->json([
+        //             'status' => true,
+        //             'message' => 'success',
+        //             'data' => $advice_area
+        //         ], Response::HTTP_OK);
+        //     } else {
+        //         return response()->json([
+        //             'status' => false,
+        //             'message' => 'Not found',
+        //             'data' => []
+        //         ], Response::HTTP_UNAUTHORIZED);
+        //     }
+        // }
         
     }
 

@@ -36,10 +36,11 @@ Route::get('login/{provider}/callback', 'Auth\LoginController@handleProviderCall
 Route::get('/generateInvoiceCron', '\App\Http\Controllers\AdvisorController@invoice');
 Route::get('/matchLeadsSummaryCron', '\App\Http\Controllers\AdvisorController@matchLeadsSummaryCron');
 Route::get('/download-invoice/{id}/{date}', '\App\Http\Controllers\AdvisorController@downloadInvoice');
+
 Route::get("/verify-success",function(){
     return "your account has been verified!";
 });
-
+Route::get('/check-email', '\App\Http\Controllers\AdvisorController@checkMail');
 Route::middleware('auth')->group(function(){
     /******************* Admin Profile Management **********************/
     Route::get('admin/profile', '\App\Http\Controllers\ProfileController@edit');

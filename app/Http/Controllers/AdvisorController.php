@@ -2482,4 +2482,13 @@ class AdvisorController extends Controller
         return "Summary of today's matching leads";
         exit;
     }
+
+    public function checkMail(Request $request) {
+        $newArrDec = array(
+            'name'=>"Test",
+            'email'=>'rahul@technofox.com',
+            'message_text' => 'You have lost this bid other advisor is selected for this bid.'
+        );
+        $c = \Helpers::sendEmail('emails.information',$newArrDec ,'akshitamishra08@gmail.com','Test','MortgageBox Test Mail','','');
+    }
 }

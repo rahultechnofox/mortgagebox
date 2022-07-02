@@ -749,7 +749,18 @@ class ApiController extends Controller
         );
         $c = \Helpers::sendEmail('emails.email_verification',$newArr2 ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
-       
+        $credentials = $request->only('email', 'password');
+        try {
+            $token = JWTAuth::attempt($credentials, ['exp' => Carbon::now()->addDays(7)->timestamp]);
+
+            JWTAuth::authenticate($token);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'token' => $token,
+
+            ], Response::HTTP_OK);
+        }
         
         return response()->json([
             'status' => true,
@@ -3210,6 +3221,18 @@ class ApiController extends Controller
                 'btn_text'=>'Respond'
             );
             $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor->email,$advisor->display_name,'Mortgagebox.co.uk – £'.number_format($advice_area->size_want).' Lead won from '.$user->name,'','');
+            $bids = AdvisorBids::where('area_id',$bidDetails->area_id)->where('advisor_id','!=',$bidDetails->advisor_id)->get();
+            if(count($bids)){
+                foreach($bids as $bids_data){
+                    $advisorDecline = AdvisorProfile::where('advisorId',$bids_data->advisor_id)->first();
+                    $newArrDec = array(
+                        'name'=>$advisorDecline->display_name,
+                        'email'=>$advisorDecline->email,
+                        'message_text' => 'You have lost this bid other advisor is selected for this bid.'
+                    );
+                    $c = \Helpers::sendEmail('emails.information',$newArrDec ,$advisorDecline->email,$advisorDecline->display_name,'MortgageBox Lost Bid','','');
+                }
+            }
         }else{
             $message = "Offer declined";
             $this->saveNotification(array(
@@ -3221,7 +3244,6 @@ class ApiController extends Controller
                 'area_id'=>$bidDetails->area_id,// 1:
                 'notification_to'=>1
             ));
-            $advisor = AdvisorProfile::where('advisorId',$bidDetails->advisor_id)->first();
             $newArr = array(
                 'name'=>$advisor->display_name,
                 'email'=>$advisor->email,
@@ -3819,10 +3841,20 @@ class ApiController extends Controller
 
 
     public function getAllAdviser(Request $request) {
+        $post = $request->all();
         $user = JWTAuth::parseToken()->authenticate();
         if($user) {
-            $post = $request->all();
-            $advice_read = User::where('user_role',1)->where('status',1)->get();
+            $team_member = array();
+            $company = companies::where('company_admin',$user->id)->first();
+            if($company){
+                $company_team = CompanyTeamMembers::where('company_id',$company->id)->where('isCompanyAdmin',0)->get();
+                if(count($company_team)){
+                    foreach($company_team as $company_team_data){
+                        array_push($team_member,$company_team_data->email);
+                    }
+                }   
+            }
+            $advice_read = User::whereIn('email',$team_member)->where('status',1)->get();
             if(count($advice_read)){
                 foreach($advice_read as $advice_read_data){
                     $advice_read_data_ad = AdvisorProfile::where('advisorId',$advice_read_data->id)->first();

@@ -180,7 +180,11 @@
                                 <div class="d-flex">
                                     <div class="transaction-percentage">
                                         <h6 class="transaction-title">{{ __('FCA Number:') }}</h6>
-                                        <small>{{isset($profile->FCANumber) ? $profile->FCANumber : '--'}}</small>
+                                        @if(isset($profile->FCANumber) && $profile->FCANumber!='')
+                                            <a href="https://register.fca.org.uk/s/search?q={{$profile->FCANumber}}&type=Individuals" target="_blank"><small>{{isset($profile->FCANumber) ? $profile->FCANumber : '--'}}</small></a>
+                                        @else
+                                            <small>{{isset($profile->FCANumber) ? $profile->FCANumber : '--'}}</small>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

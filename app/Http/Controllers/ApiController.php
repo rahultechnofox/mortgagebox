@@ -43,6 +43,7 @@ use Illuminate\Support\Facades\Storage;
     use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use PDF;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ApiController extends Controller
 {
@@ -528,6 +529,7 @@ class ApiController extends Controller
         $post = $request->all();
         // echo json_encode($post);exit;
         $data = $request->only('name', 'email', 'password');
+        $credentials = $request->only('email', 'password');
         // $post = $request->all();
         // echo json_encode($post);exit;
         $validator = Validator::make($data, [
@@ -576,7 +578,34 @@ class ApiController extends Controller
         $user = User::create($user_data);
         $free_promotions = 0;
         if($user){
-            $user->profile_percent = 15;
+            if (!$token = JWTAuth::attempt($credentials)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Credentials are invalid.',
+                ], 400);
+            }
+            // $token = JWTAuth::attempt($credentials, ['exp' => Carbon::now()->addDays(7)->timestamp]);
+            // return response()->json([
+            //     'data'=>$credentials,
+            //     'status' => false,
+            //     // 'checkkkk' => $checkkkk,
+            //     'token' => $token,
+            // ], Response::HTTP_OK);
+            // $checkkkk = JWTAuth::authenticate($token);
+            // try {
+                
+
+                
+            // } catch (Exception $e) {
+            //     return response()->json([
+            //         'data'=>$e,
+            //         'status' => false,
+            //         'token' => $token,
+
+            //     ], Response::HTTP_OK);
+            // }
+            // $user->profile_percent = 15;
+            $userData = User::where('id',$user->id)->first();
             $check_promotion_advisor = DB::table('app_settings')->where('key','new_adviser_status')->where('value','1')->first();
             if($check_promotion_advisor){
                 $free_promotion_value = DB::table('app_settings')->where('key','no_of_free_leads_adviser')->first();
@@ -587,6 +616,68 @@ class ApiController extends Controller
             User::where('id',$user->id)->update(['free_promotions'=>$free_promotions]);
             // $getuserData = User::where('id',$user->id)->first();
             // $free_promotions = $getuserData->free_promotions;
+
+            $userData->profile_percent = 15;
+            if($userData->user_role == 1) {
+                $userDetails =  AdvisorProfile::where('advisorId', '=', $user->id)->first(); 
+                if($userDetails){
+                    if($userDetails->image!=''){
+                        $userData->profile_percent = $userData->profile_percent + 20;
+                    }
+                    if($userDetails->short_description!=''){
+                        $company = companies::where('id',$userDetails->company_id)->first();
+                        if($company){
+                            if($company->company_about!=''){
+                                $userData->profile_percent = $userData->profile_percent + 15;
+                            }
+                        }
+                    }
+                    $offer_data = AdvisorOffers::where('advisor_id', '=', $user->id)->get();
+                    if(count($offer_data)){
+                        $userData->profile_percent = $userData->profile_percent + 30;
+                        $userData->offer = 1;
+                    }else{
+                        $userData->offer = 0;
+                    }
+                    if($userDetails->web_address!=''){
+                        $userData->profile_percent = $userData->profile_percent + 20;
+                    }
+                    $team_member = CompanyTeamMembers::where('email',$userDetails->email)->first();
+                    // $userDetails->is_admin = $team_member;
+                    if($team_member){
+                        if($team_member->isCompanyAdmin==1){
+                            $userData->is_admin = 1;
+                        }else{
+                            $userData->is_admin = 0;
+                        }
+                    }else{
+                        $userData->is_admin = 2;
+                    }
+                }
+                $userData->userDetails = $userDetails;
+            }else{
+                $userData->userDetails = [];
+            }
+            $userData->slug = $this->getEncryptedId($user->id);
+            $userData->is_invoice_remaining = 0;
+            $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',date('m'))->where('advisor_id',$user->id)->get();
+            if(count($unpaid_prevoius_invoice)){
+                // return response()->json(['user' => $unpaid_prevoius_invoice]);
+                $userData->is_invoice_remaining = 1;
+            }else{
+                $unpaid_prevoius_invoice_check = DB::table('invoices')->where('is_paid',0)->where('month',date('m'))->where('advisor_id',$user->id)->first();
+                
+                if($unpaid_prevoius_invoice_check){
+                    $unpaid_prevoius_invoice_check->current = date('Y-m-d H:i:s');
+                    $unpaid_prevoius_invoice_check->after = date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)));
+
+                    if(date('Y-m-d H:i:s') >= date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)))){
+                        $userData->is_invoice_remaining = 1;
+                    }
+                }
+                // return response()->json(['user' => $unpaid_prevoius_invoice_check]);
+            }
+            User::where('id',$user->id)->update(['last_active'=>date('Y-m-d H:i:s')]);
         }
         if(isset($user->invited_by) && $user->invited_by!='' && $request->type!='invite_team'){
             $invited_count = User::where('invited_by',$user->invited_by)->count();
@@ -749,23 +840,13 @@ class ApiController extends Controller
         );
         $c = \Helpers::sendEmail('emails.email_verification',$newArr2 ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         //User created, return success response
-        $credentials = $request->only('email', 'password');
-        try {
-            $token = JWTAuth::attempt($credentials, ['exp' => Carbon::now()->addDays(7)->timestamp]);
-
-            JWTAuth::authenticate($token);
-        } catch (Exception $e) {
-            return response()->json([
-                'status' => false,
-                'token' => $token,
-
-            ], Response::HTTP_OK);
-        }
+        
         
         return response()->json([
             'status' => true,
             'message' => 'Advisor created successfully',
-            'data' => $user
+            'data' => $userData,
+            'token'=> $token
         ], Response::HTTP_OK);
     }
     public function updateAdvisorProfile(Request $request)
@@ -1276,7 +1357,7 @@ class ApiController extends Controller
         return $randomString;
     }
 
-    function matchLeads()
+    function matchLeads(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
         $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
@@ -1507,12 +1588,14 @@ class ApiController extends Controller
         ->groupBy('users.'.'address')
         ->groupBy('advice_areas.'.'ltv_max')
         ->groupBy('advice_areas.'.'lti_max')
-        ->groupBy('advice_areas.'.'advisor_preference_language')->orderBy('id','DESC')->paginate();
+        ->groupBy('advice_areas.'.'advisor_preference_language')->orderBy('id','DESC')->get();
         // ->where('advisor_bids.status',0)
         $bidCountArr = array();
         //$lastquery = DB::getQueryLog();
         //dd(end($lastquery));
         //echo '<pre>=';print_r($advice_area);die;
+        $getLeads = array();
+        $check_data = 0;
         foreach($advice_area as $key=> $item) {
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
@@ -1639,20 +1722,43 @@ class ApiController extends Controller
             if($read){
                 $advice_area[$key]->is_read = 1;
             }
+            if($advice_area[$key]->total_bids_count<5){
+                array_push($getLeads,$item);
+            }
         }
+        // $check_data = count($advice_area) - count($getLeads);
+        $dataCheck = $this->arrayPaginator($getLeads,$request);
         return response()->json([
             'status' => true,
-            'data' => $advice_area->items(),
-            'current_page' => $advice_area->currentPage(),
-            'first_page_url' => $advice_area->url(1),
-            'last_page_url' => $advice_area->url($advice_area->lastPage()),
-            'per_page' => $advice_area->perPage(),
-            'next_page_url' => $advice_area->nextPageUrl(),
-            'prev_page_url' => $advice_area->previousPageUrl(),
-            'total' => $advice_area->total(),
-            'total_on_current_page' => $advice_area->count(),
-            'has_more_page' => $advice_area->hasMorePages(),
+            'pagei'=>$dataCheck,
+            'check_data'=>$getLeads,
+            'data' => $getLeads,
+            // 'current_page' => $advice_area->currentPage(),
+            // 'first_page_url' => $advice_area->url(1),
+            // 'last_page_url' => $advice_area->url($advice_area->lastPage()),
+            // 'per_page' => $advice_area->perPage(),
+            // 'next_page_url' => $advice_area->nextPageUrl(),
+            // 'prev_page_url' => $advice_area->previousPageUrl(),
+            // 'total' => $advice_area->total(),
+            // 'total_on_current_page' => $advice_area->count(),
+            // 'has_more_page' => $advice_area->hasMorePages(),
         ], Response::HTTP_OK);
+    }
+
+    public function arrayPaginator($array, $request)
+    {
+        $post = $request->all();
+        $per_page_number = 15;
+        $page = (isset($post['page']) && !empty($post['page'])) ? $post['page'] : 1;
+        $perPage = (isset($post['perpage']))?$post['perpage']:$per_page_number;
+        $offset = ($page * $perPage) - $perPage;
+        $sliceArray = array_slice($array, $offset, $perPage, true);
+        $finalArray = array();
+        foreach ($sliceArray as $row) {
+            array_push($finalArray, $row);
+        }
+
+        return new LengthAwarePaginator($finalArray, count($array), $perPage, $page,['path' => $request->url(), 'query' => $request->query()]);
     }
 
     function getNeedDetails(Request $request)
@@ -2078,10 +2184,14 @@ class ApiController extends Controller
             $advice_area[$key]->lead_value = $item->size_want_currency.number_format($lead_value,0);
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id','=',$user->id)->first();
-            $show_status = 'Accepted';
+            // $show_status = 'Accepted';
+            $show_status = 'Purchased';
+
             if($bidDetailsStatus){
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
-                    $show_status = "Accepted";
+                    // $show_status = "Accepted";
+                    $show_status = "Purchased";
+
                 }
                 if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Hired"; 
@@ -2098,7 +2208,7 @@ class ApiController extends Controller
                     }
                 }
 
-                if($item->created_at<date("Y-m-d H:i:s",strtotime("- 14 days")) && ($show_status=='Accepted' || $show_status=='')){
+                if($item->created_at<date("Y-m-d H:i:s",strtotime("- 14 days")) && ($show_status=='Purchased' || $show_status=='')){
                     $channelIds = array(-1);
                     $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
                     foreach ($channelID as $chanalesR) {
@@ -2391,7 +2501,7 @@ class ApiController extends Controller
                     ];
 
                     if($advice_area[$key]->status==1 && $area->advisor_id==$advice_area[$key]->advisor_id){
-                        $advice_area[$key]->status_name = "Accepted";
+                        $advice_area[$key]->status_name = "Purchased";
                     }else if($advice_area[$key]->status==0 && $area->advisor_id!=$advice_area[$key]->advisor_id){
                         $advice_area[$key]->status_name = "Lost";
                     }
@@ -2461,7 +2571,7 @@ class ApiController extends Controller
         //             ];
 
         //             if($advice_area[$key]->status==1){
-        //                 $advice_area[$key]->status_name = "Accepted";
+        //                 $advice_area[$key]->status_name = "Purchased";
         //             }else{
         //                 $advice_area[$key]->status_name = "Offer Declined";
         //             }
@@ -2524,7 +2634,7 @@ class ApiController extends Controller
         //             ];
 
         //             if($advice_area[$key]->status==1){
-        //                 $advice_area[$key]->status_name = "Accepted";
+        //                 $advice_area[$key]->status_name = "Purchased";
         //             }else{
         //                 $advice_area[$key]->status_name = "Lost";
         //             }
@@ -2664,7 +2774,8 @@ class ApiController extends Controller
             'name'=>$display_name,
             // 'name'=>$display_name,
             'email'=>$advisor_user->email,
-            'message_text' => $message
+            'message_text' => $message,
+            'sent_message' => $request->text
         );
         $c = \Helpers::sendEmail('emails.information',$newArr ,$advisor_user->email,$display_name,'New message received from '.$user->name,'','');
         return response()->json([
@@ -2843,7 +2954,7 @@ class ApiController extends Controller
             $bidDetailsStatus = AdvisorBids::where('area_id',$item->id)->where('advisor_id',$user->id)->first();
             if($bidDetailsStatus){
                 if($bidDetailsStatus->status==0 && $bidDetailsStatus->advisor_status==1){
-                    $show_status = "Accepted";
+                    $show_status = "Purchased";
                 }
                 if($bidDetailsStatus->status==1 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Hired"; 
@@ -2860,7 +2971,7 @@ class ApiController extends Controller
                     }
                 }
 
-                if($item->created_at<date("Y-m-d H:i:s",strtotime("- 14 days")) && ($show_status=='Accepted' || $show_status=='') ){
+                if($item->created_at<date("Y-m-d H:i:s",strtotime("- 14 days")) && ($show_status=='Purchased' || $show_status=='') ){
                     $channelIds = array(-1);
                     $channelID = ChatChannel::where('advicearea_id',$item->id)->orderBy('id','DESC')->get();
                     foreach ($channelID as $chanalesR) {

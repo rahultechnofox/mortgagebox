@@ -1290,6 +1290,12 @@ class AdvisorController extends Controller
         
         
         if(!empty($checkUser)){
+            // $newArr = array(
+            //     'name'=>ucfirst($request->name),
+            //     'email'=>$request->email,
+            //     'message_text' => 'Please be advised that '.$user->name.' has successfully added you to company '.$company->company_name
+            // );
+            // $c = \Helpers::sendEmail('emails.information',$newArr ,$request->email,ucfirst($request->name),'MortgageBox Free introduction','','');
             $newArr = array(
                 'name'=>ucfirst($request->name),
                 'invited_by'=>ucfirst($user->name),

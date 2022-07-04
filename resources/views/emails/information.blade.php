@@ -71,6 +71,12 @@ table[class="table750"] {width: 100% !important;}
                    <font face="'Source Sans Pro', sans-serif" color="#585858" style="font-size: 22px; line-height: 30px;">
                       <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #585858; font-size: 18px; line-height: 24px;">{{$message_text}}</span>
                    </font>
+                   @if(isset($sent_message) && $sent_message!='')
+                   <div style="height: 20px; line-height: 20px; font-size: 20px;">&nbsp;</div>
+                   <font face="'Source Sans Pro', sans-serif" color="#302e2e" style="font-size: 22px; line-height: 30px;">
+                      <span style="font-family: 'Source Sans Pro', Arial, Tahoma, Geneva, sans-serif; color: #302e2e; font-size: 18px; line-height: 24px;font-weight: 600;">"{{$sent_message}}"</span>
+                   </font>
+                   @endif
 				   @if(isset($url))
 				   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100% !important; max-width: 100%; min-width: 100%; border-radius: 4px;">
                       <tr>

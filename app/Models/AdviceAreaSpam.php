@@ -38,7 +38,7 @@ class AdviceAreaSpam extends Model
             // if(isset($search['status']) && $search['status']!=''){
             //     $query = $query->where('status',$search['status']);
             // }
-            $data = $query->with('area')->with('user')->orderBy('created_at','DESC')->paginate(config('constants.paginate.num_per_page'));
+            $data = $query->with('area')->with('user')->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             return $data;
         }catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

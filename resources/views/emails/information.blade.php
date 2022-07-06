@@ -81,7 +81,7 @@ table[class="table750"] {width: 100% !important;}
 				   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100% !important; max-width: 100%; min-width: 100%; border-radius: 4px;">
                       <tr>
                          <td align="center" valign="middle" height="55">
-                            <a href="{{$url}}" target="_blank" style="display: inline-block; width: 120px; height: 55px; font-family: 'Source Sans Pro', Arial, Verdana, Tahoma, Geneva, sans-serif; color: #ffffff; font-size: 20px; line-height: 55px; text-decoration: none; white-space: nowrap; font-weight: 600; background: #427af1; border-radius:5px; padding:0 15px;">
+                            <a href="{{$url}}" target="_blank" style="display: inline-block; width: auto; height: 55px; font-family: 'Source Sans Pro', Arial, Verdana, Tahoma, Geneva, sans-serif; color: #ffffff; font-size: 20px; line-height: 55px; text-decoration: none; white-space: nowrap; font-weight: 600; background: #427af1; border-radius:5px; padding:0 15px;">
                                   <span style="font-family: 'Source Sans Pro', Arial, Verdana, Tahoma, Geneva, sans-serif; color: #ffffff; font-size: 20px; line-height: 55px; text-decoration: none; white-space: nowrap; width:120px; margin: auto; font-weight: 600;">{{$btn_text}}</span>
                             </a>
                          </td>

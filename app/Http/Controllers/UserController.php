@@ -384,4 +384,40 @@ class UserController extends Controller
             return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
         }
     }
+
+    /**
+     * Update email the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateEmail(Request $request){
+        try {
+            $post = $request->all();
+            $validate = [
+                'id' => 'required',
+                'email' => 'required'
+            ];
+            $validator = Validator::make($post, $validate);
+            if ($validator->fails()) {
+                 $data['error'] = $validator->errors();
+                return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.required_field_missing')));
+            }else{
+                unset($post['_token']);
+                $checkUser = User::where('email',$post['email'])->where('id','!=',$post['id'])->first();
+                if($checkUser){
+                    return response(\Helpers::sendFailureAjaxResponse("Email is already exist."));
+                }else{
+                    $user = User::where('id',$post['id'])->update($post);
+                    if($user){
+                        return response(\Helpers::sendSuccessAjaxResponse('Email updated successfully.',$user));
+                    }else{
+                        return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.smothing_went_wrong')));
+                    }
+                }
+            }
+        } catch (\Exception $ex) {
+            return response(\Helpers::sendFailureAjaxResponse(config('constant.common.messages.there_is_an_error').$ex));
+        }
+    }
 }

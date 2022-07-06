@@ -111,6 +111,7 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('advisorTeam/', [AdvisorController::class, 'advisorTeam']);
     Route::post('updateTeam/', [AdvisorController::class, 'updateTeam']);
     Route::get('getAdvisorTeam/{company_id}', [AdvisorController::class, 'getAdvisorTeam']);
+    Route::get('send-mail-matched-lead/{area_id}', [ApiController::class, 'sendNewLeadMatchMail']);
     Route::get('checkIfExistInAdvisorTeam/{company_id}', [AdvisorController::class, 'checkIfExistInAdvisorTeam']);
     Route::get('deleteTeam/{team_id}', [AdvisorController::class, 'deleteTeam']);
     Route::post('makeEnquiry', [AdvisorController::class, 'makeEnquiry']);

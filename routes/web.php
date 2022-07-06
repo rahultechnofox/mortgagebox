@@ -56,6 +56,7 @@ Route::middleware('auth')->group(function(){
     Route::get('admin/verifyEmail/{id}','\App\Http\Controllers\UserController@verifyEmail');
     Route::get('admin/sendResetPasswordEmail/{id}','\App\Http\Controllers\UserController@sendResetPasswordEmail');
     Route::post('admin/update-user-status','\App\Http\Controllers\UserController@updateStatus');
+    Route::post('admin/update-email','\App\Http\Controllers\UserController@updateEmail');
 
     /******************* User Management **********************/
 

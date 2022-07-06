@@ -618,11 +618,13 @@ class AdvisorController extends Controller
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id)->first();
         if($advisor_data){
             $advisor_data->is_make_enquiry_visible = 1;
-            $avisor_bids_check = AdvisorBids::where('advisor_id',$id)->where('status',1)->first();
+            $avisor_bids_check = AdvisorBids::where('advisor_id',$id)->whereIn('status',[0,1])->orderBy('id','DESC')->first();
+            $advisor_data->avisor_bids_check = $avisor_bids_check;
             if($avisor_bids_check){
-                $area = Advice_area::where('id',$avisor_bids_check->area_id)->first();
+                $area = Advice_area::where('id',$avisor_bids_check->area_id)->whereIn('advisor_id',[$id,0])->first();
+                $advisor_data->area = $area;
                 if($area){
-                    if($area->advisor_id==$id && $area->area_status<3){
+                    if($area->area_status<3){
                         $advisor_data->is_make_enquiry_visible = 0;
                     }
                 }

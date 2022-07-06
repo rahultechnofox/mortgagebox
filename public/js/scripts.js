@@ -14,6 +14,18 @@ function getFormData($form){
     });
     return indexed_array;
 }
+
+function validateEmail(email) {
+    var x = email;
+    var atpos = x.indexOf("@");
+    var dotpos = x.lastIndexOf(".");
+    if (atpos < 1 || dotpos < atpos + 2 || dotpos + 2 >= x.length) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 $.ajaxSetup({
     headers: {
         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -791,4 +803,31 @@ function getPostCodesAutocomplete(){
             }, 300);
         },
     })
+}
+
+
+function updateEmail(formId){
+    var $form = $("#"+formId);
+    var data = getFormData($form);
+    if(data.email == ''){
+        myToastr('Enter Email.','error');
+    }else if(validateEmail(data.email)){
+        myToastr("Enter Valid Email.",'error');
+    }else{
+        showLoader();
+        $.ajax({
+            type: 'post',
+            url: base_url +"/admin/update-email",
+            data: data,
+            success: function (response) {
+                if(!response.status){
+                    hideLoader();
+                    myToastr(response.message,'error');
+                }else{
+                    location.reload();                   
+                    myToastr(response.message,'success');
+                }
+            }
+        });
+    }
 }

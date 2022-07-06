@@ -509,6 +509,82 @@ class Advice_area extends Model
                     $query = $query->where('advice_areas.created_at','>=',Carbon::today()->subDays(365));
                 }
             }
+
+            if(isset($search['status']) && count($search['status'])>0){
+                $status_arr = array(-1);                
+                foreach($search['status'] as $status_data){
+                    if($status_data=='accepted'){
+                        // $accepted = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
+                        // // where('advisor_status',1)->
+                        // if(count($accepted)){
+                        //     foreach($accepted as $accepted_data){
+                        //         $dataPurchased = Advice_area::where('id',$accepted_data->area_id)->where('advisor_id',0)->first();
+                        //         if($dataPurchased){
+                        //             array_push($status_arr,$dataPurchased);
+                        //         }
+                        //     }
+                        // }
+                        $status_need = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
+                        if(count($status_need)){
+                            foreach($status_need as $status_need_data){
+                                array_push($status_arr,$status_need_data->area_id);
+                            }
+                        }
+                    }
+                    if($status_data=='sole_adviser' || $status_data=='hired'){
+                        $hired = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',1)->get();
+                        if(count($hired)){
+                            foreach($hired as $hired_data){
+                                array_push($status_arr,$hired_data->area_id);
+                            }
+                        }
+                    }
+                    if($status_data=='completed'){
+                        $completed = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',2)->where('advisor_status',1)->get();
+                        if(count($completed)){
+                            foreach($completed as $hired_data){
+                                array_push($status_arr,$hired_data->area_id);
+                            }
+                        }
+                    }
+    
+                    if($status_data=='lost'){
+                        $AllMyBids = AdvisorBids::where('advisor_id',$search['user_id'])->where('status','!=',1)->where('status','!=',2)->get();
+                        if(count($AllMyBids)){
+                            foreach($AllMyBids as $bids){
+                                $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$search['user_id'])->where('advisor_id','!=',0)->first();
+                                if($dataLost){
+                                    array_push($status_arr,$bids->area_id);
+                                }
+                            }
+                        }
+                    }
+                    if($status_data=='no_response'){
+                        $response = Advice_area::where('advisor_id',0)->where('created_at','<',date("Y-m-d H:i:s",strtotime("- 14 days")))->get();
+                        foreach($response as $response_data){
+                            $accepted = AdvisorBids::where('advisor_id',$search['user_id'])->where('area_id',$response_data->id)->where('status',0)->where('advisor_status',1)->count();
+                            $hired = AdvisorBids::where('area_id',$response_data->id)->where('status',1)->count();
+                            
+                            $channelIds = array(-1);
+                            $channelID = ChatChannel::where('advicearea_id',$response_data->id)->orderBy('id','DESC')->get();
+                            foreach ($channelID as $chanalesR) {
+                                array_push($channelIds, $chanalesR->id);
+                            }                    
+                            $chatCount = ChatModel::whereIn('channel_id',$channelIds)->count();;
+    
+                            if($chatCount==0 && $hired==0 && $accepted>0){
+                                array_push($status_arr,$response_data->id);
+                            }
+                        }
+                    }
+                    
+                }
+                if(count($advice_arr)>0){
+                    $advice_arr = array_intersect($advice_arr, $status_arr);
+                }else{
+                    $advice_arr = array_unique($status_arr);
+                }
+            }
             $query =  $query->select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
             ->join('users', 'advice_areas.user_id', '=', 'users.id')
             ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
@@ -523,6 +599,8 @@ class Advice_area extends Model
             ->with('service')
             ->orderBy('id','DESC')
             ->paginate();
+            // ->get();
+            // paginate()
             return $advice_area;
         }catch (\Exception $e) {
             // echo json_encode($e->getMessage());exit;

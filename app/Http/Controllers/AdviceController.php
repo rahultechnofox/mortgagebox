@@ -76,7 +76,7 @@ class AdviceController extends Controller
             $c = \Helpers::sendEmail('emails.customer_signup',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         } 
         
-        $user = Advice_area::create([
+        $area = Advice_area::create([
             'user_id' => $request->user_id,
             // 'service_type' => $request->service_type,
             'service_type_id' => (int)$request->service_type_id,
@@ -187,6 +187,7 @@ class AdviceController extends Controller
             'status' => true,
             'token' => $token,
             'data' => $user,
+            'area_id'=>$area->id,
             'message' => 'Advice area created successfully',
         ], Response::HTTP_OK);
         // return response()->json([

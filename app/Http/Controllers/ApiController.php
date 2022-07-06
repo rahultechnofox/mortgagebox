@@ -515,6 +515,7 @@ class ApiController extends Controller
             'lti_max' => $lti_max
 
         ]);
+        
         //User created, return success response
         return response()->json([
             'status' => true,
@@ -956,7 +957,7 @@ class ApiController extends Controller
             $ltv_max  = ($request->property)/$request->size_want;
             $lti_max  = ($request->property)/$request->combined_income;
 
-            Advice_area::create([
+            $area = Advice_area::create([
                 'user_id' => $user->id,
                 'service_type_id' => (int)$request->service_type_id,
                 // 'service_type' => $request->service_type,
@@ -988,9 +989,55 @@ class ApiController extends Controller
 
             ]);
             //User created, return success response
+            // $asap = 0;
+            // $next_3_month = 0;
+            // $more_3_month = 0;
+            // if($request->request_time=='as soon as possible'){
+            //     $asap = 1;
+            // }else if($request->request_time=='in the next 3 months'){
+            //     $next_3_month = 1;
+            // }else if($request->request_time=='in more than 3 months'){
+            //     $more_3_month = 1;
+            // }
+            // $userIdsArr = array();
+            // $userService = AdviserProductPreferences::where('service_id',$request->service_type_id)->get(); 
+            // if(count($userService)){
+            //     $advisorId = array(-1);
+            //     foreach($userService as $userService_data){
+            //         array_push($advisorId,$userService_data->adviser_id);
+            //     }
+            //     if(count($userIdsArr)>0){
+            //         $userIdsArr = array_intersect($userIdsArr, $advisorId);
+            //     }else{
+            //         $userIdsArr = array_unique($advisorId);
+            //     }
+            // }
+            // $userCustomer = AdvisorPreferencesCustomer::where('self_employed',$request->self_employed)->where('non_uk_citizen',$request->non_uk_citizen)->where('adverse_credit',$request->adverse_credit)->where('asap',$asap)->where('next_3_month',$next_3_month)->where('more_3_month',$more_3_month)->where('fees_preference',$request->fees_preference)->get(); 
+            // if(count($userCustomer)){
+            //     $advisorCustomerId = array(-1);
+            //     foreach($userCustomer as $userCustomer_data){
+            //         array_push($advisorCustomerId,$userCustomer_data->advisor_id);
+            //     }
+            //     if(count($userIdsArr)>0){
+            //         $userIdsArr = array_intersect($userIdsArr, $advisorCustomerId);
+            //     }else{
+            //         $userIdsArr = array_unique($advisorCustomerId);
+            //     }
+            // }
+
+            // $advisor = User::whereIn('id',$userIdsArr)->where('user_role',1)->where('post_code',$user->post_code)->get();
+            // foreach($advisor as $advisor_data){
+            //     $newArrDec = array(
+            //         'name'=>$advisor_data->name,
+            //         'email'=>$advisor_data->email,
+            //         'message_text' => 'One lead is matched with your profile go and checkout it.'
+            //     );
+            //     $c = \Helpers::sendEmail('emails.information',$newArrDec ,$advisor_data->email,$advisor_data->name,'MortgageBox Lead Match','','');
+            // }
             return response()->json([
                 'status' => true,
                 'message' => 'Advice area added successfully',
+                'area_id'=>$area->id,
 
             ], Response::HTTP_OK);
         } else {
@@ -1001,6 +1048,76 @@ class ApiController extends Controller
             ], Response::HTTP_OK);
         }
     }
+
+    public function sendNewLeadMatchMail(Request $request,$id)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        if ($user != "") {
+            $area = Advice_area::where('id',$id)->first();
+            //User created, return success response
+            $asap = 0;
+            $next_3_month = 0;
+            $more_3_month = 0;
+            if($area){
+                if($area->request_time=='as soon as possible'){
+                    $asap = 1;
+                }else if($area->request_time=='in the next 3 months'){
+                    $next_3_month = 1;
+                }else if($area->request_time=='in more than 3 months'){
+                    $more_3_month = 1;
+                }
+                $userIdsArr = array();
+                $userService = AdviserProductPreferences::where('service_id',$area->service_type_id)->get(); 
+                if(count($userService)){
+                    $advisorId = array(-1);
+                    foreach($userService as $userService_data){
+                        array_push($advisorId,$userService_data->adviser_id);
+                    }
+                    if(count($userIdsArr)>0){
+                        $userIdsArr = array_intersect($userIdsArr, $advisorId);
+                    }else{
+                        $userIdsArr = array_unique($advisorId);
+                    }
+                }
+                $userCustomer = AdvisorPreferencesCustomer::where('self_employed',$area->self_employed)->where('non_uk_citizen',$area->non_uk_citizen)->where('adverse_credit',$area->adverse_credit)->where('asap',$asap)->where('next_3_month',$next_3_month)->where('more_3_month',$more_3_month)->where('fees_preference',$request->fees_preference)->get(); 
+                if(count($userCustomer)){
+                    $advisorCustomerId = array(-1);
+                    foreach($userCustomer as $userCustomer_data){
+                        array_push($advisorCustomerId,$userCustomer_data->advisor_id);
+                    }
+                    if(count($userIdsArr)>0){
+                        $userIdsArr = array_intersect($userIdsArr, $advisorCustomerId);
+                    }else{
+                        $userIdsArr = array_unique($advisorCustomerId);
+                    }
+                }
+    
+                $advisor = User::whereIn('id',$userIdsArr)->where('user_role',1)->where('post_code',$user->post_code)->get();
+                foreach($advisor as $advisor_data){
+                    $newArrDec = array(
+                        'name'=>$advisor_data->name,
+                        'email'=>$advisor_data->email,
+                        'message_text' => 'One lead is matched with your profile go and checkout it.'
+                    );
+                    $c = \Helpers::sendEmail('emails.information',$newArrDec ,$advisor_data->email,$advisor_data->name,'MortgageBox Lead Matched','','');
+                }
+                
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Mail sent successfully',
+                'data'=>$area
+
+            ], Response::HTTP_OK);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'not found',
+
+            ], Response::HTTP_OK);
+        }
+    }
+
     public function getUsersAdviceArea()
     {
         $id = JWTAuth::parseToken()->authenticate();
@@ -1730,19 +1847,41 @@ class ApiController extends Controller
         $dataCheck = $this->arrayPaginator($getLeads,$request);
         return response()->json([
             'status' => true,
-            'pagei'=>$dataCheck,
-            'check_data'=>$getLeads,
-            'data' => $getLeads,
-            // 'current_page' => $advice_area->currentPage(),
-            // 'first_page_url' => $advice_area->url(1),
-            // 'last_page_url' => $advice_area->url($advice_area->lastPage()),
-            // 'per_page' => $advice_area->perPage(),
-            // 'next_page_url' => $advice_area->nextPageUrl(),
-            // 'prev_page_url' => $advice_area->previousPageUrl(),
-            // 'total' => $advice_area->total(),
-            // 'total_on_current_page' => $advice_area->count(),
-            // 'has_more_page' => $advice_area->hasMorePages(),
+            'data' => $dataCheck->items(),
+            'current_page' => $dataCheck->currentPage(),
+            'first_page_url' => $dataCheck->url(1),
+            'last_page_url' => $dataCheck->url($dataCheck->lastPage()),
+            'per_page' => $dataCheck->perPage(),
+            'next_page_url' => $dataCheck->nextPageUrl(),
+            'prev_page_url' => $dataCheck->previousPageUrl(),
+            'total' => $dataCheck->total(),
+            'total_on_current_page' => $dataCheck->count(),
+            'has_more_page' => $dataCheck->hasMorePages(),
+            // 'current_page' => $dataCheck['current_page'],
+            // 'first_page_url' => $dataCheck['first_page_url'],
+            // 'last_page_url' => $dataCheck['last_page_url'],
+            // 'per_page' => $dataCheck['per_page'],
+            // 'next_page_url' => $dataCheck['next_page_url'],
+            // 'prev_page_url' => $dataCheck['prev_page_url'],
+            // 'total' => $dataCheck['total'],
+            // 'total_on_current_page' => $dataCheck->last_page_url,
+            // 'has_more_page' => $dataCheck->last_page_url,
         ], Response::HTTP_OK);
+        // return response()->json([
+        //     'status' => true,
+        //     'pagei'=>$dataCheck,
+        //     'check_data'=>$getLeads,
+        //     'data' => $getLeads,
+        //     'current_page' => $advice_area->currentPage(),
+        //     'first_page_url' => $advice_area->url(1),
+        //     'last_page_url' => $advice_area->url($advice_area->lastPage()),
+        //     'per_page' => $advice_area->perPage(),
+        //     'next_page_url' => $advice_area->nextPageUrl(),
+        //     'prev_page_url' => $advice_area->previousPageUrl(),
+        //     'total' => $advice_area->total(),
+        //     'total_on_current_page' => $advice_area->count(),
+        //     'has_more_page' => $advice_area->hasMorePages(),
+        // ], Response::HTTP_OK);
     }
 
     public function arrayPaginator($array, $request)
@@ -2785,7 +2924,7 @@ class ApiController extends Controller
         ], Response::HTTP_OK);
     }
 
-    function advisorAcceptedLeads()
+    function advisorAcceptedLeads(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
         $post['user_id'] = $user->id;
@@ -2794,6 +2933,10 @@ class ApiController extends Controller
         }
         if(isset($_GET['time']) && $_GET['time']){
             $post['time'] = $_GET['time'];
+        }
+        if(isset($request->status) && $request->status!=''){
+            $explode = explode(",",$request->status);
+            $post['status'] = $explode;
         }
         $advice_area =  Advice_area::getAcceptedLeads($post);
         $bidCountArr = array();
@@ -3024,6 +3167,7 @@ class ApiController extends Controller
 
         return response()->json([
             'status' => true,
+            // 'data' => $advice_area,
             'data' => $advice_area->items(),
             'current_page' => $advice_area->currentPage(),
             'first_page_url' => $advice_area->url(1),
@@ -3346,6 +3490,7 @@ class ApiController extends Controller
             }
         }else{
             $message = "Offer declined";
+            $advisor = AdvisorProfile::where('advisorId',$bidDetails->advisor_id)->first();
             $this->saveNotification(array(
                 'type'=>'2', // 1:
                 'message'=>'Your bid declined by customer '.$user->name, // 1:
@@ -4186,7 +4331,7 @@ class ApiController extends Controller
                         $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
                         $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
                         
-                        $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->with('area')->with('adviser')->get();
+                        $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->whereMonth('created_at',$m)->with('area')->with('adviser')->get();
                         // ->where('is_discounted',0)
                         if(count($data['invoice']->new_fees_arr)){
                             foreach($data['invoice']->new_fees_arr as $new_bid){
@@ -4212,7 +4357,7 @@ class ApiController extends Controller
                             }
                         }
                         
-                        $discount_cre = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                        $discount_cre = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->where('is_discounted','!=',0)->whereMonth('created_at',$m)->with('area')->with('adviser')->get();
                         if(count($discount_cre)){
                             foreach($discount_cre as $discount_bid){
                                 $discount_bid->cost_leads = number_format($discount_bid->cost_leads,2);
@@ -4386,9 +4531,20 @@ class ApiController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $aStatus = array(-1);
         if($user) {
+            $acceptedArr = array();
             $data['unread'] = 0;
             $data['unread'] = ChatModel::where('to_user_id',$user->id)->where('to_user_id_seen',0)->count();
-            $data['accepted'] = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->count();
+            $data['accepted'] = 0;
+            $accepted = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->where('advisor_status',1)->get();
+            if(count($accepted)){
+                foreach($accepted as $accepted_data){
+                    $dataPurchased = Advice_area::where('id',$accepted_data->area_id)->where('advisor_id',0)->first();
+                    if($dataPurchased){
+                        $data['accepted'] = $data['accepted'] + 1;
+                        array_push($acceptedArr,$dataPurchased);
+                    }
+                }
+            }
             $data['hired'] = AdvisorBids::where('advisor_id',$user->id)->where('status',1)->count();
             $data['completed'] = AdvisorBids::where('advisor_id',$user->id)->where('status',2)->where('advisor_status',1)->count();
             $data['no_response'] = 0;
@@ -4408,15 +4564,16 @@ class ApiController extends Controller
                     $data['no_response'] = $data['no_response'] + 1;
                 }
             }
-
+            $lostArr = array();
             // $data['no_response'] = Advice_area::where('advisor_id',$user->id)->where('advisor_id',0)->count();
             $data['lost'] = 0;
-            $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status',0)->get();
+            $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status','!=',1)->where('status','!=',2)->get();
             if(count($AllMyBids)){
                 foreach($AllMyBids as $bids){
-                    $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->first();
+                    $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
                     if($dataLost){
                         $data['lost'] = $data['lost'] + 1;
+                        array_push($lostArr,$dataLost);
                     }
                 }
             }
@@ -4428,7 +4585,8 @@ class ApiController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Count fetched successfully',
-                'data'=> $data
+                'data'=> $data,
+                'lostArr'=>$lostArr
             ], Response::HTTP_OK);          
         }else{
             return response()->json([

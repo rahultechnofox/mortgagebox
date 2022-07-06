@@ -66,7 +66,15 @@
 							<div class="col-md-6 mb-1">
 								<div class="d-flex">
 									<div class="transaction-percentage">
-										<h6 class="transaction-title">Email:</h6> <small>{{isset($userDetails->email) ? $userDetails->email : '--'}}</small> </div>
+										<h6 class="transaction-title">Email:</h6> 
+										@if(isset($userDetails->email) && $userDetails->email!='')
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editEmail">
+                                                <small>{{$userDetails->email}}</small><i data-feather="edit-2" class="me-50" style="margin-bottom: 7px;"></i>
+                                            </a>
+                                        @else
+                                            --
+                                        @endif
+									</div>
 								</div>
 							</div>
 							<div class="col-md-6 mb-1">
@@ -195,6 +203,28 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger waves-effect waves-float waves-light" onclick="updateStatus('{{$userDetails->id}}','0','/admin/update-user-status',true,'suspend_reason');">Suspend</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade text-start" id="editEmail" tabindex="-1" aria-labelledby="myModalLabel33" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel33">Edit Email</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="updateEmailForm">
+                <div class="modal-body">
+                    <label>Email</label>
+					<input type="hidden" id="id" name="id" value="{{isset($userDetails->id) ? $userDetails->id : ''}}">
+                    <div class="mb-1">
+                        <input type="email" placeholder="Email" class="form-control" name="email" id="email" value="{{isset($userDetails->email) ? $userDetails->email : ''}}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger waves-effect waves-float waves-light" onclick="updateEmail('updateEmailForm');">Update</button>
                 </div>
             </form>
         </div>

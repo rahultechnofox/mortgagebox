@@ -16,6 +16,7 @@
                                 <th>Review</th>
                                 <th>Advisor</th>
                                 <th>Reason</th>
+                                <th>Created Date</th>
                                 <th>Agree</th>
                             </tr>
                         </thead>
@@ -29,6 +30,7 @@
                                 <td>{{\Helpers::checkNull($users_data->review->reviews)}}</td>
                                 <td>{{\Helpers::checkNull($users_data->adviser->display_name)}}</td>
                                 <td>{{\Helpers::checkNull($users_data->reason)}}</td>
+                                <td>{{\Helpers::formatDateNormal($users_data->created_at)}}</td>
                                 <td>
                                     @if($users_data->spam_status == -1)
                                         <a class="btn btn-warning btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" data-bs-toggle="modal" data-bs-target="#modals-slide-in_{{$users_data->id}}">Pending</a>

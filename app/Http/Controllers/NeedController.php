@@ -450,18 +450,29 @@ class NeedController extends Controller
                             $adviser = AdvisorProfile::where('advisorId',$need->user_id)->first();
                             if($adviser){
                                 if($post['spam_status']==1){
+                                    $message = "Admin is agree with your spam marked request.";
                                     $newArr = array(
                                         'name'=>$adviser->display_name,
                                         'email'=>$adviser->email,
                                         'message_text' => 'Admin is agree with your spam marked request.'
                                     );
                                 }else{
+                                    $message = "Admin is disagree with your spam marked request.";
                                     $newArr = array(
                                         'name'=>$adviser->display_name,
                                         'email'=>$adviser->email,
                                         'message_text' => 'Admin is disagree with your spam marked request.'
                                     );
                                 }
+                                $this->saveNotification(array(
+                                    'type'=>'0', // 1:
+                                    'message'=>$message, // 1:
+                                    'read_unread'=>'0', // 1:
+                                    'user_id'=>1,// 1:
+                                    'advisor_id'=>$need->user_id, // 1:
+                                    'area_id'=>$need->area_id,// 1:
+                                    'notification_to'=>1
+                                ));
                                 
                                 $c = \Helpers::sendEmail('emails.information',$newArr ,$adviser->email,$adviser->display_name,'Mortgagebox.co.uk – '.$adviser->display_name,'','');
                             }

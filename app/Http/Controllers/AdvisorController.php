@@ -1292,19 +1292,19 @@ class AdvisorController extends Controller
         
         
         if(!empty($checkUser)){
-            // $newArr = array(
-            //     'name'=>ucfirst($request->name),
-            //     'email'=>$request->email,
-            //     'message_text' => 'Please be advised that '.$user->name.' has successfully added you to company '.$company->company_name
-            // );
-            // $c = \Helpers::sendEmail('emails.information',$newArr ,$request->email,ucfirst($request->name),'MortgageBox Free introduction','','');
             $newArr = array(
                 'name'=>ucfirst($request->name),
-                'invited_by'=>ucfirst($user->name),
                 'email'=>$request->email,
-                'url' => config('constants.urls.team_email_verification_url')."".$this->getEncryptedId($company_team_id)
+                'message_text' => 'Please be advised that '.$user->name.' has successfully added you to company '.$company->company_name
             );
-            $c = \Helpers::sendEmail('emails.team_email_verification',$newArr ,$request->email,$request->name,'Join Company | Mortgagebox.co.uk','','');
+            $c = \Helpers::sendEmail('emails.information',$newArr ,$request->email,ucfirst($request->name),'Join Company | Mortgagebox.co.uk','','');
+            // $newArr = array(
+            //     'name'=>ucfirst($request->name),
+            //     'invited_by'=>ucfirst($user->name),
+            //     'email'=>$request->email,
+            //     'url' => config('constants.urls.team_email_verification_url')."".$this->getEncryptedId($company_team_id)
+            // );
+            // $c = \Helpers::sendEmail('emails.team_email_verification',$newArr ,$request->email,$request->name,'Join Company | Mortgagebox.co.uk','','');
         }else{
             $newArr = array(
                 'name'=>ucfirst($request->name),
@@ -1626,89 +1626,169 @@ class AdvisorController extends Controller
         if($hired_leads_for_per!=0 && $accepted_leads_for_per!=0){
             $conversion_rate = ($hired_leads_for_per / $accepted_leads_for_per) * 100;
         }
-        $live_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
-            ->where('status', '=', 0)
-            ->where('advisor_status', '=', 1)
-            ->where('created_at', '>', Carbon::today()->subDays(30))
-            ->count();
-        $live_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 0)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(90))
-        ->count();
+        // $live_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 0)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $live_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 0)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
 
-        $live_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 0)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(365))
-        ->count();
+        // $live_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 0)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
+        /************ This month COunt ************/
+        $live_leads_months = 0;
+        $accepted_months = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',0)->where('advisor_status',1)->where('created_at', '>', Carbon::today()->subDays(30))->get();
+        if(count($accepted_months)){
+            foreach($accepted_months as $accepted_months_data){
+                $dataPurchased_months = Advice_area::where('id',$accepted_months_data->area_id)->where('advisor_id',0)->first();
+                if($dataPurchased_months){
+                    $live_leads_months = $live_leads_months + 1;
+                }
+            }
+        }
 
-        $hired_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
-            ->where('status', '=', 1)
-            ->where('advisor_status', '=', 1)
-            ->where('created_at', '>', Carbon::today()->subDays(30))
-            ->count();
-        $hired_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 1)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(90))
-        ->count();
-
-        $hired_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 1)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(365))
-        ->count();
-
-        $completed_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
-            ->where('status', '=', 2)
-            ->where('advisor_status', '=', 1)
-            ->where('created_at', '>', Carbon::today()->subDays(30))
-            ->count();
-        $completed_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 2)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(90))
-        ->count();
-
-        $completed_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
-        ->where('status', '=', 2)
-        ->where('advisor_status', '=', 1)
-        ->where('created_at', '>', Carbon::today()->subDays(365))
-        ->count();
-
+        $hired_leads_months = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',1)->where('created_at', '>', Carbon::today()->subDays(30))->count();
+        $completed_leads_months = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',2)->where('advisor_status',1)->where('created_at', '>', Carbon::today()->subDays(30))->count();
         $lost_leads_months = 0;
-        $checkBidMonth= AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(30))->get();
-        if(count($checkBidMonth)){
-            foreach($checkBidMonth as $checkBidMonth_data){
-                $dataLostMonth = Advice_area::where('id',$checkBidMonth_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
-                if($dataLostMonth){
+        $AllMyBids_months = AdvisorBids::where('advisor_id',$userDetails->id)->where('status','!=',1)->where('status','!=',2)->where('created_at', '>', Carbon::today()->subDays(30))->get();
+        if(count($AllMyBids_months)){
+            foreach($AllMyBids_months as $AllMyBids_months_data){
+                $dataLost_months = Advice_area::where('id',$AllMyBids_months_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+                if($dataLost_months){
                     $lost_leads_months = $lost_leads_months + 1;
                 }
             }
         }
 
+        /************ This month COunt ************/
+
+        /************ Quarter COunt ************/
+        $live_leads_quarter = 0;
+        $accepted_quarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',0)->where('advisor_status',1)->where('created_at', '>', Carbon::today()->subDays(90))->get();
+        if(count($accepted_quarter)){
+            foreach($accepted_quarter as $accepted_quarter_data){
+                $dataPurchased_quarter = Advice_area::where('id',$accepted_quarter_data->area_id)->where('advisor_id',0)->first();
+                if($dataPurchased_quarter){
+                    $live_leads_quarter = $live_leads_quarter + 1;
+                }
+            }
+        }
+
+        $hired_leads_quarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',1)->where('created_at', '>', Carbon::today()->subDays(90))->count();
+        $completed_leads_quarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',2)->where('advisor_status',1)->where('created_at', '>', Carbon::today()->subDays(90))->count();
         $lost_leads_quarter = 0;
-        $checkBidQuarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(90))->get();
-        if(count($checkBidQuarter)){
-            foreach($checkBidQuarter as $checkBidQuarter_data){
-                $dataLostQuarter = Advice_area::where('id',$checkBidQuarter_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
-                if($dataLostQuarter){
+        $AllMyBids_quarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('status','!=',1)->where('status','!=',2)->where('created_at', '>', Carbon::today()->subDays(90))->get();
+        if(count($AllMyBids_quarter)){
+            foreach($AllMyBids_quarter as $AllMyBids_quarter_data){
+                $dataLost_quarter = Advice_area::where('id',$AllMyBids_quarter_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+                if($dataLost_quarter){
                     $lost_leads_quarter = $lost_leads_quarter + 1;
                 }
             }
         }
 
+        /************ Quarter COunt ************/
+
+        /************ Year COunt ************/
+        $live_leads_year = 0;
+        $accepted_year = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',0)->where('advisor_status',1)->where('created_at', '>', Carbon::today()->subDays(365))->get();
+        if(count($accepted_year)){
+            foreach($accepted_year as $accepted_year_data){
+                $dataPurchased_year = Advice_area::where('id',$accepted_year_data->area_id)->where('advisor_id',0)->first();
+                if($dataPurchased_year){
+                    $live_leads_year = $live_leads_year + 1;
+                }
+            }
+        }
+
+        $hired_leads_year = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',1)->count();
+        $completed_leads_year = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',2)->where('advisor_status',1)->count();
         $lost_leads_year = 0;
-        $checkBidYear = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(365))->get();
-        if(count($checkBidYear)){
-            foreach($checkBidYear as $checkBidYear_data){
-                $dataLostYear = Advice_area::where('id',$checkBidYear_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
-                if($dataLostYear){
+        $AllMyBids_year = AdvisorBids::where('advisor_id',$userDetails->id)->where('status','!=',1)->where('status','!=',2)->get();
+        if(count($AllMyBids_year)){
+            foreach($AllMyBids_year as $AllMyBids_year_data){
+                $dataLost_year = Advice_area::where('id',$AllMyBids_year_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+                if($dataLost_year){
                     $lost_leads_year = $lost_leads_year + 1;
                 }
             }
         }
+
+        /************ Year COunt ************/
+
+        // $hired_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 1)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $hired_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 1)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
+
+        // $hired_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 1)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
+
+        // $completed_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 2)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $completed_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 2)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
+
+        // $completed_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 2)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
+
+        // $lost_leads_months = 0;
+        // $checkBidMonth= AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(30))->get();
+        // if(count($checkBidMonth)){
+        //     foreach($checkBidMonth as $checkBidMonth_data){
+        //         $dataLostMonth = Advice_area::where('id',$checkBidMonth_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+        //         if($dataLostMonth){
+        //             $lost_leads_months = $lost_leads_months + 1;
+        //         }
+        //     }
+        // }
+
+        // $lost_leads_quarter = 0;
+        // $checkBidQuarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(90))->get();
+        // if(count($checkBidQuarter)){
+        //     foreach($checkBidQuarter as $checkBidQuarter_data){
+        //         $dataLostQuarter = Advice_area::where('id',$checkBidQuarter_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+        //         if($dataLostQuarter){
+        //             $lost_leads_quarter = $lost_leads_quarter + 1;
+        //         }
+        //     }
+        // }
+
+        // $lost_leads_year = 0;
+        // $checkBidYear = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(365))->get();
+        // if(count($checkBidYear)){
+        //     foreach($checkBidYear as $checkBidYear_data){
+        //         $dataLostYear = Advice_area::where('id',$checkBidYear_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+        //         if($dataLostYear){
+        //             $lost_leads_year = $lost_leads_year + 1;
+        //         }
+        //     }
+        // }
 
         // $lost_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
         //     ->where('status', '=', 3)

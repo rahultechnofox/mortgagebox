@@ -16,6 +16,7 @@
                                 <th>Area ID</th>
                                 <th>Adviser</th>
                                 <th>Reason</th>
+                                <th>Created Date</th>
                                 <th>Agree</th>
                             </tr>
                         </thead>
@@ -29,6 +30,7 @@
                                 <td><a href="{{url('admin/need/show/')}}/{{$users_data->area_id}}">{{\Helpers::checkNull($users_data->area_id)}}</td>
                                 <td>{{\Helpers::checkNull($users_data->user->name)}}</td>
                                 <td>{{\Helpers::checkNull($users_data->reason)}}</td>
+                                <td>{{\Helpers::formatDateNormal($users_data->created_at)}}</td>
                                 <td>
                                     @if($users_data->spam_status == -1)
                                         <a class="btn btn-warning btn-sm btn-add-new waves-effect waves-float waves-light" href="javascript:;" data-bs-toggle="modal" data-bs-target="#modals-slide-in_{{$users_data->id}}">Pending</a>

@@ -409,6 +409,10 @@ class UserController extends Controller
                     return response(\Helpers::sendFailureAjaxResponse("Email is already exist."));
                 }else{
                     $user = User::where('id',$post['id'])->update($post);
+                    $checkAdvisor = AdvisorProfile::where('advisorId',$post['id'])->first();
+                    if($checkAdvisor){
+                        AdvisorProfile::where('id',$checkAdvisor->id)->update($post);
+                    }
                     if($user){
                         return response(\Helpers::sendSuccessAjaxResponse('Email updated successfully.',$user));
                     }else{

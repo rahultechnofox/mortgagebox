@@ -463,41 +463,91 @@ class Advice_area extends Model
             if(isset($search['lead']) && $search['lead']!=''){
                 $advice_arr = array(-1);
                 if($search['lead']=='live_leads'){
-                    $accepted = AdvisorBids::where('status',0)->where('advisor_status',1)->where('advisor_id','=',$search['user_id'])->get();
+                    $accepted = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
+                    // where('advisor_status',1)->
                     if(count($accepted)){
                         foreach($accepted as $accepted_data){
-                            if(!in_array($accepted_data->area_id,$advice_arr)){
-                                array_push($advice_arr,$accepted_data->area_id);
+                            $dataPurchased = Advice_area::where('id',$accepted_data->area_id)->where('advisor_id',0)->first();
+                            if($dataPurchased){
+                                if(!in_array($dataPurchased->id,$advice_arr)){
+                                    array_push($advice_arr,$dataPurchased->id);
+                                }
+                                // array_push($status_arr,$dataPurchased->id);
                             }
                         }
                     }
+                    // $accepted = AdvisorBids::where('status',0)->where('advisor_status',1)->where('advisor_id','=',$search['user_id'])->get();
+                    // if(count($accepted)){
+                    //     foreach($accepted as $accepted_data){
+                    //         if(!in_array($accepted_data->area_id,$advice_arr)){
+                    //             array_push($advice_arr,$accepted_data->area_id);
+                    //         }
+                    //     }
+                    // }
                 }else if($search['lead']=='hired'){
-                    $accepted = AdvisorBids::where('status',1)->where('advisor_id',$search['user_id'])->get();
-                    if(count($accepted)){
-                        foreach($accepted as $accepted_data){
-                            if(!in_array($accepted_data->area_id,$advice_arr)){
-                                array_push($advice_arr,$accepted_data->area_id);
+                    $hired = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',1)->get();
+                    if(count($hired)){
+                        foreach($hired as $hired_data){
+                            if(!in_array($hired_data->area_id,$advice_arr)){
+                                array_push($advice_arr,$hired_data->area_id);
                             }
+                            // array_push($status_arr,$hired_data->area_id);
                         }
                     }
+                    // $accepted = AdvisorBids::where('status',1)->where('advisor_id',$search['user_id'])->get();
+                    // if(count($accepted)){
+                    //     foreach($accepted as $accepted_data){
+                    //         if(!in_array($accepted_data->area_id,$advice_arr)){
+                    //             array_push($advice_arr,$accepted_data->area_id);
+                    //         }
+                    //     }
+                    // }
                 }else if($search['lead']=='completed'){
-                    $accepted = AdvisorBids::where('status',2)->where('advisor_status',1)->where('advisor_id','=',$search['user_id'])->get();
-                    if(count($accepted)){
-                        foreach($accepted as $accepted_data){
-                            if(!in_array($accepted_data->area_id,$advice_arr)){
-                                array_push($advice_arr,$accepted_data->area_id);
+                    $completed = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',2)->where('advisor_status',1)->get();
+                    if(count($completed)){
+                        foreach($completed as $completed_data){
+                            if(!in_array($completed_data->area_id,$advice_arr)){
+                                array_push($advice_arr,$completed_data->area_id);
                             }
+                            // array_push($status_arr,$hired_data->area_id);
                         }
                     }
+                    // $accepted = AdvisorBids::where('status',2)->where('advisor_status',1)->where('advisor_id','=',$search['user_id'])->get();
+                    // if(count($accepted)){
+                    //     foreach($accepted as $accepted_data){
+                    //         if(!in_array($accepted_data->area_id,$advice_arr)){
+                    //             array_push($advice_arr,$accepted_data->area_id);
+                    //         }
+                    //     }
+                    // }
                 }else if($search['lead']=='lost'){
-                    $AllMyBids = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
+                    $AllMyBids = AdvisorBids::where('advisor_id',$search['user_id'])->where('status','!=',1)->where('status','!=',2)->get();
                     if(count($AllMyBids)){
-                        foreach($AllMyBids as $AllMyBids_data){
-                            if(!in_array($AllMyBids_data->area_id,$advice_arr)){
-                                array_push($advice_arr,$AllMyBids_data->area_id);
+                        foreach($AllMyBids as $bids){
+                            $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$search['user_id'])->where('advisor_id','!=',0)->first();
+                            if($dataLost){
+                                if(!in_array($dataLost->id,$advice_arr)){
+                                    array_push($advice_arr,$dataLost->id);
+                                }
+                                // array_push($status_arr,$bids->area_id);
+                            }else{
+                                $dataLostManual = Advice_area::where('id',$bids->area_id)->where('advisor_id',$search['user_id'])->where('area_status',4)->first();
+                                if($dataLostManual){
+                                    if(!in_array($dataLostManual->id,$advice_arr)){
+                                        array_push($advice_arr,$dataLostManual->id);
+                                    }
+                                }
                             }
                         }
                     }
+                    // $AllMyBids = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
+                    // if(count($AllMyBids)){
+                    //     foreach($AllMyBids as $AllMyBids_data){
+                    //         if(!in_array($AllMyBids_data->area_id,$advice_arr)){
+                    //             array_push($advice_arr,$AllMyBids_data->area_id);
+                    //         }
+                    //     }
+                    // }
                 }   
             }
             if(isset($search['time']) && $search['time']!=''){
@@ -514,22 +564,22 @@ class Advice_area extends Model
                 $status_arr = array(-1);                
                 foreach($search['status'] as $status_data){
                     if($status_data=='accepted'){
-                        // $accepted = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
-                        // // where('advisor_status',1)->
-                        // if(count($accepted)){
-                        //     foreach($accepted as $accepted_data){
-                        //         $dataPurchased = Advice_area::where('id',$accepted_data->area_id)->where('advisor_id',0)->first();
-                        //         if($dataPurchased){
-                        //             array_push($status_arr,$dataPurchased);
-                        //         }
-                        //     }
-                        // }
-                        $status_need = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
-                        if(count($status_need)){
-                            foreach($status_need as $status_need_data){
-                                array_push($status_arr,$status_need_data->area_id);
+                        $accepted = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
+                        // where('advisor_status',1)->
+                        if(count($accepted)){
+                            foreach($accepted as $accepted_data){
+                                $dataPurchased = Advice_area::where('id',$accepted_data->area_id)->where('advisor_id',0)->first();
+                                if($dataPurchased){
+                                    array_push($status_arr,$dataPurchased->id);
+                                }
                             }
                         }
+                        // $status_need = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',0)->get();
+                        // if(count($status_need)){
+                        //     foreach($status_need as $status_need_data){
+                        //         array_push($status_arr,$status_need_data->area_id);
+                        //     }
+                        // }
                     }
                     if($status_data=='sole_adviser' || $status_data=='hired'){
                         $hired = AdvisorBids::where('advisor_id',$search['user_id'])->where('status',1)->get();
@@ -549,12 +599,19 @@ class Advice_area extends Model
                     }
     
                     if($status_data=='lost'){
-                        $AllMyBids = AdvisorBids::where('advisor_id',$search['user_id'])->where('status','!=',1)->where('status','!=',2)->get();
-                        if(count($AllMyBids)){
-                            foreach($AllMyBids as $bids){
-                                $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$search['user_id'])->where('advisor_id','!=',0)->first();
+                        $AllMyBidsLost = AdvisorBids::where('advisor_id',$search['user_id'])->where('status','!=',1)->where('status','!=',2)->get();
+                        if(count($AllMyBidsLost)){
+                            foreach($AllMyBidsLost as $bidsLost){
+                                $dataLost = Advice_area::where('id',$bidsLost->area_id)->where('advisor_id','!=',$search['user_id'])->where('advisor_id','!=',0)->first();
                                 if($dataLost){
-                                    array_push($status_arr,$bids->area_id);
+                                    array_push($status_arr,$dataLost->id);
+                                }else{
+                                    $dataLostManual = Advice_area::where('id',$bidsLost->area_id)->where('advisor_id',$search['user_id'])->where('area_status',4)->first();
+                                    if($dataLostManual){
+                                        if(!in_array($dataLostManual->id,$status_arr)){
+                                            array_push($status_arr,$dataLostManual->id);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -576,9 +633,21 @@ class Advice_area extends Model
                                 array_push($status_arr,$response_data->id);
                             }
                         }
+                        $response_another = Advice_area::where('advisor_id',$search['user_id'])->where('area_status',5)->get();
+                        if(count($response_another)){
+                            foreach($response_another as $response_another_data){
+                                $accepted_another = AdvisorBids::where('advisor_id',$search['user_id'])->where('area_id',$response_another_data->id)->where('status',4)->where('advisor_status',1)->first();
+                                if($accepted_another){
+                                    if(!in_array($response_another_data->id,$status_arr)){
+                                        array_push($status_arr,$response_another_data->id);
+                                    }
+                                }
+                            }
+                        }
                     }
                     
                 }
+                // echo json_encode($status_arr);exit;
                 if(count($advice_arr)>0){
                     $advice_arr = array_intersect($advice_arr, $status_arr);
                 }else{
@@ -588,7 +657,7 @@ class Advice_area extends Model
             $query =  $query->select('advice_areas.*', 'users.name', 'users.email', 'users.address', 'advisor_bids.advisor_id as advisor_id')
             ->join('users', 'advice_areas.user_id', '=', 'users.id')
             ->join('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('advisor_bids.advisor_status', '=', 1)
+            // ->where('advisor_bids.advisor_status', '=', 1)
             ->where('advisor_bids.advisor_id', '=',$search['user_id']);
 
             if(count($advice_arr)>0){

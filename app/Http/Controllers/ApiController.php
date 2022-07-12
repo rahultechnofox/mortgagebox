@@ -1347,10 +1347,7 @@ class ApiController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
     }
-    public function searchAdvisor()
-    {
-        
-    }
+    
     public function verifyEmail($id)
     {
         $user_id = $this->getDecryptedId($id);
@@ -2939,6 +2936,10 @@ class ApiController extends Controller
             $post['status'] = $explode;
         }
         $advice_area =  Advice_area::getAcceptedLeads($post);
+        // return response()->json([
+        //     'status' => true,
+        //     'data' => $advice_area,
+        // ], Response::HTTP_OK);
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
@@ -3105,12 +3106,20 @@ class ApiController extends Controller
                 if($bidDetailsStatus->status==2 && $bidDetailsStatus->advisor_status==1){
                     $show_status = "Completed"; 
                 }
+                // if($bidDetailsStatus->status==4 && $bidDetailsStatus->advisor_status==1){
+                //     $show_status = "Completed"; 
+                // }
 
                 $checkBid = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$item->id)->count();
                 if($checkBid>0){
                     $dataLost = Advice_area::where('id',$item->id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
                     if($dataLost){
                         $show_status = "Lost";
+                    }else{
+                        $dataLostManual = Advice_area::where('id',$item->id)->where('advisor_id',$user->id)->where('area_status',4)->first();
+                        if($dataLostManual){
+                            $show_status = "Lost";
+                        }
                     }
                 }
 
@@ -3123,6 +3132,10 @@ class ApiController extends Controller
                     $chatCount = ChatModel::whereIn('channel_id',$channelIds)->count();
                     if($chatCount==0){
                         $show_status = "No Response";
+                    }else{
+                        if($item->area_status==5){
+                            $show_status = "No Response";
+                        }
                     }
                 }
             }
@@ -3526,7 +3539,7 @@ class ApiController extends Controller
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
         $stripe = new \Stripe\StripeClient(
-            'sk_test_51J904DSD18gBSiDIJxuDFBCwwNmhwgTXiU2SPAWDt20XaL7htbtnHKBkqfzu9tTJxPaDBcKrK6KCfxQO0MJcdcGX00zusc4Lug'
+            'sk_test_3eGdHm9suYV79NBBzmCOWcsN'
           );
           $advisorDetails = AdvisorProfile::where('advisorId','=',$user->id)->first();
           if($advisorDetails->stripe_customer_id != "" && $advisorDetails->stripe_customer_id != null){
@@ -3540,6 +3553,7 @@ class ApiController extends Controller
                           'cvc' => $request->cvc,
                         ],
                     ]);
+                   
                     $payment_method = $stripe->paymentMethods->retrieve($paymentDetails['id']);
                     $payment_method->attach(['customer' => $advisorDetails->stripe_customer_id]);
                     return response()->json([
@@ -3602,15 +3616,21 @@ class ApiController extends Controller
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
         //$Skey = config('constants.stripe.stripe_secret_key'); 
-        \Stripe\Stripe::setApiKey('sk_test_51J904DSD18gBSiDIJxuDFBCwwNmhwgTXiU2SPAWDt20XaL7htbtnHKBkqfzu9tTJxPaDBcKrK6KCfxQO0MJcdcGX00zusc4Lug');
+        \Stripe\Stripe::setApiKey('sk_test_3eGdHm9suYV79NBBzmCOWcsN');
         // echo $request->currency;die;
+       
         try{
             $advisorDetails = User::where('id','=',$request->advisorId)->first();
+            // return response()->json([
+            //     'status' => true,
+            //     'message' => "Card saved successfully",
+            //     'data' => $advisorDetails
+            // ], Response::HTTP_OK);
             $responseData = \Stripe\Customer::create([
                 'name'=>($advisorDetails->name) ? $request->name : '',
                 'email'=>($advisorDetails->email) ? $advisorDetails->email : '',
                 "address" => [
-                    "city" => ($request->city) ? $request->city : '', "country" => '', "line1" => ($request->address_line1) ? $request->address_line1: '', "line2" => "", "postal_code" =>($request->postal_code)?$request->postal_code:'', "state" => ''
+                    "city" => ($request->city) ? $request->city : '', "country" => '', "line1" => ($request->address_line1) ? $request->address_line1: '', "line2" => "", "postal_code" =>($advisorDetails->post_code)?$advisorDetails->post_code:'', "state" => ''
                 ],
             ]);
               $customerDetails = json_decode($responseData,true);
@@ -3635,7 +3655,7 @@ class ApiController extends Controller
         //$Skey = config('constants.stripe.stripe_secret_key'); 
         try {
             $stripe = new \Stripe\StripeClient(
-                'sk_test_51J904DSD18gBSiDIJxuDFBCwwNmhwgTXiU2SPAWDt20XaL7htbtnHKBkqfzu9tTJxPaDBcKrK6KCfxQO0MJcdcGX00zusc4Lug'
+                'sk_test_3eGdHm9suYV79NBBzmCOWcsN'
               );
               $cardDerails = $stripe->paymentMethods->all([
                 'customer' => $advisorDetails->stripe_customer_id,
@@ -3662,7 +3682,7 @@ class ApiController extends Controller
         //$Skey = config('constants.stripe.stripe_secret_key'); 
         try {
             $stripe = new \Stripe\StripeClient(
-                'sk_test_51J904DSD18gBSiDIJxuDFBCwwNmhwgTXiU2SPAWDt20XaL7htbtnHKBkqfzu9tTJxPaDBcKrK6KCfxQO0MJcdcGX00zusc4Lug'
+                'sk_test_3eGdHm9suYV79NBBzmCOWcsN'
               );
                 $stripe->paymentMethods->detach(
                   $request->card_id,
@@ -3689,7 +3709,7 @@ class ApiController extends Controller
         //$Skey = config('constants.stripe.stripe_secret_key'); 
          $intent = null;
             try {
-                \Stripe\Stripe::setApiKey('sk_test_51J904DSD18gBSiDIJxuDFBCwwNmhwgTXiU2SPAWDt20XaL7htbtnHKBkqfzu9tTJxPaDBcKrK6KCfxQO0MJcdcGX00zusc4Lug');
+                \Stripe\Stripe::setApiKey('sk_test_3eGdHm9suYV79NBBzmCOWcsN');
                 // $advisorDetails = User::where('id','=',$user->id)->first();
                 // $responseData = \Stripe\Customer::create([
                 //     'name'=>($advisorDetails->name) ? $advisorDetails->name : '',
@@ -4203,7 +4223,15 @@ class ApiController extends Controller
             $post = $request->all();
             if(isset($post) && !empty($post)){
                 AdvisorBids::where('advisor_id',$post['advisor_id'])->where('area_id',$post['area_id'])->update(['status'=>$post['advisor_status']]);
-                Advice_area::where('id',$post['area_id'])->update(['area_status'=>3]);
+                $status = 0;
+                if($post['advisor_status']==2){
+                    $status = 3;
+                }else if($post['advisor_status']==3){
+                    $status = 4;
+                }else if($post['advisor_status']==4){
+                    $status = 5;
+                }
+                Advice_area::where('id',$post['area_id'])->update(['area_status'=>$status]);
                 return response()->json([
                     'status' => true,
                     'message' => 'Status updated successfully',
@@ -4398,52 +4426,52 @@ class ApiController extends Controller
                             }
                         }
 
-                        $spam_refund = AdviceAreaSpam::where('user_id',$data['invoice']->advisor_id)->where('spam_status',1)->with('area')->get();
-                        foreach($spam_refund as $spam_refund_data){
-                            $spam_refund_need = NeedSpam::where('adviser_id',$spam_refund_data->user_id)->where('area_id',$spam_refund_data->area_id)->first();
-                            if($spam_refund_need){
-                                $spam_bid = AdvisorBids::where('id',$spam_refund_need->bid_id)->with('area')->first();
-                                if($spam_bid){
-                                    $baddress = "";
-                                    if($spam_bid->area){
-                                        if(!empty($spam_bid->area->user)) {
-                                            $addressDetails = PostalCodes::where('Postcode',$spam_bid->area->user->post_code)->first();
-                                            if(!empty($addressDetails)) {
-                                                if($addressDetails->Country != ""){
-                                                    $baddress = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
-                                                    $baddress .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
-                                                    $baddress .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
-                                                }
+                        // $spam_refund = AdviceAreaSpam::where('user_id',$data['invoice']->advisor_id)->where('spam_status',1)->with('area')->whereMonth('created_at',$m)->get();
+                        // foreach($spam_refund as $spam_refund_data){
+                        //     $spam_refund_need = NeedSpam::where('adviser_id',$spam_refund_data->user_id)->where('area_id',$spam_refund_data->area_id)->first();
+                        //     if($spam_refund_need){
+                        //         $spam_bid = AdvisorBids::where('id',$spam_refund_need->bid_id)->with('area')->first();
+                        //         if($spam_bid){
+                        //             $baddress = "";
+                        //             if($spam_bid->area){
+                        //                 if(!empty($spam_bid->area->user)) {
+                        //                     $addressDetails = PostalCodes::where('Postcode',$spam_bid->area->user->post_code)->first();
+                        //                     if(!empty($addressDetails)) {
+                        //                         if($addressDetails->Country != ""){
+                        //                             $baddress = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                        //                             $baddress .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                        //                             $baddress .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                        //                         }
                                                 
-                                            }
-                                        }
-                                    }
-                                    $spam_bid->area->address = $baddress;
-                                    if($spam_bid->status==0){
-                                        $spam_bid->status_type = "Live Lead";
-                                    }else if($spam_bid->status==1){
-                                        $spam_bid->status_type = "Hired";
-                                    }else if($spam_bid->status==2){
-                                        $spam_bid->status_type = "Completed";
-                                    }else if($spam_bid->status==3){
-                                        $spam_bid->status_type = "Lost";
-                                    }else if($spam_bid->advisor_status==2){
-                                        $spam_bid->status_type = "Not Proceeding";
-                                    }
-                                    $spam_bid->discount_cycle = "Refund";
-                                    $spam_bid->cost_leads = number_format($spam_bid->cost_leads,2);
-                                    $spam_bid->cost_discounted = number_format($spam_bid->cost_discounted,2);
-                                    // array_push($data['discount_credits'],$spam_bid);
-                                    $spam_bid->date = date("d-M-Y H:i",strtotime($spam_bid->created_at));
-                                    array_push($data['discount_credits'],$spam_bid);
-                                    if($spam_refund_need->cost_of_lead_discounted!=0){
-                                        $spam_total = $spam_total + $spam_refund_need->cost_of_lead_discounted;
-                                    }else{
-                                        $spam_total = $spam_total + $spam_refund_need->cost_of_lead;
-                                    }
-                                }
-                            }
-                        }
+                        //                     }
+                        //                 }
+                        //             }
+                        //             $spam_bid->area->address = $baddress;
+                        //             if($spam_bid->status==0){
+                        //                 $spam_bid->status_type = "Live Lead";
+                        //             }else if($spam_bid->status==1){
+                        //                 $spam_bid->status_type = "Hired";
+                        //             }else if($spam_bid->status==2){
+                        //                 $spam_bid->status_type = "Completed";
+                        //             }else if($spam_bid->status==3){
+                        //                 $spam_bid->status_type = "Lost";
+                        //             }else if($spam_bid->advisor_status==2){
+                        //                 $spam_bid->status_type = "Not Proceeding";
+                        //             }
+                        //             $spam_bid->discount_cycle = "Refund";
+                        //             $spam_bid->cost_leads = number_format($spam_bid->cost_leads,2);
+                        //             $spam_bid->cost_discounted = number_format($spam_bid->cost_discounted,2);
+                        //             // array_push($data['discount_credits'],$spam_bid);
+                        //             $spam_bid->date = date("d-M-Y H:i",strtotime($spam_bid->created_at));
+                        //             array_push($data['discount_credits'],$spam_bid);
+                        //             if($spam_refund_need->cost_of_lead_discounted!=0){
+                        //                 $spam_total = $spam_total + $spam_refund_need->cost_of_lead_discounted;
+                        //             }else{
+                        //                 $spam_total = $spam_total + $spam_refund_need->cost_of_lead;
+                        //             }
+                        //         }
+                        //     }
+                        // }
                         // $discount_subtotal_to = $data['invoice']->discount_subtotal + $spam_total;
                         // $data['invoice']->discount_subtotal = number_format($discount_subtotal_to,2);
                         $data['invoice']->discount_credit_arr = $data['discount_credits'];
@@ -4548,8 +4576,12 @@ class ApiController extends Controller
             $data['hired'] = AdvisorBids::where('advisor_id',$user->id)->where('status',1)->count();
             $data['completed'] = AdvisorBids::where('advisor_id',$user->id)->where('status',2)->where('advisor_status',1)->count();
             $data['no_response'] = 0;
+            $noresArrTotal = array();
+            $noresNotArr = array();
+            $noresyesArr = array();
             $response = Advice_area::where('advisor_id',0)->where('created_at','<',date("Y-m-d H:i:s",strtotime("- 14 days")))->get();
             foreach($response as $response_data){
+                array_push($noresArrTotal,$response_data);
                 $accepted = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_data->id)->where('status',0)->where('advisor_status',1)->count();
                 $hired = AdvisorBids::where('area_id',$response_data->id)->where('status',1)->count();
                 
@@ -4562,21 +4594,50 @@ class ApiController extends Controller
 
                 if($chatCount==0 && $hired==0 && $accepted>0){
                     $data['no_response'] = $data['no_response'] + 1;
+                    array_push($noresNotArr,$response_data);
                 }
             }
-            $lostArr = array();
-            // $data['no_response'] = Advice_area::where('advisor_id',$user->id)->where('advisor_id',0)->count();
-            $data['lost'] = 0;
-            $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status','!=',1)->where('status','!=',2)->get();
-            if(count($AllMyBids)){
-                foreach($AllMyBids as $bids){
-                    $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
-                    if($dataLost){
-                        $data['lost'] = $data['lost'] + 1;
-                        array_push($lostArr,$dataLost);
+            $response_another = Advice_area::where('advisor_id',$user->id)->where('area_status',5)->get();
+            if(count($response_another)){
+                foreach($response_another as $response_another_data){
+                    $accepted_another = AdvisorBids::where('advisor_id',$user->id)->where('area_id',$response_another_data->id)->where('status',4)->where('advisor_status',1)->first();
+                    if($accepted_another){
+                        array_push($noresyesArr,$accepted_another);
+                        $data['no_response'] = $data['no_response'] + 1;
                     }
                 }
             }
+            
+            $lostArrTotal = array();
+            $lostNotArr = array();
+            $lostyesArr = array();
+
+            // $data['no_response'] = Advice_area::where('advisor_id',$user->id)->where('advisor_id',0)->count();
+            $data['lost'] = 0;
+            $AllMyBids = AdvisorBids::where('advisor_id',$user->id)->where('status','!=',1)->where('status','!=',2)->get();   
+            if(count($AllMyBids)){
+                foreach($AllMyBids as $bids){
+                    array_push($lostArrTotal,$bids);
+                    $dataLost = Advice_area::where('id',$bids->area_id)->where('advisor_id','!=',$user->id)->where('advisor_id','!=',0)->first();
+                    if($dataLost){
+                        $data['lost'] = $data['lost'] + 1;
+                        array_push($lostNotArr,$dataLost);
+                    }else{
+                        $dataLostManual = Advice_area::where('id',$bids->area_id)->where('advisor_id',$user->id)->where('area_status',4)->first();
+                        if($dataLostManual){
+                            $data['lost'] = $data['lost'] + 1;
+                            array_push($lostyesArr,$dataLostManual);
+                        }
+                    }
+                }
+            }
+            // return response()->json([
+            //     'status' => true,
+            //     'message' => 'Count fetched successfully',
+            //     'data'=> $data,
+            //     'lostArr'=>$lostArr,
+            //     // 'acceptedArr'=>$acceptedArr
+            // ], Response::HTTP_OK);     
             $data['three_month'] = Advice_area::where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 3 month")))->count();
             $data['six_month'] = Advice_area::where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 6 month")))->count();
             $data['last_year'] = Advice_area::where('advice_areas.created_at','>=',date("Y-m-d",strtotime("- 12 month")))->count();
@@ -4586,7 +4647,10 @@ class ApiController extends Controller
                 'status' => true,
                 'message' => 'Count fetched successfully',
                 'data'=> $data,
-                'lostArr'=>$lostArr
+                'noresArrTotal'=>$noresArrTotal,
+                'noresNotArr'=>$noresNotArr,
+                'noresyesArr'=>$noresyesArr,
+                'acceptedArr'=>$acceptedArr
             ], Response::HTTP_OK);          
         }else{
             return response()->json([

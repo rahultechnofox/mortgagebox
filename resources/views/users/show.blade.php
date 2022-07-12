@@ -69,7 +69,7 @@
 										<h6 class="transaction-title">Email:</h6> 
 										@if(isset($userDetails->email) && $userDetails->email!='')
                                             <a href="#" data-bs-toggle="modal" data-bs-target="#editEmail">
-                                                <small>{{$userDetails->email}}</small><i data-feather="edit-2" class="me-50" style="margin-bottom: 7px;"></i>
+                                                <small>{{$userDetails->email}}</small> <i data-feather="edit-2" class="me-50" style="margin-bottom: 7px;"></i>
                                             </a>
                                         @else
                                             --

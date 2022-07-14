@@ -31,6 +31,8 @@ use App\Models\FaqCategory;
 use App\Models\Contactus;
 use App\Models\NeedSpam;
 use App\Models\AdviserProductPreferences;
+use App\Models\PaymentLog;
+use App\Models\Payment;
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -44,6 +46,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use PDF;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Stripe;
 
 class ApiController extends Controller
 {
@@ -303,22 +306,11 @@ class ApiController extends Controller
             }
             $user->slug = $this->getEncryptedId($user->id);
             $user->is_invoice_remaining = 0;
-            $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',date('m'))->where('advisor_id',$user->id)->get();
-            if(count($unpaid_prevoius_invoice)){
+            $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('total_due','!=',0)->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+
+            if($unpaid_prevoius_invoice){
                 // return response()->json(['user' => $unpaid_prevoius_invoice]);
                 $user->is_invoice_remaining = 1;
-            }else{
-                $unpaid_prevoius_invoice_check = DB::table('invoices')->where('is_paid',0)->where('month',date('m'))->where('advisor_id',$user->id)->first();
-                
-                if($unpaid_prevoius_invoice_check){
-                    $unpaid_prevoius_invoice_check->current = date('Y-m-d H:i:s');
-                    $unpaid_prevoius_invoice_check->after = date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)));
-
-                    if(date('Y-m-d H:i:s') >= date('Y-m-d H:i:s',strtotime('+14 Days',strtotime($unpaid_prevoius_invoice_check->created_at)))){
-                        $user->is_invoice_remaining = 1;
-                    }
-                }
-                // return response()->json(['user' => $unpaid_prevoius_invoice_check]);
             }
         }
         return response()->json(['user' => $user]);
@@ -1200,6 +1192,8 @@ class ApiController extends Controller
                 $show_status = "Completed";
             }else if($item->area_status=='4'){
                 $show_status = "Closed";
+            }else if($item->area_status=='5'){
+                $show_status = "Not Proceeding";
             }
             $advice_area[$key]->show_status = $show_status;
             $reviewed = 0;
@@ -3137,6 +3131,10 @@ class ApiController extends Controller
                             $show_status = "No Response";
                         }
                     }
+                }else{
+                    if($item->area_status==5){
+                        $show_status = "No Response";
+                    }
                 }
             }
             
@@ -3538,74 +3536,173 @@ class ApiController extends Controller
     public function saveCard(Request $request) {
         require_once(public_path().'/stripe/init.php');
         $user = JWTAuth::parseToken()->authenticate();
-        $stripe = new \Stripe\StripeClient(
-            'sk_test_3eGdHm9suYV79NBBzmCOWcsN'
-          );
-          $advisorDetails = AdvisorProfile::where('advisorId','=',$user->id)->first();
-          if($advisorDetails->stripe_customer_id != "" && $advisorDetails->stripe_customer_id != null){
-              try {
-                    $paymentDetails =  $stripe->paymentMethods->create([
-                        'type' => 'card',
-                        'card' => [
-                          'number' => $request->account_number,
-                          'exp_month' => $request->exp_month,
-                          'exp_year' => $request->exp_year,
-                          'cvc' => $request->cvc,
-                        ],
-                    ]);
-                   
-                    $payment_method = $stripe->paymentMethods->retrieve($paymentDetails['id']);
-                    $payment_method->attach(['customer' => $advisorDetails->stripe_customer_id]);
-                    return response()->json([
-                        'status' => true,
-                        'message' => "Card saved successfully",
-                        'data' => []
-                    ], Response::HTTP_OK);
+        try {
+            // $stripe_obj = new Stripe();
+            $stripe_obj = \Stripe\Stripe::setApiKey('sk_test_3eGdHm9suYV79NBBzmCOWcsN');
+            $stripe = new \Stripe\StripeClient(
+                'sk_test_3eGdHm9suYV79NBBzmCOWcsN'
+            );
         
-                  }catch(Exception $e) {
+            $token = $stripe->tokens->create([
+                'card' => [
+                    'number' => $request->account_number,
+                    'exp_month' => $request->exp_month,
+                    'exp_year' => $request->exp_year,
+                    'cvc' => $request->cvc,
+                ],
+            ]);
+            if($token   ){
+                $customer = Stripe\Customer::create(array(
+                    'name'=>($user->name) ? $user->name : '',
+                    'email'=>($user->email) ? $user->email : '',
+                    'source' => $token['id']
+                ));
+                if($customer){
+                    // $card = \Stripe\Stripe::cards()->create($advisorDetails->stripe_customer_id, $token['id']); 
+                    $total_payment = round(100 * $request->amount);
+                    $striperes = Stripe\Charge::create ([
+                        "amount" => $total_payment,
+                        "currency" => "usd",
+                        // 'source' => $token['id'],
+                        'customer'=> $customer->id,
+                        "description" => "Order placed on Mbox",
+                        'metadata' => array(
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'user_id' => $user->id
+                        )
+                    ]);
+                    if($striperes['status']=='succeeded'){
+                        DB::table('invoices')->where('id',$request->invoice_id)->update(['is_paid'=>1,'paid_at'=>date('Y-m-d H:i:s')]);
+                        $payment_response = array(
+                            'invoice_id'=>$request->invoice_id,
+                            'payment_transaction_id'=>$striperes['id'],
+                            'payment_status'=>$striperes['status'],
+                            'payment_response'=>json_encode($striperes),
+                            'status'=>1,
+                            'created_at'=>date('Y-m-d H:i:s')
+                        ); 
+                        Payment::insertGetId($payment_response);
+                        $paymentLog = array(
+                            'invoice_id'=>$request->invoice_id,
+                            'request_param'=>json_encode($request->all()),
+                            'response_param'=>json_encode($striperes),
+                            'status'=>$payment_response['status'],
+                            'created_at'=>date('Y-m-d H:i:s')
+                        );
+                        PaymentLog::insertGetId($paymentLog);      
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Payment deducted successfully",
+                            'data' => $striperes
+                        ], Response::HTTP_OK);              
+                    }else{
+                        $payment_response = array(
+                            'invoice_id'=>$request->invoice_id,
+                            'payment_status'=>$striperes['status'],
+                            'payment_response'=>json_encode($striperes),
+                            'status'=>0,
+                            'created_at'=>date('Y-m-d H:i:s')
+                        );
+                        Payment::insertGetId($payment_response);
+                        $paymentLog = array(
+                            'invoice_id'=>$request->invoice_id,
+                            'request_param'=>json_encode($post),
+                            'response_param'=>json_encode($striperes),
+                            'status'=>$payment_response['status'],
+                            'created_at'=>date('Y-m-d H:i:s')
+                        );
+                        PaymentLog::insertGetId($paymentLog); 
+                        return response()->json([
+                            'status' => false,
+                            'message' => "Something went wrong while deducting payment please try again later!",
+                            'data' => []
+                        ], Response::HTTP_OK); 
+                    }
+                    
+                }else{
                     return response()->json([
                         'status' => false,
-                        'message' => $e->getMessage(),
+                        'message' => "Customer is not created on stripe please try again!.",
                         'data' => []
                     ], Response::HTTP_OK);
-                  }
-          }else{
-            $status = $this->createCustomer($advisorDetails);
-            if($status) {
-                $advisorDetails = AdvisorProfile::where('advisorId','=',$user->id)->first();
-                try {
-                    $paymentDetails =  $stripe->paymentMethods->create([
-                        'type' => 'card',
-                        'card' => [
-                          'number' => $request->account_number,
-                          'exp_month' => $request->exp_month,
-                          'exp_year' => $request->exp_year,
-                          'cvc' => $request->cvc,
-                        ],
-                    ]);
-                    $payment_method = $stripe->paymentMethods->retrieve($paymentDetails['id']);
-                    $payment_method->attach(['customer' => $advisorDetails->stripe_customer_id]);
-                    return response()->json([
-                        'status' => true,
-                        'message' => "Card saved successfully",
-                        'data' => []
-                    ], Response::HTTP_OK);
-        
-                  }catch(Exception $e) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => $e->getMessage(),
-                        'data' => []
-                    ], Response::HTTP_OK);
-                  }
-            }else {
+                }
+            }else{
                 return response()->json([
                     'status' => false,
-                    'message' => "Something went wrong",
+                    'message' =>"Invalid Token",
                     'data' => []
                 ], Response::HTTP_OK);
             }
-          }
+        }catch(Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+                'data' => []
+            ], Response::HTTP_OK);
+        }
+        // $advisorDetails = AdvisorProfile::where('advisorId','=',$user->id)->first();
+        // if($advisorDetails->stripe_customer_id != "" && $advisorDetails->stripe_customer_id != null){
+        //     try {
+               
+        //             // $paymentDetails =  $stripe->paymentMethods->create([
+        //             //     'type' => 'card',
+        //             //     'card' => [
+        //             //       'number' => $request->account_number,
+        //             //       'exp_month' => $request->exp_month,
+        //             //       'exp_year' => $request->exp_year,
+        //             //       'cvc' => $request->cvc,
+        //             //     ],
+        //             // ]);
+                   
+        //             // $payment_method = $stripe->paymentMethods->retrieve($paymentDetails['id']);
+        //             // $payment_method->attach(['customer' => $advisorDetails->stripe_customer_id]);
+                    
+        
+        //     }catch(Exception $e) {
+        //             return response()->json([
+        //                 'status' => false,
+        //                 'message' => $e->getMessage(),
+        //                 'data' => []
+        //             ], Response::HTTP_OK);
+        //     }
+        // }else{
+        //     $status = $this->createCustomer($advisorDetails);
+        //     if($status) {
+        //         $advisorDetails = AdvisorProfile::where('advisorId','=',$user->id)->first();
+        //         try {
+        //             $paymentDetails =  $stripe->paymentMethods->create([
+        //                 'type' => 'card',
+        //                 'card' => [
+        //                   'number' => $request->account_number,
+        //                   'exp_month' => $request->exp_month,
+        //                   'exp_year' => $request->exp_year,
+        //                   'cvc' => $request->cvc,
+        //                 ],
+        //             ]);
+        //             $payment_method = $stripe->paymentMethods->retrieve($paymentDetails['id']);
+        //             $payment_method->attach(['customer' => $advisorDetails->stripe_customer_id]);
+        //             return response()->json([
+        //                 'status' => true,
+        //                 'message' => "Card saved successfully",
+        //                 'data' => []
+        //             ], Response::HTTP_OK);
+        
+        //           }catch(Exception $e) {
+        //             return response()->json([
+        //                 'status' => false,
+        //                 'message' => $e->getMessage(),
+        //                 'data' => []
+        //             ], Response::HTTP_OK);
+        //           }
+        //     }else {
+        //         return response()->json([
+        //             'status' => false,
+        //             'message' => "Something went wrong",
+        //             'data' => []
+        //         ], Response::HTTP_OK);
+        //     }
+        // }
           
         
         //cus_Jn74KtxONwHBv5
@@ -4322,7 +4419,8 @@ class ApiController extends Controller
                 // $data['invoice']->discount_credit_arr = array();
                 $spam_total = 0;
                 if($data['adviser']){
-                    $data['month_data'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->get(); 
+                    $data['month_data'] = DB::table('invoices')->where('total_due','!=',0)->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->get(); 
+                    // where('is_paid',0)->where('is_paid',0)->
                     foreach($data['month_data'] as $month_data){
                         $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
                     }
@@ -4475,6 +4573,114 @@ class ApiController extends Controller
                         // $discount_subtotal_to = $data['invoice']->discount_subtotal + $spam_total;
                         // $data['invoice']->discount_subtotal = number_format($discount_subtotal_to,2);
                         $data['invoice']->discount_credit_arr = $data['discount_credits'];
+                    }
+
+                    $data['month_data_unpaid'] = DB::table('invoices')->where('is_paid',0)->where('total_due','!=',0)->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first(); 
+                    // where('is_paid',0)->
+                    foreach($data['month_data'] as $month_data){
+                        $month_data->show_days = \Helpers::getMonth($month_data->month)." ".$month_data->year;
+                    }
+                    if($data['month_data_unpaid']){
+                        $data['month_data_unpaid']->show_days = \Helpers::getMonth($data['month_data_unpaid']->month)." ".$data['month_data_unpaid']->year;
+                        $data['show_month_year'] = \Helpers::getMonth($data['month_data_unpaid']->month)." ".$data['month_data_unpaid']->year;
+                        $searchmonth = $data['month_data_unpaid']->month;
+                        $searchyear = $data['month_data_unpaid']->year;
+                        $data_invoice = DB::table('invoices')->where('advisor_id',$user->id)->where('month',$searchmonth)->where('year',$searchyear)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                        if($data_invoice){
+                            $data['invoice_unpaid'] = $data_invoice;
+                        }else{
+                            $data['invoice_unpaid'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                        }
+                        
+                    }else{
+                        $data['invoice_unpaid'] = DB::table('invoices')->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
+                    }
+                    
+                    if($data['invoice_unpaid']){
+                        $summary = "";
+                        $monthArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        $m = $data['invoice_unpaid']->month;
+                        if($m==4 || $m==6 || $m==9 || $m==11){
+                            $day = 30;
+                        }else if($m==2){
+                            $day = 28;  
+                        }else{
+                            $day = 31;
+                        }
+                        $data['invoice_unpaid']->month_check = $m;
+                        $summary = "01 ".$monthArr[$m-1]." ".date("Y")." - ".$day." ".$monthArr[$m-1]." ".date("Y");
+                        $data['invoice_unpaid']->summary = $summary;
+                        $data['invoice_unpaid']->invoice_data = json_decode($data['invoice_unpaid']->invoice_data);
+                        $data['invoice_unpaid']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice_unpaid']->month)->where('advisor_id',$data['invoice_unpaid']->advisor_id)->sum('total_due');
+                        $data['invoice_unpaid']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice_unpaid']->month)->where('advisor_id',$data['invoice_unpaid']->advisor_id)->sum('total_due');
+                        
+                        $data['invoice_unpaid']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice_unpaid']->advisor_id)->whereMonth('created_at',$m)->with('area')->with('adviser')->get();
+                        // ->where('is_discounted',0)
+                        if(count($data['invoice_unpaid']->new_fees_arr)){
+                            foreach($data['invoice_unpaid']->new_fees_arr as $new_bid){
+                                $new_bid->cost_leads = number_format($new_bid->cost_leads,2);
+                                if(isset($new_bid->area) && $new_bid->area){
+                                    $new_bid->area->user->advisor_profile = null;
+                                    if(isset($new_bid->area->user) && $new_bid->area->user){
+                                        $new_bid->area->user->advisor_profile = AdvisorProfile::where('advisorId',$new_bid->area->user->id)->first();
+                                    }
+                                }
+                                $new_bid->date = date("d-M-Y H:i",strtotime($new_bid->created_at));
+                                if($new_bid->status==0){
+                                    $new_bid->status_type = "Live Lead";
+                                }else if($new_bid->status==1){
+                                    $new_bid->status_type = "Hired";
+                                }else if($new_bid->status==2){
+                                    $new_bid->status_type = "Completed";
+                                }else if($new_bid->status==3){
+                                    $new_bid->status_type = "Lost";
+                                }else if($new_bid->advisor_status==2){
+                                    $new_bid->status_type = "Not Proceeding";
+                                }
+                            }
+                        }
+                        
+                        $discount_cre = AdvisorBids::where('advisor_id',$data['invoice_unpaid']->advisor_id)->where('is_discounted','!=',0)->whereMonth('created_at',$m)->with('area')->with('adviser')->get();
+                        if(count($discount_cre)){
+                            foreach($discount_cre as $discount_bid){
+                                $discount_bid->cost_leads = number_format($discount_bid->cost_leads,2);
+                                $address = "";
+                                if($discount_bid->area){
+                                    if(!empty($discount_bid->area->user)) {
+                                        $addressDetails = PostalCodes::where('Postcode',$discount_bid->area->user->post_code)->first();
+                                        if(!empty($addressDetails)) {
+                                            if($addressDetails->Country != ""){
+                                                $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
+                                                $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                                                $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                                            }
+                                            
+                                        }
+                                    }
+                                }
+                                $discount_bid->area->address = $address;
+                                // if(isset($discount_bid->area) && $discount_bid->area){
+                                //     $discount_bid->area->user->advisor_profile = null;
+                                //     if(isset($discount_bid->area->user) && $discount_bid->area->user){
+                                //         $discount_bid->area->user->advisor_profile = AdvisorProfile::where('advisorId',$discount_bid->area->user->id)->first();
+                                //     }
+                                // }
+                                $discount_bid->date = date("d-M-Y H:i",strtotime($discount_bid->created_at));
+                                if($discount_bid->status==0){
+                                    $discount_bid->status_type = "Live Lead";
+                                }else if($discount_bid->status==1){
+                                    $discount_bid->status_type = "Hired";
+                                }else if($discount_bid->status==2){
+                                    $discount_bid->status_type = "Completed";
+                                }else if($discount_bid->status==3){
+                                    $discount_bid->status_type = "Lost";
+                                }else if($discount_bid->advisor_status==2){
+                                    $discount_bid->status_type = "Not Proceeding";
+                                }
+                                array_push($data['discount_credits'],$discount_bid);
+                            }
+                        }
+                        $data['invoice_unpaid']->discount_credit_arr = $data['discount_credits'];
                     }
                 }
                 return response()->json([

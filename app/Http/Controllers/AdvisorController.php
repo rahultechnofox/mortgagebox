@@ -875,7 +875,7 @@ class AdvisorController extends Controller
         //     $request->image = "";
         // }
         $arr = array();
-    
+        $userarr = array();
         if(isset($request->email) && $request->email != ''){
             $emailExist = User::where('email',$request->email)->where('id','!=',$id->id)->count();
             if ($emailExist) {
@@ -886,6 +886,8 @@ class AdvisorController extends Controller
                 ], Response::HTTP_OK);
             }
             $arr['email'] = $request->email;
+            $userarr['email_verified_at'] = NULL;
+            $userarr['email_status'] = 0;
         }
 
         
@@ -1023,7 +1025,15 @@ class AdvisorController extends Controller
         }
         $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($arr);
         if ($request->email != "" && $request->email != "null") {
-            User::where('id',$id->id)->update(['email'=>$request->email]);
+            $advisorDetail = AdvisorProfile::where('advisorId', '=', $id->id)->first();
+            $userarr['email'] = $request->email;
+            User::where('id',$id->id)->update($userarr);
+            $newArr2 = array(
+                'name'=>$advisorDetail->display_name,
+                'email'=>$userarr['email'],
+                'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($id->id)
+            );
+            $c = \Helpers::sendEmail('emails.email_verification',$newArr2 ,$userarr['email'],$advisorDetail->display_name,'Email Verify | Mortgagebox.co.uk','','');
         }
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         // echo json_encode($advisor_data);exit;

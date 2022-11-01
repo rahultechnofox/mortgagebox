@@ -2525,16 +2525,17 @@ class ApiController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
         $adviser = AdvisorProfile::where('advisorId',$user->id)->first();
+        $post = $request->all();
         if (isset($request->emails) && !empty($request->emails)) {
             foreach($request->emails as $email_id){
                 $invitedUrl = "";
-                if(isset($request->user_role) && $request->user_role!=''){
-                    if($request->user_role==1){
+                if(isset($post['user_role'])){
+                    if($post['user_role']==1){
                         $invitedUrl = config('constants.urls.host_url');
-                        $invitedUrl .= "/invite-advisor/" . $this->getEncryptedId($user->id)."?invitedToEmail=".$email_id;
+                        $invitedUrl = $invitedUrl."/invite-advisor/" . $this->getEncryptedId($user->id)."?invitedToEmail=".$email_id;
                     }else{
                         $invitedUrl = config('constants.urls.host_url');
-                        $invitedUrl .= "/invite/" . $this->getEncryptedId($user->id)."?invitedToEmail=".$email_id;
+                        $invitedUrl = $invitedUrl."/invite/" . $this->getEncryptedId($user->id)."?invitedToEmail=".$email_id;
                     }
                 }
                 $newArr = array(
@@ -2631,7 +2632,8 @@ class ApiController extends Controller
                     ];
 
                     if($advice_area[$key]->status==1 && $area->advisor_id==$advice_area[$key]->advisor_id){
-                        $advice_area[$key]->status_name = "Purchased";
+                        // $advice_area[$key]->status_name = "Purchased";
+                        $advice_area[$key]->status_name = "Adviser Selected";
                     }else if($advice_area[$key]->status==0 && $area->advisor_id!=$advice_area[$key]->advisor_id){
                         $advice_area[$key]->status_name = "Lost";
                     }
@@ -3491,10 +3493,19 @@ class ApiController extends Controller
             if(count($bids)){
                 foreach($bids as $bids_data){
                     $advisorDecline = AdvisorProfile::where('advisorId',$bids_data->advisor_id)->first();
+                    $this->saveNotification(array(
+                        'type'=>'2', // 1:
+                        'message'=>'Your offer to help '.$user->name.' has unfortunately been unsuccessful', // 1:
+                        'read_unread'=>'0', // 1:
+                        'user_id'=>$user->id,// 1:
+                        'advisor_id'=>$bids_data->advisor_id, // 1:
+                        'area_id'=>$bidDetails->area_id,// 1:
+                        'notification_to'=>1
+                    ));
                     $newArrDec = array(
                         'name'=>$advisorDecline->display_name,
                         'email'=>$advisorDecline->email,
-                        'message_text' => 'You have lost this bid other advisor is selected for this bid.'
+                        'message_text' => 'Your offer to help '.$user->name.' has unfortunately been unsuccessful'
                     );
                     $c = \Helpers::sendEmail('emails.information',$newArrDec ,$advisorDecline->email,$advisorDecline->display_name,'MortgageBox Lost Bid','','');
                 }

@@ -170,7 +170,7 @@ class AdvisorProfile extends Model
             if(count($advisorArr)){
                 $query = $query->whereIn('advisorId',$advisorArr);
             }
-            $data = $query->orderBy('id','DESC')->groupBy('id')->get();
+            $data = $query->orderBy('id','DESC')->groupBy('id')->limit(10)->get();
             $getCustomerPostalDetails = PostalCodes::where('Postcode', $search['post_code'])->first();
 
             //Data for Same ZipCode
@@ -213,6 +213,8 @@ class AdvisorProfile extends Model
                     $item->rating = [
                         'total' => count($rating),
                     ];
+                    $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisorId)->count();
+                    $item->total_completed_bids = $itemComplete;
                     $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
                     ->Where('advisor_status','=',1)
                     ->Where('advisor_id','=',$item->advisorId)
@@ -317,7 +319,7 @@ class AdvisorProfile extends Model
             if(count($advisorArr)){
                 $query = $query->whereIn('advisorId',$advisorArr);
             }
-            $data = $query->orderBy('id','DESC')->groupBy('id')->get();            
+            $data = $query->orderBy('id','DESC')->groupBy('id')->limit(10)->get();            
             if (count($data)) {
                 foreach ($data as $key => $item) {
                     $item->distance = 0;
@@ -365,6 +367,8 @@ class AdvisorProfile extends Model
                     $item->rating = [
                         'total' => count($rating),
                     ];
+                    $itemComplete = AdvisorBids::orWhere('status',2)->where('advisor_status',1)->where('advisor_id',$item->advisorId)->count();
+                    $item->total_completed_bids = $itemComplete;
                     $usedByMortage = AdvisorBids::orWhere('status','=',1)->orWhere('status','=',2)
                     ->Where('advisor_status','=',1)
                     ->Where('advisor_id','=',$item->advisorId)

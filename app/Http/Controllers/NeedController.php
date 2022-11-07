@@ -428,6 +428,13 @@ class NeedController extends Controller
                                     'created_at'=>date('Y-m-d H:i:s'),
                                 );
                                 NeedSpam::insertGetId($refund);
+                                if($need_bid->free_introduction==1){
+                                    $adviser_data = User::where('id',$need->user_id)->first();
+                                    if($adviser_data){
+                                        $free_lead = $adviser_data->free_promotions + 1;
+                                        User::where('id',$need->user_id)->update(['free_promotions'=>$free_lead]);
+                                    }
+                                }
                             }
                             $this->saveNotification(array(
                                 'type'=>'0', // 1:

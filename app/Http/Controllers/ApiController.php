@@ -1708,7 +1708,7 @@ class ApiController extends Controller
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
-                $bidCountArr[] = ($bid->status == 3)? 0:1;
+                $bidCountArr[] = ($bid->status == 3 )? 0:1;
             }
             $advice_area[$key]->totalBids = $bidCountArr;
             $advice_area[$key]->total_bids_count = count($item->total_bid_count);
@@ -2941,7 +2941,20 @@ class ApiController extends Controller
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
-                $bidCountArr[] = ($bid->status == 3)? 0:1;
+                if($advice_area[$key]->area_status==2){
+                    // if($bid->status == 3){
+                    //     array_push($bidCountArr,0);
+                    // }elseif($bid->status == 0){
+                    //     array_push($bidCountArr,0);
+                    // }else{
+                    //     array_push($bidCountArr,1);
+                    // }
+
+                    $bidCountArr[] = ($bid->status == 3 || $bid->status == 0)? 0:1;
+                    // $bidCountArr[] = [1,2,3,4,5];
+                }else{
+                    $bidCountArr[] = ($bid->status == 3)? 0:1;
+                }
             }
             $adviceBidMainStatus = AdvisorBids::where('area_id',$item->id)->where('status','>','0')->orderBy('status','ASC')->first();
             if(!empty($adviceBidMainStatus)) {
@@ -2951,6 +2964,10 @@ class ApiController extends Controller
             }
             $advice_area[$key]->totalBids = $bidCountArr;
             $advice_area[$key]->total_bids_count = count($item->total_bid_count);
+            $advice_area[$key]->total_lost_bids_count = count($item->total_lost_bid_count);
+            if($item->advisor_id!=0){
+                $advice_area[$key]->total_lost_bids_count = count($item->total_lost_bid_count);
+            }
             $advice_area[$key]->is_accepted = 1;
             $costOfLead = ($item->size_want/100)*0.006;
             $costOfLeadsStr = "";

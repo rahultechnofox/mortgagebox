@@ -25,6 +25,9 @@ class Advice_area extends Model
     public function total_bid_count(){
         return $this->hasMany('App\Models\AdvisorBids',"area_id","id");
     }
+    public function total_lost_bid_count(){
+        return $this->hasMany('App\Models\AdvisorBids',"area_id","id")->where('status',0);
+    }
     
     public static function getNeedList($search){
         try {
@@ -664,7 +667,7 @@ class Advice_area extends Model
                 $query = $query->whereIn('advice_areas.id',$advice_arr);
             }
 
-            $advice_area =  $query->with('total_bid_count')
+            $advice_area =  $query->with('total_bid_count')->with('total_lost_bid_count')
             ->with('service')
             ->orderBy('id','DESC')
             ->paginate();

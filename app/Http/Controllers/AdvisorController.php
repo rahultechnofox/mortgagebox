@@ -885,9 +885,12 @@ class AdvisorController extends Controller
                     'data' => $post
                 ], Response::HTTP_OK);
             }
+            $emailExistUser = User::where('email',$request->email)->where('id',$id->id)->first();
+            if(!$emailExistUser){
+                $userarr['email_verified_at'] = NULL;
+                $userarr['email_status'] = 0;
+            }
             $arr['email'] = $request->email;
-            $userarr['email_verified_at'] = NULL;
-            $userarr['email_status'] = 0;
         }
 
         
@@ -1022,18 +1025,76 @@ class AdvisorController extends Controller
 
         if ($request->company_name != "" && $request->company_name != "null") {
             $arr['company_name'] = $request->company_name;
+            $company_data = companies::where('company_name', '=', $request->company_name)->first();
+            $company_id = 0;
+            companies::where('company_name', '!=', $request->company_name)->where('company_admin',$id->id)->update(['company_admin'=>0]);
+            if (!empty($company_data)) {
+                $parentAdvisor = AdvisorProfile::where('company_id', '=', $company_data->id)->first();
+                if(!empty($parentAdvisor)) {
+                    $description = $parentAdvisor->description;
+                }
+                $arr['company_id'] = $company_data->id;
+                if($company_data->company_admin==0){
+                    companies::where('company_id', '=', $company_data->id)->update(['company_admin'=>$id->id]);
+                }
+                // $company_data_new = companies::create([
+                //     'company_name' => $request->company_name,
+                //     'company_admin' => $id->id
+                // ]);
+            } else {
+                $company_data_new = companies::create([
+                    'company_name' => $request->company_name,
+                    'company_admin' => $id->id
+                ]);
+                $arr['company_id'] = $company_data_new->id;
+            }
+            $company_data_after_update = companies::where('id',$arr['company_id'])->first();
+            $company_team = CompanyTeamMembers::where('email',$request->email)->first();
+            if($company_team){
+                $teamArr = array(
+                    'company_id' => $arr['company_id'],
+                    'name' => $request->display_name,
+                    'status'=>1,
+                    'is_joined'=>1,
+                    'updated_at'=>date('Y-m-d H:i:s')
+                );
+                if($company_data_after_update->company_admin==$id->id){
+                    $teamArr['isCompanyAdmin'] = 1;
+                    $iscompany_admin = 1;
+                }else{
+                    $teamArr['isCompanyAdmin'] = 0;
+                    $iscompany_admin = 0;
+                }
+                CompanyTeamMembers::where('id',$company_team->id)->update($teamArr);
+            }else{
+                $teamArr = array(
+                    'company_id' => $arr['company_id'],
+                    'name' => $request->display_name,
+                    'email' => $request->email,
+                    'advisor_id' => $id->id,
+                    'isCompanyAdmin'=>1,
+                    'status'=>1,
+                    'is_joined'=>1,
+                    'created_at'=>date('Y-m-d H:i:s')
+                );
+                CompanyTeamMembers::insertGetId($teamArr);
+                $iscompany_admin = 1;
+            }
         }
         $advisorDetails = AdvisorProfile::where('advisorId', '=', $id->id)->update($arr);
         if ($request->email != "" && $request->email != "null") {
-            $advisorDetail = AdvisorProfile::where('advisorId', '=', $id->id)->first();
-            $userarr['email'] = $request->email;
-            User::where('id',$id->id)->update($userarr);
-            $newArr2 = array(
-                'name'=>$advisorDetail->display_name,
-                'email'=>$userarr['email'],
-                'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($id->id)
-            );
-            $c = \Helpers::sendEmail('emails.email_verification',$newArr2 ,$userarr['email'],$advisorDetail->display_name,'Email Verify | Mortgagebox.co.uk','','');
+            $emailExistUser = User::where('email',$request->email)->where('id',$id->id)->first();
+            if(!$emailExistUser){
+                $advisorDetail = AdvisorProfile::where('advisorId', '=', $id->id)->first();
+                $userarr['email'] = $request->email;
+                User::where('id',$id->id)->update($userarr);
+                $newArr2 = array(
+                    'name'=>$advisorDetail->display_name,
+                    'email'=>$userarr['email'],
+                    'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($id->id)
+                );
+                $c = \Helpers::sendEmail('emails.email_verification',$newArr2 ,$userarr['email'],$advisorDetail->display_name,'Email Verify | Mortgagebox.co.uk','','');
+            }
         }
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
         // echo json_encode($advisor_data);exit;

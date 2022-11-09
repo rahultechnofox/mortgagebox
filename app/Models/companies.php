@@ -11,7 +11,8 @@ class companies extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'company_name'
+        'company_name',
+        'company_admin'
     ];
 
     public function team_members(){

@@ -1097,7 +1097,6 @@ class AdvisorController extends Controller
             }
         }
         $advisor_data = AdvisorProfile::where('advisorId', '=', $id->id)->first();
-        // echo json_encode($advisor_data);exit;
         if(isset($request->company_name) && $request->company_name!=''){
             companies::where('id',$advisor_data->company_id)->update(['company_name'=>$request->company_name]);
         }

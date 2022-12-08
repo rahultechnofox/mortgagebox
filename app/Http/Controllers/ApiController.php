@@ -1704,7 +1704,10 @@ class ApiController extends Controller
         //echo '<pre>=';print_r($advice_area);die;
         $getLeads = array();
         $check_data = 0;
+
         foreach($advice_area as $key=> $item) {
+            $user_id = 0;
+            $user_id = $item->user_id;
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
@@ -1796,6 +1799,7 @@ class ApiController extends Controller
             }
             $lead_value = ($main_value)*($advisorDetaultPercent);
             $advice_area[$key]->lead_value = $item->size_want_currency.number_format((int)round($lead_value),0);
+            
             // if($item->service_type=="remortgage") {
             //     $advisorDetaultValue = "remortgage";
             // }else if($item->service_type=="first time buyer") {
@@ -1830,8 +1834,30 @@ class ApiController extends Controller
             if($read){
                 $advice_area[$key]->is_read = 1;
             }
+            $adviser_detail = User::where('id',$user->id)->first();
+                if($adviser_detail){
+                    $advisor_location = PostalCodes::where('Postcode',$adviser_detail->post_code)->first();
+                    if($advisor_location){
+                        $user_detail = User::where('id',$user_id)->first();
+                        $user_location = PostalCodes::where('Postcode',$user_detail->post_code)->first();
+                        if($user_location){
+                            $advice_area[$key]->Latitude = $advisor_location->Latitude;
+                            $advice_area[$key]->Longitude = $advisor_location->Longitude;
+                            $advice_area[$key]->UserLatitude = $user_location->Latitude;
+                            $advice_area[$key]->UserLongitude = $user_location->Longitude;
+                            $advice_area[$key]->distance = \Helpers::distance($advisor_location->Latitude,
+                            $advisor_location->Longitude,$user_location->Latitude,$user_location->Longitude,'K');
+                            $item->distance = $advice_area[$key]->distance;
+                        }
+                    }
+                }
             if($advice_area[$key]->total_bids_count<5){
-                array_push($getLeads,$item);
+                $advisor_profile_data = AdvisorProfile::where('advisorId', '=', $user->id)->first();
+                if($advisor_profile_data){
+                    if($advisor_profile_data->serve_range>=$advice_area[$key]->distance){
+                        array_push($getLeads,$item);
+                    }
+                }
             }
         }
         // $check_data = count($advice_area) - count($getLeads);

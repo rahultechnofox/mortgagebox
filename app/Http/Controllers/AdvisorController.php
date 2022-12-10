@@ -1249,6 +1249,9 @@ class AdvisorController extends Controller
             "postcode" => $request->post_code,
             "serve_range" => $request->miles,
         ]);
+        User::where('id',$user->id)->update([
+            "post_code" => $request->post_code,
+        ]);
         $locations = AdvisorProfile::select(['postcode AS post_code', 'serve_range AS miles'])->where('advisorId', '=', $user->id)->first();
         return response()->json([
             'status' => true,

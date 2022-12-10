@@ -263,6 +263,7 @@ class Advice_area extends Model
             }
 
             if(isset($search['status']) && count($search['status'])){
+
                 $statusIds = array(-1);
                 foreach($search['status'] as $status){
                     if($status=='read'){
@@ -352,8 +353,11 @@ class Advice_area extends Model
                 $query = $query->whereIn('id',$advisorAreaArr);
             }
             $data = $query->with('service')->orderBy('id','DESC')->paginate();
+            $finalArr = array();
             if(count($data)){
                 foreach($data as $key=> $item) {
+                    $user_id = 0;
+                    $user_id = $item->user_id;
                     $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
                     $bidCountArr = array();
                     $user = User::where('id',$item->user_id)->first();
@@ -450,9 +454,43 @@ class Advice_area extends Model
                     $lead_value = ($main_value)*($advisorDetaultPercent);
                     $data[$key]->lead_value = $item->size_want_currency.$lead_value;
                     $data[$key]->lead_address = $address;
+
+                    $adviser_detail = User::where('id',$search['user_id'])->first();
+                    if($adviser_detail){
+                        $advisor_location = PostalCodes::where('Postcode',$adviser_detail->post_code)->first();
+                        if($advisor_location){
+                            $user_detail = User::where('id',$user_id)->first();
+                            $user_location = PostalCodes::where('Postcode',$user_detail->post_code)->first();
+                            if($user_location){
+                                $data[$key]->Latitude = $advisor_location->Latitude;
+                                $data[$key]->Longitude = $advisor_location->Longitude;
+                                $data[$key]->UserLatitude = $user_location->Latitude;
+                                $data[$key]->UserLongitude = $user_location->Longitude;
+                                $data[$key]->distance = \Helpers::distance($advisor_location->Latitude,
+                                $advisor_location->Longitude,$user_location->Latitude,$user_location->Longitude,'K');
+                                $item->distance = $data[$key]->distance;
+                            }
+                        }
+                    }
+                    if($data[$key]->total_bids_count<5){
+                        $advisor_profile_data = AdvisorProfile::where('advisorId',$search['user_id'])->first();
+                        if($advisor_profile_data){
+                            if($advisor_profile_data->serve_range>0){
+                                if($advisor_profile_data->serve_range>=$data[$key]->distance){
+                                    if(date('Y-m-d h:i:s',strtotime("+15 days",strtotime($data[$key]->created_at)))>date('Y-m-d h:i:s')){
+                                        array_push($finalArr,$item);
+                                    }
+                                }
+                            }else{
+                                if(date('Y-m-d h:i:s',strtotime("+15 days",strtotime($data[$key]->created_at)))>date('Y-m-d h:i:s')){
+                                    array_push($finalArr,$item);
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            return $data;
+            return $finalArr;
         }catch (\Exception $e) {
             // echo json_encode($e->getMessage());exit;
             return ['status' => false, 'message' => $e->getMessage() . ' '. $e->getLine() . ' '. $e->getFile()];

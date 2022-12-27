@@ -146,10 +146,20 @@ class Advice_area extends Model
             $ltv_max = "";
             $lti_max = "";
 
+            $self = 0;
+            $non_uk_citizen = 0;
+            $adverse = 0;
+            $fees_preference = 0;
+
+
             $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$search['user_id'])->first();
             if($userPreferenceCustomer){
                 $ltv_max = $userPreferenceCustomer->ltv_max;
                 $lti_max = $userPreferenceCustomer->lti_max;
+                $self = $userPreferenceCustomer->self_employed;
+                $non_uk_citizen = $userPreferenceCustomer->non_uk_citizen;
+                $adverse = $userPreferenceCustomer->adverse_credit;
+                $fees_preference = $userPreferenceCustomer->fees_preference;
             }
             
             if(isset($search['advice_area']) && count($search['advice_area'])){
@@ -164,25 +174,31 @@ class Advice_area extends Model
 
             if(isset($search['fees_preference']) && count($search['fees_preference'])){
                 $preferencesIds = array(-1);
+                $preferencesIdsNo = array(-1);
                 for($i=0;$i<count($search['fees_preference']);$i++){
                     if($search['fees_preference'][$i]=="no_fee") {
                         $preference = Advice_area::where('fees_preference',0)->where('status',1)->get();
                         foreach($preference as $preference_data){
                             array_push($preferencesIds,$preference_data->id);
                         }
-                    }else{  
+                    }
+                    
+                    if($search['fees_preference'][$i]=="would_consider"){  
                         $preference_no = Advice_area::where('fees_preference',1)->where('status',1)->get();
                         foreach($preference_no as $preference_no_data){
-                            array_push($preferencesIds,$preference_no_data->id);
+                            array_push($preferencesIdsNo,$preference_no_data->id);
                         }
                     }
                 }
+                $newArr = array_merge($preferencesIds,$preferencesIdsNo);
 
                 if(count($advisorAreaArr)>0){
-                    $advisorAreaArr = array_intersect($advisorAreaArr, $preferencesIds);
+                    $advisorAreaArr = array_intersect($advisorAreaArr, $newArr);
                 }else{
-                    $advisorAreaArr = array_unique($preferencesIds);
+                    $advisorAreaArr = array_unique($newArr);
                 }
+            }else{
+                $query->where('fees_preference',$fees_preference);
             }
 
             if(isset($search['mortgage_value']) && count($search['mortgage_value'])){
@@ -192,16 +208,18 @@ class Advice_area extends Model
                     if($explode[0]>0){
                         $explode[0] = (int)$explode[0]."000";
                     }
-                    if($explode[1]>0){
-                        $explode[1] = (int)$explode[1]."000";
-                    }
-                    
-                    $ad = Advice_area::where('size_want','>',$explode[0])->where('size_want','<=',$explode[1])->get();
-                    if(count($ad)){
-                        foreach($ad as $ad_data){
-                            array_push($mortgageValueIds,$ad_data->id);
+                    if(isset($explode[1])){
+                        if($explode[1]>0){
+                            $explode[1] = (int)$explode[1]."000";
+                        }
+                        $ad = Advice_area::where('size_want','>',$explode[0])->where('size_want','<=',$explode[1])->get();
+                        if(count($ad)){
+                            foreach($ad as $ad_data){
+                                array_push($mortgageValueIds,$ad_data->id);
+                            }
                         }
                     }
+                    
                 }
                 if(count($advisorAreaArr)>0){
                     $advisorAreaArr = array_intersect($advisorAreaArr, $mortgageValueIds);
@@ -349,9 +367,56 @@ class Advice_area extends Model
                     $advisorAreaArr = array_unique($promotionIds);
                 }
             }
+
+            // if(isset($search['advice_area_ids']) && count($search['advice_area_ids'])){
+            //     $advisorAreaArr = array(-1);
+            //     if(count($advisorAreaArr)>0){
+            //         $advisorAreaArr = array_intersect($advisorAreaArr,$search['advice_area_ids']);
+            //     }else{
+            //         $advisorAreaArr = array_unique($search['advice_area_ids']);
+            //     }
+            // }
+            
             if(count($advisorAreaArr)){
-                $query = $query->whereIn('id',$advisorAreaArr);
+                // $advisorAreaArrids = array(-1);
+                // if(isset($search['advice_area_ids']) && count($search['advice_area_ids'])){
+                //     $advisorAreaArrids = $search['advice_area_ids'];
+                //     foreach($advisorAreaArr as $advisorAreaArr_data){
+                //         if(in_array($advisorAreaArr_data,$search['advice_area_ids'])){
+                //             array_push($advisorAreaArrids,$advisorAreaArr_data);
+                //         }
+                //     }                    
+                // }else{  
+                //     $advisorAreaArrids = $advisorAreaArr;
+                // }
+                $advisorAreaArrids = $advisorAreaArr;
+                $query = $query->whereIn('id',$advisorAreaArrids);
             }
+            if($self!=0 && $non_uk_citizen!=0 && $adverse!=0){
+                if($self==1){
+                    $query->where('self_employed',1);
+                }
+                if($non_uk_citizen==1){
+                    $query->where('non_uk_citizen',1);
+                }
+                if($adverse==1){
+                    $query->where('adverse_credit',1);
+                }
+                // $queryModel::where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse);
+            }
+           $query->where(function($query) use ($ltv_max){
+                if($ltv_max != "") {
+                   
+                    $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));
+                    $query->where('advice_areas.ltv_max','>',0);
+                }
+            })->where(function($query) use ($lti_max){
+                if($lti_max != "") {
+                    //  echo chop($ltv_max,"%");die;
+                    $query->where('advice_areas.lti_max','<=',chop($lti_max,"x"));
+                    $query->where('advice_areas.lti_max','>',0);
+                }
+            });
             $data = $query->with('service')->orderBy('id','DESC')->paginate();
             $finalArr = array();
             if(count($data)){

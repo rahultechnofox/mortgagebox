@@ -558,21 +558,22 @@ class ApiController extends Controller
         }
         $description = "";
         if(isset($request->company_name) && $request->company_name!=''){
-            $company_data = companies::where('company_name', '=', $request->company_name)->first();
-            $company_id = 0;
+            $company_data_new = companies::create([
+                'company_name' => $request->company_name
+            ]);
+            $company_id = $company_data_new->id;
+            // $company_data = companies::where('company_name', '=', $request->company_name)->first();
+            // $company_id = 0;
             
-            if (!empty($company_data)) {
-                $parentAdvisor = AdvisorProfile::where('company_id', '=', $company_data->id)->first();
-                if(!empty($parentAdvisor)) {
-                    $description = $parentAdvisor->description;
-                }
-                $company_id = $company_data->id;
-            } else {
-                $company_data_new = companies::create([
-                    'company_name' => $request->company_name
-                ]);
-                $company_id = $company_data_new->id;
-            }
+            // if (!empty($company_data)) {
+            //     $parentAdvisor = AdvisorProfile::where('company_id', '=', $company_data->id)->first();
+            //     if(!empty($parentAdvisor)) {
+            //         $description = $parentAdvisor->description;
+            //     }
+            //     $company_id = $company_data->id;
+            // } else {
+                
+            // }
         }
         //Request is valid, create new user
         $user_data = array(
@@ -2083,10 +2084,21 @@ class ApiController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
             $post = $request->all();
             $post['user_id'] = $user->id;
+            $advice_arr = array();
+            // $advice_area_check = $this->matchLeadsForCount($request);
+            // if(count($advice_area_check)){
+            //     foreach($advice_area_check as $advice_area_data){
+            //         array_push($advice_arr,$advice_area_data->id);
+            //     }
+            // }
+            // if(count($advice_arr)){
+            //     $post['advice_area_ids'] = $advice_arr;
+            // }
             $advice_area = Advice_area::getMatchNeedFilter($post);
             $dataCheck = $this->arrayPaginator($advice_area,$request);
             return response()->json([
                 'status' => true,
+                'advice_arr'=>$advice_arr,
                 'data' => $dataCheck->items(),
                 'current_page' => $dataCheck->currentPage(),
                 'first_page_url' => $dataCheck->url(1),
@@ -4024,17 +4036,7 @@ class ApiController extends Controller
         // $user = JWTAuth::parseToken()->authenticate();
         $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
         if(!empty($result)) {
-            $advice_arr = array();
-            $advice_area = $this->matchLeadsForCount($request);
-            if(count($advice_area)){
-                foreach($advice_area as $advice_area_data){
-                    array_push($advice_arr,$advice_area_data->id);
-                }
-            }
-            foreach($result as $row){
-                $row->value = 0;
-                $row->service_count = Advice_area::where('service_type_id',$row->id)->whereIn('id',$advice_arr)->count();
-            }
+            
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -4049,11 +4051,19 @@ class ApiController extends Controller
         }           
     }
 
-    public function getAllServiceTypeWithAuth() {
+    public function getAllServiceTypeWithAuth(Request $request) {
         $user = JWTAuth::parseToken()->authenticate();
         $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
         if(!empty($result)) {
+            $advice_arr = array();
+            $advice_area = $this->matchLeadsForCount($request);
+            if(count($advice_area)){
+                foreach($advice_area as $advice_area_data){
+                    array_push($advice_arr,$advice_area_data->id);
+                }
+            }
             foreach($result as $row){
+                $row->service_count = Advice_area::where('service_type_id',$row->id)->whereIn('id',$advice_arr)->count();
                 $row->value = 0;
                 $default = DefaultPercent::where('service_id',$row->id)->where('adviser_id',$user->id)->first();
                 if($default){
@@ -4810,14 +4820,17 @@ class ApiController extends Controller
         $service=0;
         $discountArr=array();
         $timeArr=array();
-
+        $ltv_max = "";
+        $lti_max = "";
         $discount='';
-        $ltv_max = $userPreferenceCustomer->ltv_max;
-        $lti_max = $userPreferenceCustomer->lti_max;
+
+        
         $self = 0;
         $non_uk_citizen = 0;
         $adverse = 0;
         if(!empty($userPreferenceCustomer)) {
+            $ltv_max = $userPreferenceCustomer->ltv_max;
+            $lti_max = $userPreferenceCustomer->lti_max;
             $self = $userPreferenceCustomer->self_employed;
             $non_uk_citizen = $userPreferenceCustomer->non_uk_citizen;
             $adverse = $userPreferenceCustomer->adverse_credit;

@@ -925,18 +925,34 @@ class AdvisorController extends Controller
                         "mime" => $image->getClientMimeType()
                     );
                 } else if ($request->company_logo != "") {
-                    $request->company_logo =  str_replace("data:image/jpeg;base64,","",$request->company_logo);
-                    $request->company_logo =  str_replace("data:image/png;base64,","",$request->company_logo);
-                    $file = base64_decode($request->company_logo);
-                    $folderName = 'advisor';
+                    $explode = explode(";",$request->company_logo);
+                    $explode_new = explode("/",$explode[0]);
+                    if(isset($explode_new[1]) && $explode_new[1]!=''){
+                        $request->company_logo =  str_replace("data:image/".$explode_new[1].";base64,","",$request->company_logo);
+                        // $request->image =  str_replace("data:image/png;base64,","",$request->image);
+                        $file = base64_decode($request->company_logo);
+                        $folderName = 'advisor';
+            
+                        $safeName = $this->quickRandom(10) . '.' .$explode_new[1];
+                        $destinationPath = public_path() . "/storage/" . $folderName;
+                        file_put_contents($destinationPath . "/" . $safeName, $file);
+            
+                        //save new file path into db
+                        $request->company_logo = $safeName;
+                        $arr['company_logo'] = $request->company_logo;
+                    }
+                    // $request->company_logo =  str_replace("data:image/jpeg;base64,","",$request->company_logo);
+                    // $request->company_logo =  str_replace("data:image/png;base64,","",$request->company_logo);
+                    // $file = base64_decode($request->company_logo);
+                    // $folderName = 'advisor';
         
-                    $safeName = $this->quickRandom(10) . '.' . 'png';
-                    $destinationPath = public_path() . "/storage/" . $folderName;
-                    file_put_contents($destinationPath . "/" . $safeName, $file);
+                    // $safeName = $this->quickRandom(10) . '.' . 'png';
+                    // $destinationPath = public_path() . "/storage/" . $folderName;
+                    // file_put_contents($destinationPath . "/" . $safeName, $file);
         
-                    //save new file path into db
-                    $request->company_logo = $safeName;
-                    $arr['company_logo'] = $request->company_logo;
+                    // //save new file path into db
+                    // $request->company_logo = $safeName;
+                    // $arr['company_logo'] = $request->company_logo;
                 }
                 $arr['company_logo'] = $request->company_logo;
             }
@@ -972,18 +988,22 @@ class AdvisorController extends Controller
                         "mime" => $image->getClientMimeType()
                     );
                 } else if ($request->image != "") {
-                    $request->image =  str_replace("data:image/jpeg;base64,","",$request->image);
-                    $request->image =  str_replace("data:image/png;base64,","",$request->image);
-                    $file = base64_decode($request->image);
-                    $folderName = 'advisor';
-        
-                    $safeName = $this->quickRandom(10) . '.' . 'png';
-                    $destinationPath = public_path() . "/storage/" . $folderName;
-                    file_put_contents($destinationPath . "/" . $safeName, $file);
-        
-                    //save new file path into db
-                    $request->image = $safeName;
-                    $arr['image'] = $request->image;
+                    $explode = explode(";",$request->image);
+                    $explode_new = explode("/",$explode[0]);
+                    if(isset($explode_new[1]) && $explode_new[1]!=''){
+                        $request->image =  str_replace("data:image/".$explode_new[1].";base64,","",$request->image);
+                        // $request->image =  str_replace("data:image/png;base64,","",$request->image);
+                        $file = base64_decode($request->image);
+                        $folderName = 'advisor';
+            
+                        $safeName = $this->quickRandom(10) . '.' .$explode_new[1];
+                        $destinationPath = public_path() . "/storage/" . $folderName;
+                        file_put_contents($destinationPath . "/" . $safeName, $file);
+            
+                        //save new file path into db
+                        $request->image = $safeName;
+                        $arr['image'] = $request->image;
+                    }
                 }
             }
         }
@@ -1029,13 +1049,13 @@ class AdvisorController extends Controller
             $company_id = 0;
             companies::where('company_name', '!=', $request->company_name)->where('company_admin',$id->id)->update(['company_admin'=>0]);
             if (!empty($company_data)) {
-                $parentAdvisor = AdvisorProfile::where('company_id', '=', $company_data->id)->first();
+                $parentAdvisor = AdvisorProfile::where('company_id', $company_data->id)->first();
                 if(!empty($parentAdvisor)) {
                     $description = $parentAdvisor->description;
                 }
                 $arr['company_id'] = $company_data->id;
                 if($company_data->company_admin==0){
-                    companies::where('company_id', '=', $company_data->id)->update(['company_admin'=>$id->id]);
+                    companies::where('id', $company_data->id)->update(['company_admin'=>$id->id]);
                 }
                 // $company_data_new = companies::create([
                 //     'company_name' => $request->company_name,

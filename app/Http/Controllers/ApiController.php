@@ -416,6 +416,8 @@ class ApiController extends Controller
 
     public function addAdviceArea(Request $request)
     {
+        $ltv_max  = ($request->property)/$request->size_want;
+        $lti_max  = ($request->property)/$request->combined_income;
         if ($request->user_id == 0 || $request->user_id == "") {
 
             $data = $request->only('name', 'email', 'password');
@@ -436,30 +438,6 @@ class ApiController extends Controller
             ])->id;
 
             $request->user_id = $user;
-            // $msg = "";
-            // $msg .= "Welcome\n\n";
-            // $msg .= "Hello ".ucfirst($request->name)."\n\n";
-            // $msg .= "<p>Finding the right mortgage should be easy, but too often it's a hassle. Some mortgage web-sites / advisors aren't as helpful or that easy to use. And how can you be sure you've been given the best deal when you only use one?</p>\n\n";
-            // $msg .= "<p>That's why we launched mortgagebox. To give you choice by matching you to five expert mortgage advisers, based on your mortgage needs, who then contoct you initially through mortgagebox</p>\n\n";
-            // $msg .= "<p>Meet/talk/message the advisers and then choose the one best suited to your needs. This could be based on product, speed of execution, service offered, lack of fees or how well you gel with the adviser</p>\n\n";
-            // $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
-            // $msg .= "<p>We've created a free account for you to manage your mortgage need. Please click the link below to activate your account and start finding your mortgage advisers</p>\n\n";
-            // $msg .= "<a href='".config('constants.urls.email_verification_url')."'>Activate Account</a>\n\n";
-            // $msg .= "Best wishes\n\n";
-            // $msg .= "The Mortgagebox team\n\n";
-            // $msg = "You have successfully created account.\n Please verfiy your account by click below link ";
-            // $msg .= config('constants.urls.email_verification_url');
-
-            //$msg .= $this->getEncryptedId($request->user_id);
-          //  $msg = wordwrap($msg, 70);
-
-            // mail($request->email, "Welcome to Mortgagebox.co.uk", $msg);
-            // $newArr = array(
-            //     'name'=>$request->name,
-            //     'email'=>$request->email,
-            //     'url' => config('constants.urls.email_verification_url')."".$this->getEncryptedId($request->user_id)
-            // );
-            // $c = \Helpers::sendEmail('emails.email_verification',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
             $newArr = array(
                 'name'=>$request->name,
                 'email'=>$request->email,
@@ -481,22 +459,7 @@ class ApiController extends Controller
             }
         }
         JWTAuth::parseToken()->authenticate();
-        // $user = Advice_area::create([
-        //     'user_id' => $request->user_id,
-        //     'service_type' => $request->service_type,
-        //     'request_time' => $request->request_time,
-        //     'property' => $request->property,
-        //     'property_want' => $request->property_want,
-        //     'size_want' => $request->size_want,
-        //     'combined_income' => $request->combined_income,
-        //     'description' => $request->description,
-        //     'occupation' => $request->occupation,
-        //     'contact_preference' => $request->contact_preference,
-        //     'advisor_preference' => $request->advisor_preference,
-        //     'fees_preference' => $request->fees_preference,
-        // ]);
-            $ltv_max  = ($request->property)/$request->size_want;
-            $lti_max  = ($request->property)/$request->combined_income;
+        
 
         Advice_area::create([
             'user_id' => $request->user_id,
@@ -526,7 +489,6 @@ class ApiController extends Controller
             'advisor_preference_gender' => $request->advisor_preference_gender,
             'ltv_max' => $ltv_max,
             'lti_max' => $lti_max
-
         ]);
         
         //User created, return success response
@@ -1680,7 +1642,7 @@ class ApiController extends Controller
             $advice_areaQuery = $advice_areaQuery->whereIn('advice_areas.id',$discountArr);
         }
 
-        $advice_area = $advice_areaQuery->orWhereIn('advice_areas.id',$advice_area_arr)->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
+        $advice_area = $advice_areaQuery->orWhereIn('advice_areas.id',$advice_area_arr)->whereNotNull('users.email_verified_at')->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
         ->groupBy('advice_areas.'.'user_id')
         ->groupBy('advice_areas.'.'service_type')
         ->groupBy('advice_areas.'.'request_time')

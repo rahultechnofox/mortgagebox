@@ -75,7 +75,8 @@ class AdviceController extends Controller
             );
             $c = \Helpers::sendEmail('emails.customer_signup',$newArr ,$request->email,$request->name,'Welcome to Mortgagebox.co.uk','','');
         } 
-        
+        $ltv_max  = ($request->property)/$request->size_want;
+        $lti_max  = ($request->property)/$request->combined_income;
         $area = Advice_area::create([
             'user_id' => $request->user_id,
             // 'service_type' => $request->service_type,
@@ -103,6 +104,8 @@ class AdviceController extends Controller
             'advisor_preference_language' => $request->advisor_preference_language,
             'size_want_currency' => $request->size_want_currency,
             'advisor_preference_gender' => $request->advisor_preference_gender,
+            'ltv_max' => $ltv_max,
+            'lti_max' => $lti_max
         ]);
         //User created, return success response
 

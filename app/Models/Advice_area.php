@@ -773,7 +773,8 @@ class Advice_area extends Model
             $advice_area =  $query->with('total_bid_count')->with('total_lost_bid_count')
             ->with('service')
             ->orderBy('id','DESC')
-            ->paginate();
+            ->get();
+            // ->paginate();
             // ->get();
             // paginate()
             return $advice_area;

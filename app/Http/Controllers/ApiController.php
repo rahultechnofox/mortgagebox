@@ -1465,6 +1465,19 @@ class ApiController extends Controller
         $self = 0;
         $non_uk_citizen = 0;
         $adverse = 0;
+        $verified_user_arr = array();
+        $verified_user = User::where('user_role',0)->where('email_status',1)->get();
+        if(count($verified_user)){
+            foreach($verified_user as $verified_user_data){
+                array_push($verified_user_arr,$verified_user_data->id);
+            }
+        }
+
+        // return response()->json([
+        //     'status' => true,
+        //     'verified_user'=>$verified_user,
+        //     'verified_user_arr'=>$verified_user_arr,
+        // ], Response::HTTP_OK);
         if(!empty($userPreferenceCustomer)) {
             $self = $userPreferenceCustomer->self_employed;
             $non_uk_citizen = $userPreferenceCustomer->non_uk_citizen;
@@ -1597,7 +1610,7 @@ class ApiController extends Controller
         $advice_areaQuery =  $queryModel::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('area_status',0)->where('inquiry_adviser_id',0)->where(function($query) use ($requestTime){
+            ->where('area_status',0)->whereIn('advice_areas.user_id',$verified_user_arr)->where('inquiry_adviser_id',0)->where(function($query) use ($requestTime){
                 // ->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)
                 // if($requestTime != ""){
                 //     $query->where('advice_areas.request_time','=',$requestTime);
@@ -1642,7 +1655,7 @@ class ApiController extends Controller
             $advice_areaQuery = $advice_areaQuery->whereIn('advice_areas.id',$discountArr);
         }
 
-        $advice_area = $advice_areaQuery->orWhereIn('advice_areas.id',$advice_area_arr)->whereNotNull('users.email_verified_at')->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
+        $advice_area = $advice_areaQuery->orWhereIn('advice_areas.id',$advice_area_arr)->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
         ->groupBy('advice_areas.'.'user_id')
         ->groupBy('advice_areas.'.'service_type')
         ->groupBy('advice_areas.'.'request_time')
@@ -1725,7 +1738,7 @@ class ApiController extends Controller
                 $hrArr = explode(".",$in);
                 $leadSummary = "This lead will cost ".$item->size_want_currency.(round($amount/2));
 
-                $costOfLeadsDropStr = "Cost of lead drops to ".(round($amount-$newAmount))." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
+                $costOfLeadsDropStr = "Cost of lead drops to ".$item->size_want_currency.(round($amount-$newAmount))." in ".(isset($hrArr[0])? $hrArr[0]."h":'0h')." ".(isset($hrArr[1])? $hrArr[1]."m":'0m');
             }
             if($hourdiff > 48 && $hourdiff < 72) {
                 $newAmount = (75 / 100) * $amount;
@@ -1762,11 +1775,12 @@ class ApiController extends Controller
             if(!empty($area_owner_details)) {
                 $addressDetails = PostalCodes::where('Postcode','=',$area_owner_details->post_code)->first();
                 if(!empty($addressDetails)) {
-                    if($addressDetails->Country != ""){
-                        $address = ($addressDetails->Ward != "") ? $addressDetails->Ward.", " : '';
-                        // $address .= ($addressDetails->District != "") ? $addressDetails->District."," : '';
-                        $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
-                        $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
+                    $address = ($addressDetails->District != "") ? $addressDetails->District."," : '';
+                    $address .= ($addressDetails->Ward != "") ? $addressDetails->Ward: '';
+                    if($addressDetails->District != ""){
+                        
+                        // $address .= ($addressDetails->Constituency != "") ? $addressDetails->Constituency.", " : '';
+                        // $address .= ($addressDetails->Country != "") ? $addressDetails->Country : '';
                     }
                     
                 }
@@ -1893,6 +1907,21 @@ class ApiController extends Controller
         //     'total_on_current_page' => $advice_area->count(),
         //     'has_more_page' => $advice_area->hasMorePages(),
         // ], Response::HTTP_OK);
+    }
+    public function arrayPaginatorForUnlimited($array, $request)
+    {
+        $post = $request->all();
+        $per_page_number = count($array);
+        $page = (isset($post['page']) && !empty($post['page'])) ? $post['page'] : 1;
+        $perPage = (isset($post['perpage']))?$post['perpage']:$per_page_number;
+        $offset = ($page * $perPage) - $perPage;
+        $sliceArray = array_slice($array, $offset, $perPage, true);
+        $finalArray = array();
+        foreach ($sliceArray as $row) {
+            array_push($finalArray, $row);
+        }
+
+        return new LengthAwarePaginator($finalArray, count($array), $perPage, $page,['path' => $request->url(), 'query' => $request->query()]);
     }
 
     public function arrayPaginator($array, $request)
@@ -2963,10 +2992,12 @@ class ApiController extends Controller
             $post['status'] = $explode;
         }
         $advice_area =  Advice_area::getAcceptedLeads($post);
+        
         // return response()->json([
         //     'status' => true,
         //     'data' => $advice_area,
         // ], Response::HTTP_OK);
+        $bidArr = array();
         $bidCountArr = array();
         foreach($advice_area as $key=> $item) {
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
@@ -3224,21 +3255,21 @@ class ApiController extends Controller
             $advice_area[$key]->spam_info = AdviceAreaSpam::where('area_id',$item->id)->where('user_id','=',$user->id)->first();
             
             $advice_area[$key]->last_chat = $last_chat_data;
+            array_push($bidArr,$item);
         }
-
+        $dataCheck = $this->arrayPaginatorForUnlimited($bidArr,$request);
         return response()->json([
             'status' => true,
-            // 'data' => $advice_area,
-            'data' => $advice_area->items(),
-            'current_page' => $advice_area->currentPage(),
-            'first_page_url' => $advice_area->url(1),
-            'last_page_url' => $advice_area->url($advice_area->lastPage()),
-            'per_page' => $advice_area->perPage(),
-            'next_page_url' => $advice_area->nextPageUrl(),
-            'prev_page_url' => $advice_area->previousPageUrl(),
-            'total' => $advice_area->total(),
-            'total_on_current_page' => $advice_area->count(),
-            'has_more_page' => $advice_area->hasMorePages(),
+            'data' => $dataCheck->items(),
+            'current_page' => $dataCheck->currentPage(),
+            'first_page_url' => $dataCheck->url(1),
+            'last_page_url' => $dataCheck->url($dataCheck->lastPage()),
+            'per_page' => $dataCheck->perPage(),
+            'next_page_url' => $dataCheck->nextPageUrl(),
+            'prev_page_url' => $dataCheck->previousPageUrl(),
+            'total' => $dataCheck->total(),
+            'total_on_current_page' => $dataCheck->count(),
+            'has_more_page' => $dataCheck->hasMorePages(),
         ], Response::HTTP_OK);
     }
 

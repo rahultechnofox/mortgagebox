@@ -1361,10 +1361,20 @@ class AdvisorController extends Controller
         $checkUser = User::where('email','=',$request->email)->first();
         if (!empty($company_data)) {
             $company_team_data = CompanyTeamMembers::where('id',$company_data->id)->first();
-            CompanyTeamMembers::where('id',$company_data->id)->update([
-                'company_id' => $request->company_id,
-                'advisor_id' => $user->id
-            ]);
+            if($checkUser){
+                CompanyTeamMembers::where('id',$company_data->id)->update([
+                    'company_id' => $request->company_id,
+                    'advisor_id' => $user->id,
+                    'isCompanyAdmin'=>0,
+                    'member_id' => $checkUser->id
+                ]);
+            }else{
+                CompanyTeamMembers::where('id',$company_data->id)->update([
+                    'company_id' => $request->company_id,
+                    'advisor_id' => $user->id,
+                    'isCompanyAdmin'=>0
+                ]);
+            }
 
             if(!empty($checkUser)){
                 AdvisorProfile::where('advisorId',$checkUser->id)->update([
@@ -1374,12 +1384,23 @@ class AdvisorController extends Controller
             $company_team_id = $company_data->id;
             
         }else{
-            $profile = CompanyTeamMembers::create([
-                'company_id' => $request->company_id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'advisor_id' => $user->id
-            ]);
+            if($checkUser){
+                $profile = CompanyTeamMembers::create([
+                    'company_id' => $request->company_id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'advisor_id' => $user->id,
+                    'member_id' => $checkUser->id
+                ]);
+            }else{
+                $profile = CompanyTeamMembers::create([
+                    'company_id' => $request->company_id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'advisor_id' => $user->id
+                ]);
+            }
+            
             $company_team_id = $profile->id;
         }
         
@@ -1488,6 +1509,9 @@ class AdvisorController extends Controller
             $teamAdvisorDetails = User::where('users.email', '=', $item->email)->where('user_role', '=', 1)
                 ->join('advisor_profiles', 'users.id', '=', 'advisor_profiles.advisorId')->first();
             $teams[$key]['advisorDetails'] = $teamAdvisorDetails;
+            if($item->member_id==0){
+                $item->member_id = $teamAdvisorDetails->advisorId;
+            }
         }
         
         if (count($teams) > 0) {

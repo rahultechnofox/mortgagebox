@@ -45,13 +45,15 @@ class InvoiceController extends Controller
     public function index(Request $request) {
         $post = $request->all();
         $data['result'] = Invoice::getInvoiceList($post);
-        $data['post_code'] = PostalCodes::get();
+        $data['post_code'] = array();
+        // $data['post_code'] = PostalCodes::get();
         $data['adviser_data'] = User::where('user_role',1)->get();
         if(count($data['result'])){
             foreach($data['result'] as $row){
                 $row->invoice_data = json_decode($row->invoice_data);
             }
         }
+        
         return view('invoice.index',$data);
     }
     /**
@@ -93,11 +95,8 @@ class InvoiceController extends Controller
      */
     public function invoice(Request $request) {
         $post = $request->all();
-        // $data = AdvisorBids::getInvoice($post);
         $data['invoice'] = Invoice::getOverAllInvoice($post);
-        $data['post_code'] = PostalCodes::get();
         $data['adviser_data'] = User::where('user_role',1)->orderBy('id','DESC')->get();
-        // echo json_encode($data);exit;
         return view('invoice.overall_invoice',$data);
     }
 

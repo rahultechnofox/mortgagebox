@@ -1610,7 +1610,8 @@ class ApiController extends Controller
         $advice_areaQuery =  $queryModel::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
             ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
             ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('area_status',0)->whereIn('advice_areas.user_id',$verified_user_arr)->where('inquiry_adviser_id',0)->where(function($query) use ($requestTime){
+            ->where('area_status',0)->where('inquiry_adviser_id',0)->where(function($query) use ($requestTime){
+                // whereIn('advice_areas.user_id',$verified_user_arr)->
                 // ->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)
                 // if($requestTime != ""){
                 //     $query->where('advice_areas.request_time','=',$requestTime);
@@ -1706,6 +1707,7 @@ class ApiController extends Controller
             $user_id = 0;
             $user_id = $item->user_id;
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
+            $item->user_detail = User::where('id',$item->user_id)->first();
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {
                 $bidCountArr[] = ($bid->status == 3 )? 0:1;
@@ -4027,9 +4029,8 @@ class ApiController extends Controller
 
     public function getAllServiceType(Request $request) {
         // $user = JWTAuth::parseToken()->authenticate();
-        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->orderBy('sequence','ASC')->get();
         if(!empty($result)) {
-            
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -4046,7 +4047,7 @@ class ApiController extends Controller
 
     public function getAllServiceTypeWithAuth(Request $request) {
         $user = JWTAuth::parseToken()->authenticate();
-        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->get();
+        $result = ServiceType::where('status',1)->where('parent_id','!=','0')->orderBy('sequence','ASC')->get();
         if(!empty($result)) {
             $advice_arr = array();
             $advice_area = $this->matchLeadsForCount($request);

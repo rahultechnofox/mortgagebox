@@ -1707,6 +1707,10 @@ class ApiController extends Controller
             $user_id = 0;
             $user_id = $item->user_id;
             $item->created_at_need = date("d-m-Y H:i",strtotime($item->created_at));
+//             $timestamp = strtotime("Fri Feb 10 2023 12:25:16 GMT+0530");
+// echo date("D M d Y H:i:s", $timestamp);
+            $item->created_at_for_updated_time = date("D M d Y H:i:s T",strtotime($item->created_at));
+
             $item->user_detail = User::where('id',$item->user_id)->first();
             $adviceBid = AdvisorBids::where('area_id',$item->id)->orderBy('status','ASC')->get();
             foreach($adviceBid as $bid) {

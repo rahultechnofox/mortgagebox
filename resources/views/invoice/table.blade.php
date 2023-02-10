@@ -24,7 +24,7 @@
                             @if(count($result) > 0)
                             @foreach($result as $users_data)
                             <tr>
-                                <td><a href="{{url('/admin/invoice-list')}}/{{$users_data->month}}">{{\Helpers::getMonth($users_data->month)}} {{date("Y",strtotime($users_data->year))}}</a></td>
+                                <td><a href="{{url('/admin/invoice-list')}}/{{$users_data->month}}">{{\Helpers::getMonth($users_data->month)}} {{date("Y",strtotime($users_data->created_at))}}</a></td>
                                 <td><?php echo \Helpers::currency($users_data->subtotal_month); ?></td>
                                 <td><?php echo \Helpers::currency($users_data->discount_month); ?></td>
                                 <td><?php echo \Helpers::currency($users_data->total_due_month); ?></td>

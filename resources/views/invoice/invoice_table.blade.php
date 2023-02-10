@@ -23,7 +23,12 @@
                                 @foreach($result as $users_data)
                                     <tr>
                                         <td>@if(isset($users_data->adviser) && $users_data->adviser!='')<a href="{{url('/admin/invoice-detail')}}/{{$users_data->id}}">{{$users_data->adviser->display_name}}@else -- @endif</a></td>
-                                        <td><?php echo \Helpers::currency(json_encode($users_data->invoice_data->total_dues)); ?></td>
+                                        <td>
+                                        @if($users_data->is_paid==1)
+                                            <?php echo \Helpers::currency(json_encode($users_data->invoice_data->total_dues)); ?>
+                                        @else
+                                            <?php echo \Helpers::currency($users_data->subtotal); ?></td>
+                                        @endif
                                         <td>
                                             @if($users_data->is_paid==1)
                                                 Paid

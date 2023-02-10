@@ -50,10 +50,27 @@ class InvoiceController extends Controller
         $data['adviser_data'] = User::where('user_role',1)->get();
         if(count($data['result'])){
             foreach($data['result'] as $row){
+                // $total = 0; 
+                // $row->invoice_data = json_decode($row->invoice_data); 
+                // $sub = 0;
+                // if(json_encode($row->invoice_data->sub_total_without_tax)!=null){
+                //     $sub = json_encode($row->invoice_data->sub_total_without_tax);
+                // }
+                // // echo $sub;exit;
+                // $total += (int) $sub;
+                // $row->total = $total;
+                $total = 0;
                 $row->invoice_data = json_decode($row->invoice_data);
+                $sub = 0;
+                if (property_exists($row->invoice_data, 'new_taxable_amount') && is_numeric($row->invoice_data->new_taxable_amount)) {
+                $sub = $row->invoice_data->new_taxable_amount;
+                }
+                $total += (int) $sub;
+                $row->total = $total;
             }
+            
         }
-        
+        // echo json_encode($data['result']);exit;
         return view('invoice.index',$data);
     }
     /**
@@ -72,6 +89,7 @@ class InvoiceController extends Controller
         foreach($data['result'] as $row){
             $row->invoice_data = json_decode($row->invoice_data);
         }
+        // echo json_encode($data['result']);exit;
         $data['adviser'] = User::where('user_role',1)->where('status',1)->with('advisor_profile')->get();
         return view('invoice.invoice_list',$data);
     }

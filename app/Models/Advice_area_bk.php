@@ -35,7 +35,7 @@ class Advice_area extends Model
             $userId = array();
             $perpage = config('constants.paginate.num_per_page');
             if(isset($search['search']) && $search['search']!=''){
-                $user = User::where('name', 'like', "%" .strtolower($search['search']). '%')->get();
+                $user = User::where('name', 'like', '%' .strtolower($search['search']). '%')->get();
                 if(count($user)){
                     foreach($user as $row){
                         array_push($userId,$row->id);
@@ -325,63 +325,38 @@ class Advice_area extends Model
                     $advisorAreaArr = array_unique($statusIds);
                 }
             }
-
             if(isset($search['promotion']) && count($search['promotion'])){
                 $promotionIds = array(-1);
                 foreach($search['promotion'] as $item){
                     if($item=='none'){
-                        // $none = AdvisorBids::where('is_discounted', 0)->get();
-                        // if(count($none)){
-                        //     foreach($none as $none_data){
-                        //         array_push($promotionIds,$none_data->area_id);
-                        //     }
-                        // }
-                        $none = Advice_area::where('created_at', '>',date("Y-m-d H:i:s",strtotime("-24 hours")))->get();
+                        $none = AdvisorBids::where('is_discounted', 0)->get();
                         if(count($none)){
                             foreach($none as $none_data){
-                                array_push($promotionIds,$none_data->id);
+                                array_push($promotionIds,$none_data->area_id);
                             }
                         }
                     }
                     if($item=='75-off'){
-                        // $third = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Third cycle")->get();
-                        // if(count($third)){
-                        //     foreach($third as $third_data){
-                        //         array_push($promotionIds,$third_data->area_id);
-                        //     }
-                        // }
-                        $third = Advice_area::where('created_at', '<',date("Y-m-d H:i:s",strtotime("-48 hours")))->where('created_at', '>',date("Y-m-d H:i:s",strtotime("-72 hours")))->get();
+                        $third = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Third cycle")->get();
                         if(count($third)){
                             foreach($third as $third_data){
-                                array_push($promotionIds,$third_data->id);
+                                array_push($promotionIds,$third_data->area_id);
                             }
                         }
                     }
                     if($item=='50-off'){
-                        // $half = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Second cycle")->get();
-                        // if(count($half)){
-                        //     foreach($half as $half_data){
-                        //         array_push($promotionIds,$half_data->area_id);
-                        //     }
-                        // }
-                        $half = Advice_area::where('created_at', '<',date("Y-m-d H:i:s",strtotime("-24 hours")))->where('created_at', '>',date("Y-m-d H:i:s",strtotime("-48 hours")))->get();
+                        $half = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Second cycle")->get();
                         if(count($half)){
                             foreach($half as $half_data){
-                                array_push($promotionIds,$half_data->id);
+                                array_push($promotionIds,$half_data->area_id);
                             }
                         }
                     }
                     if($item=='free'){
-                        // $free = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Fourth cycle")->get();
-                        // if(count($free)){
-                        //     foreach($free as $free_data){
-                        //         array_push($promotionIds,$free_data->area_id);
-                        //     }
-                        // }
-                        $free = Advice_area::where('created_at', '<',date("Y-m-d H:i:s",strtotime("-72 hours")))->get();
+                        $free = AdvisorBids::where('is_discounted', 1)->where('discount_cycle', "Fourth cycle")->get();
                         if(count($free)){
                             foreach($free as $free_data){
-                                array_push($promotionIds,$free_data->id);
+                                array_push($promotionIds,$free_data->area_id);
                             }
                         }
                     }
@@ -429,16 +404,7 @@ class Advice_area extends Model
                 }
                 // $queryModel::where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse);
             }
-            if($self==0){
-                $query->where('self_employed',0);
-            }
-            if($non_uk_citizen==0){
-                $query->where('non_uk_citizen',0);
-            }
-            if($adverse==0){
-                $query->where('adverse_credit',0);
-            }
-            $query->where(function($query) use ($ltv_max){
+           $query->where(function($query) use ($ltv_max){
                 if($ltv_max != "") {
                    
                     $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));

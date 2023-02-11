@@ -1633,30 +1633,17 @@ class AdvisorController extends Controller
             'data' => []
         ], Response::HTTP_OK);
     }
-
-    function matchLeadsForCount()
-    {
-        $user = JWTAuth::parseToken()->authenticate();
-        $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id','=',$user->id)->first();
+    function advisorDashboard() {
+        $userDetails = JWTAuth::parseToken()->authenticate();
+        $userData = AdvisorProfile::where('advisorId',$userDetails->id)->first();
         $requestTime = [];
-        $timeVal='';
-        $service=0;
-        $discountArr=array();
-        $timeArr=array();
-        $ltv_max = "";
-        $lti_max = "";
-        $discount='';        
+        $discount='';
+        $ltv_max = 0;
+        $lti_max = 0;
         $self = 0;
         $non_uk_citizen = 0;
         $adverse = 0;
-        $mortgage_max_size = 0;
-        $mortgage_min_size = 0;
-        $advisorProfile = AdvisorProfile::where('advisorId',$user->id)->first();
-        if($advisorProfile){
-            $mortgage_max_size = $advisorProfile->mortgage_max_size;
-            $mortgage_min_size = $advisorProfile->mortgage_min_size;
-        }
-
+        $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id',$userDetails->id)->first();
         if(!empty($userPreferenceCustomer)) {
             $ltv_max = $userPreferenceCustomer->ltv_max;
             $lti_max = $userPreferenceCustomer->lti_max;
@@ -1672,238 +1659,16 @@ class AdvisorController extends Controller
             if($userPreferenceCustomer->more_3_month == 1) {
                 $requestTime[] = "in more than 3 months";
             }
-            $fees_preference = $userPreferenceCustomer->fees_preference;
         }
-
-        $userPreferenceProduct = AdviserProductPreferences::where('adviser_id','=',$user->id)->get();
+        $userPreferenceProduct = AdviserProductPreferences::where('adviser_id',$userDetails->id)->get();
         $service_type = array();
         if(!empty($userPreferenceProduct)) {
             foreach($userPreferenceProduct as $userPreferenceProduct_data){
                 array_push($service_type,$userPreferenceProduct_data->service_id);
             }
-        }
-
-        $advice_area_arr = array(-1);
-        $advice_meQ = Advice_area::where('inquiry_adviser_id',$user->id);
-        $advice_me = $advice_meQ->get();
-        foreach($advice_me as $advice_me_data){
-            array_push($advice_area_arr,$advice_me_data->id);
-        }
-        $adviceQ = Advice_area::where('inquiry_adviser_id','!=',0)->where('inquiry_adviser_id','!=',$user->id)->where('inquiry_match_me',1)->where('area_status',0);
-        $advice = $adviceQ->get();
-        foreach($advice as $advice_data){
-            $bid = AdvisorBids::where('area_id',$advice_data->id)->count();
-            if($bid<3){
-                if(!in_array($advice_data->id,$advice_area_arr)){
-                    array_push($advice_area_arr,$advice_data->id);
-                }
-            }
-        }
-
-        if(count($advice_area_arr)){
-            $advice_area_arr = array_unique($advice_area_arr);
-        }
-
-        $queryModel = 'App\Models\Advice_area';
-        $advice_areaQuery =  $queryModel::select('advice_areas.*', 'users.name', 'users.email', 'users.address')->with('service')
-            ->leftJoin('users', 'advice_areas.user_id', '=', 'users.id')
-            ->leftJoin('advisor_bids', 'advice_areas.id', '=', 'advisor_bids.area_id')
-            ->where('area_status',0)->where('inquiry_adviser_id',0)->where(function($query) use ($requestTime){
-                if(!empty($requestTime)) {
-                    $query->where(function($q) use ($requestTime) {
-                        foreach($requestTime as $rtime){
-                            $q->orWhere('advice_areas.request_time',$rtime);
-                        }
-                    });
-                }
-        })->where(function($query) use ($service_type){
-                if(!empty($service_type)) {
-                    $query->where(function($q) use ($service_type) {
-                        foreach($service_type as $sitem){
-                            $q->orWhere('advice_areas.service_type_id',$sitem);
-                        }
-                    });
-                }
             
-        })->where(function($query) use ($ltv_max){
-            if($ltv_max != "") {
-               
-                $query->where('advice_areas.ltv_max','<=',chop($ltv_max,"%"));
-                $query->where('advice_areas.ltv_max','>',0);
-            }
-        })->where(function($query) use ($lti_max){
-            if($lti_max != "") {
-                $query->where('advice_areas.lti_max','<=',chop($lti_max,"x"));
-                $query->where('advice_areas.lti_max','>',0);
-            }
-        })->where(function($query) use ($service){
-            if($service != 0) {
-                $query->where('advice_areas.service_type_id',$service);
-            }
-        })->whereNotIn('advice_areas.id',function($query) use ($user){
-            $query->select('area_id')->from('advisor_bids')->where('advisor_id','=',$user->id);
-        });
-
-        if(count($discountArr)>0){
-            $advice_areaQuery = $advice_areaQuery->whereIn('advice_areas.id',$discountArr);
         }
-
-        if($self==0){
-            $advice_areaQuery = $advice_areaQuery->where('advice_areas.self_employed',0);
-        }
-        if($non_uk_citizen==0){
-            $advice_areaQuery = $advice_areaQuery->where('advice_areas.non_uk_citizen',0);
-        }
-        if($adverse==0){
-            $advice_areaQuery = $advice_areaQuery->where('advice_areas.adverse_credit',0);
-        }
-        if($fees_preference==1){
-            $advice_areaQuery = $advice_areaQuery->where('advice_areas.fees_preference',$fees_preference);
-        }
-
-        if($mortgage_max_size>0){
-            $advice_areaQuery = $advice_areaQuery->where('advice_areas.size_want','<=',$mortgage_max_size);
-        }
-
-        if($mortgage_min_size>0){
-            $advice_areaQuery = $advice_areaQuery->where('advice_areas.size_want','>=',$mortgage_min_size);
-        }
-
-        $advice_area = $advice_areaQuery->orWhereIn('advice_areas.id',$advice_area_arr)->orderBy('advice_areas.id','DESC')->with('total_bid_count')->groupBy('advice_areas.'.'id')
-        ->groupBy('advice_areas.'.'user_id')
-        ->groupBy('advice_areas.'.'service_type')
-        ->groupBy('advice_areas.'.'request_time')
-        ->groupBy('advice_areas.'.'property')
-        ->groupBy('advice_areas.'.'property_want')
-        ->groupBy('advice_areas.'.'size_want')
-        ->groupBy('advice_areas.'.'combined_income')
-        ->groupBy('advice_areas.'.'description')
-        ->groupBy('advice_areas.'.'occupation')
-        ->groupBy('advice_areas.'.'contact_preference')
-        ->groupBy('advice_areas.'.'advisor_preference')
-        ->groupBy('advice_areas.'.'fees_preference')
-        ->groupBy('advice_areas.'.'self_employed')
-        ->groupBy('advice_areas.'.'non_uk_citizen')
-        ->groupBy('advice_areas.'.'adverse_credit')
-        ->groupBy('advice_areas.'.'contact_preference_face_to_face')
-        ->groupBy('advice_areas.'.'contact_preference_online')
-        ->groupBy('advice_areas.'.'contact_preference_telephone')
-        ->groupBy('advice_areas.'.'contact_preference_evening_weekend')
-        ->groupBy('advice_areas.'.'advisor_preference_local')
-        ->groupBy('advice_areas.'.'advisor_preference_gender')
-        ->groupBy('advice_areas.'.'status')
-        ->groupBy('advice_areas.'.'combined_income_currency')
-        ->groupBy('advice_areas.'.'property_currency')
-        ->groupBy('advice_areas.'.'size_want_currency')
-        ->groupBy('advice_areas.'.'advisor_id')
-        ->groupBy('advice_areas.'.'close_type')
-        ->groupBy('advice_areas.'.'need_reminder')
-        ->groupBy('advice_areas.'.'initial_term')
-        ->groupBy('advice_areas.'.'start_date')
-        ->groupBy('advice_areas.'.'created_at')
-        ->groupBy('advice_areas.'.'updated_at')
-        ->groupBy('users.'.'name')
-        ->groupBy('users.'.'email')
-        ->groupBy('users.'.'address')
-        ->groupBy('advice_areas.'.'ltv_max')
-        ->groupBy('advice_areas.'.'lti_max')
-        ->groupBy('advice_areas.'.'advisor_preference_language')->orderBy('id','DESC')->get();
-        $bidCountArr = array();
-        
-        $getLeads = array();
-        $check_data = 0;
-
-        foreach($advice_area as $key=> $item) {
-            $user_id = $item->user_id;
-            $advice_area[$key]->total_bids_count = count($item->total_bid_count);
-            $adviser_detail = User::where('id',$user->id)->first();
-            if($adviser_detail){
-                $advisor_location = PostalCodes::where('Postcode',$adviser_detail->post_code)->first();
-                if($advisor_location){
-                    $user_detail = User::where('id',$user_id)->first();
-                    $user_location = PostalCodes::where('Postcode',$user_detail->post_code)->first();
-                    if($user_location){
-                        $advice_area[$key]->Latitude = $advisor_location->Latitude;
-                        $advice_area[$key]->Longitude = $advisor_location->Longitude;
-                        $advice_area[$key]->UserLatitude = $user_location->Latitude;
-                        $advice_area[$key]->UserLongitude = $user_location->Longitude;
-                        $advice_area[$key]->distance = \Helpers::distance($advisor_location->Latitude,
-                        $advisor_location->Longitude,$user_location->Latitude,$user_location->Longitude,'K');
-                        $item->distance = $advice_area[$key]->distance;
-                    }
-                }
-            }
-            if($advice_area[$key]->total_bids_count<5){
-                $advisor_profile_data = AdvisorProfile::where('advisorId', '=', $user->id)->first();
-                if($advisor_profile_data){
-                    if($advisor_profile_data->serve_range>0){
-                        if($advisor_profile_data->serve_range>=$advice_area[$key]->distance){
-                            if(date('Y-m-d h:i:s',strtotime("+15 days",strtotime($advice_area[$key]->created_at)))>date('Y-m-d h:i:s')){
-                                array_push($getLeads,$item);
-                            }
-                        }
-                    }else{
-                        if(date('Y-m-d h:i:s',strtotime("+15 days",strtotime($advice_area[$key]->created_at)))>date('Y-m-d h:i:s')){
-                            array_push($getLeads,$item);
-                        }
-                    }
-                }
-            }
-        }
-        return $getLeads;
-    }
-
-    function advisorDashboard() {
-        $userDetails = JWTAuth::parseToken()->authenticate();
-        $userData = AdvisorProfile::where('advisorId',$userDetails->id)->first();
-        $requestTime = [];
-        $discount='';
-        $ltv_max = 0;
-        $lti_max = 0;
-        $self = 0;
-        $non_uk_citizen = 0;
-        $adverse = 0;
-        $promotion = [];
-        // $mortgage_max_size = 0;
-        // $mortgage_min_size = 0;
-
-        // $userPreferenceCustomer = AdvisorPreferencesCustomer::where('advisor_id',$userDetails->id)->first();
-        // if(!empty($userPreferenceCustomer)) {
-        //     $ltv_max = $userPreferenceCustomer->ltv_max;
-        //     $lti_max = $userPreferenceCustomer->lti_max;
-        //     $self = $userPreferenceCustomer->self_employed;
-        //     $non_uk_citizen = $userPreferenceCustomer->non_uk_citizen;
-        //     $adverse = $userPreferenceCustomer->adverse_credit;
-        //     if($userPreferenceCustomer->asap == 1) {
-        //         $requestTime[] = "as soon as possible";
-        //     }
-        //     if($userPreferenceCustomer->next_3_month == 1) {
-        //         $requestTime[] = "in the next 3 months";
-        //     }
-        //     if($userPreferenceCustomer->more_3_month == 1) {
-        //         $requestTime[] = "in more than 3 months";
-        //     }
-        //     $fees_preference = $userPreferenceCustomer->fees_preference;
-        // }
-        // $userPreferenceProduct = AdviserProductPreferences::where('adviser_id',$userDetails->id)->get();
-        // $service_type = array();
-        // if(!empty($userPreferenceProduct)) {
-        //     foreach($userPreferenceProduct as $userPreferenceProduct_data){
-        //         array_push($service_type,$userPreferenceProduct_data->service_id);
-        //     }
-        // }
-
-        $advice_arr = array(-1);
-        $advice_area = $this->matchLeadsForCount();
-        if(count($advice_area)){
-            foreach($advice_area as $advice_area_data){
-                array_push($advice_arr,$advice_area_data->id);
-            }
-        }
-
         if($userData){
-            //$mortgage_max_size = $userData->mortgage_max_size;
-            //$mortgage_min_size = $userData->mortgage_min_size;
             $userData->profile_percent = 15;
             if($userData->image!=''){
                 $userData->profile_percent = $userData->profile_percent + 20;
@@ -1931,17 +1696,20 @@ class AdvisorController extends Controller
         
         $matched_last_hour = DB::table('advice_areas')
             ->where('created_at', '>=',DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)'))
-            ->whereIn('id',$advice_arr)->count();
-            
-        $matched_last_today = Advice_area::where('created_at','>=', Carbon::today())->whereIn('id',$advice_arr)->count();
-        $matched_last_yesterday = Advice_area::where('created_at','>=', Carbon::yesterday())->whereIn('id',$advice_arr)->count();
-        $less_than_3_days = Advice_area::where('created_at','>=', Carbon::today()->subDays(3))->whereIn('id',$advice_arr)->count();
-
+            ->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
+            // orWhereIn('request_time',$requestTime)->
+        $matched_last_today = Advice_area::where('created_at','>=', Carbon::today())->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
+        $matched_last_yesterday = Advice_area::where('created_at','>=', Carbon::yesterday())->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
+        $less_than_3_days = Advice_area::where('created_at','>=', Carbon::today()->subDays(3))->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->whereIn('service_type_id',$service_type)->count();
+        // $remortgage = Advice_area::where('service_type', '=', 'remortgage')->count();
+        // $next_time_buyer = Advice_area::where('service_type', '=', 'first time buyer')->count();
+        // $first_time_buyer = Advice_area::where('service_type', '=', 'next time buyer')->count();
+        // $buy_to_let = Advice_area::where('service_type', '=', 'buy to let')->count();
         $unread_count_total = DB::select("SELECT count(*) as count_message FROM `chat_models` AS m LEFT JOIN `chat_channels` AS c ON m.channel_id = c.id WHERE  m.to_user_id = $userDetails->id AND m.to_user_id_seen = 0");
         
         $service = ServiceType::where('parent_id','!=',0)->where('status',1)->limit(4)->orderBy('sequence','ASC')->get();
         foreach($service as $service_data){
-            $service_data->service_data_count = Advice_area::where('service_type_id', '=', $service_data->id)->whereIn('id',$advice_arr)->count();
+            $service_data->service_data_count = Advice_area::where('service_type_id', '=', $service_data->id)->where('self_employed',$self)->where('non_uk_citizen',$non_uk_citizen)->where('adverse_credit',$adverse)->count();
         }
         $service_arr = array();
         if(count($service)){    
@@ -1952,20 +1720,12 @@ class AdvisorController extends Controller
                 $service[3]->name => $service[3]->service_data_count,
             );
         }
-
-        $matched_card_two_50 = Advice_area::where('created_at', '<',date("Y-m-d H:i:s",strtotime("-24 hours")))->where('created_at', '>',date("Y-m-d H:i:s",strtotime("-48 hours")))->whereIn('id',$advice_arr)->count();
-
-        $matched_card_two_75 = Advice_area::where('created_at', '<',date("Y-m-d H:i:s",strtotime("-48 hours")))->where('created_at', '>',date("Y-m-d H:i:s",strtotime("-72 hours")))->whereIn('id',$advice_arr)->count();
-
-        $matched_card_two_free = Advice_area::where('created_at', '<',date("Y-m-d H:i:s",strtotime("-72 hours")))->where('created_at', '>',date("Y-m-d H:i:s",strtotime("-15 days")))->whereIn('id',$advice_arr)->count();
-
         $accepted_leads = AdvisorBids::where('advisor_id','=',$userDetails->id)
             ->where('status', '!=', 3)
             ->where('advisor_status', '=', 1)
             ->where('is_discounted',0)
             ->where('free_introduction',0)
             ->sum('cost_leads');
-
         $hired_leads = AdvisorBids::where('advisor_id','=',$userDetails->id)
             ->where('status', '=', 1)
             ->where('advisor_status', '=', 1)
@@ -1975,17 +1735,30 @@ class AdvisorController extends Controller
             ->where('status', '!=', 3)
             ->where('advisor_status', '=', 1)
             ->count();
-
         $hired_leads_for_per = AdvisorBids::where('advisor_id','=',$userDetails->id)
             ->where('status', '=', 1)
             ->where('advisor_status', '=', 1)
             ->count();
-
         $conversion_rate = 0;
         if($hired_leads_for_per!=0 && $accepted_leads_for_per!=0){
             $conversion_rate = ($hired_leads_for_per / $accepted_leads_for_per) * 100;
         }
-        
+        // $live_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 0)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $live_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 0)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
+
+        // $live_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 0)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
         /************ This month COunt ************/
         $live_leads_months = 0;
         $accepted_months = AdvisorBids::where('advisor_id',$userDetails->id)->where('status',0)->where('advisor_status',1)->where('created_at', '>', Carbon::today()->subDays(30))->get();
@@ -2067,6 +1840,105 @@ class AdvisorController extends Controller
 
         /************ Year COunt ************/
 
+        // $hired_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 1)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $hired_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 1)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
+
+        // $hired_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 1)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
+
+        // $completed_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 2)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $completed_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 2)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
+
+        // $completed_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 2)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
+
+        // $lost_leads_months = 0;
+        // $checkBidMonth= AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(30))->get();
+        // if(count($checkBidMonth)){
+        //     foreach($checkBidMonth as $checkBidMonth_data){
+        //         $dataLostMonth = Advice_area::where('id',$checkBidMonth_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+        //         if($dataLostMonth){
+        //             $lost_leads_months = $lost_leads_months + 1;
+        //         }
+        //     }
+        // }
+
+        // $lost_leads_quarter = 0;
+        // $checkBidQuarter = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(90))->get();
+        // if(count($checkBidQuarter)){
+        //     foreach($checkBidQuarter as $checkBidQuarter_data){
+        //         $dataLostQuarter = Advice_area::where('id',$checkBidQuarter_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+        //         if($dataLostQuarter){
+        //             $lost_leads_quarter = $lost_leads_quarter + 1;
+        //         }
+        //     }
+        // }
+
+        // $lost_leads_year = 0;
+        // $checkBidYear = AdvisorBids::where('advisor_id',$userDetails->id)->where('created_at', '>', Carbon::today()->subDays(365))->get();
+        // if(count($checkBidYear)){
+        //     foreach($checkBidYear as $checkBidYear_data){
+        //         $dataLostYear = Advice_area::where('id',$checkBidYear_data->area_id)->where('advisor_id','!=',$userDetails->id)->where('advisor_id','!=',0)->first();
+        //         if($dataLostYear){
+        //             $lost_leads_year = $lost_leads_year + 1;
+        //         }
+        //     }
+        // }
+
+        // $lost_leads_months = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        //     ->where('status', '=', 3)
+        //     ->where('advisor_status', '=', 1)
+        //     ->where('created_at', '>', Carbon::today()->subDays(30))
+        //     ->count();
+        // $lost_leads_quarter = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 3)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(90))
+        // ->count();
+
+        // $lost_leads_year = AdvisorBids::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 3)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
+
+        // $promotion = User::where('advisor_id','=',$userDetails->id)
+        // ->where('status', '=', 2)
+        // ->where('advisor_status', '=', 1)
+        // ->where('created_at', '>', Carbon::today()->subDays(365))
+        // ->count();
+        $promotion = $userDetails->free_promotions;
+        // if
+        // if($userDetails->invite_count!=0){
+        //     $promotion = $userDetails->free_promotions;
+        //     // $app_settings = DB::table('app_settings')->where('key','no_of_free_leads_refer_friend')->first();
+        //     // if($app_settings){
+        //     //     $promotion = $userDetails->invite_count * $app_settings->value;
+        //     // }
+        // }
+
         $es_val = AdvisorBids::where('advisor_id','=',$userDetails->id)->where('status', '=', 2)->where('advisor_status', '=', 1)->get();
         $estimated = number_format(0.00,0);
         $area_arr = array();
@@ -2102,9 +1974,9 @@ class AdvisorController extends Controller
                 ),
                 'matched_card_two'=>array(
                     'early_bid'=>'0',
-                    '50_off'=>$matched_card_two_50,
-                    '70_off'=>$matched_card_two_75,
-                    'free'=>$matched_card_two_free,
+                    '50_off'=>'0',
+                    '70_off'=>'0',
+                    'free'=>'0',
                 ),
                 'matched_card_three'=>$service,
                 'accepted_card_one'=>array(
@@ -2138,7 +2010,6 @@ class AdvisorController extends Controller
             ]
         ], Response::HTTP_OK);
     }
-
     public function getAdvisorDefaultPreference(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();

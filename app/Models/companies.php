@@ -96,8 +96,8 @@ class companies extends Model
                 $final_cost_of_lead = 0;
                 $cost_lead_final = 0;
                 $area_arr = array(-1);
+                $final_eastimated_lead = 0;
                 foreach($row->team_members as $team_members_data){
-                    $final_eastimated_lead = 0;
                     $cost_lead = 0;
                     $lead_value = 0;
                     $advisor_data_team = AdvisorProfile::where('email',$team_members_data->email)->first();

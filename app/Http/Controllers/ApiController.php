@@ -4563,10 +4563,12 @@ class ApiController extends Controller
                         $summary = "01 ".$monthArr[$m-1]." ".date("Y")." - ".$day." ".$monthArr[$m-1]." ".date("Y");
                         $data['invoice']->summary = $summary;
                         $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
-                        $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
                         $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
                         
                         $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->whereMonth('created_at',$m)->with('area')->with('adviser')->get();
+
+                        $data['invoice']->total_due = $data['invoice']->total_due + $data['invoice']->unpaid_prevoius_invoice;
                         // ->where('is_discounted',0)
                         if(count($data['invoice']->new_fees_arr)){
                             foreach($data['invoice']->new_fees_arr as $new_bid){

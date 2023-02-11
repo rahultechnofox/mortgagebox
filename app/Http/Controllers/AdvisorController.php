@@ -1361,10 +1361,21 @@ class AdvisorController extends Controller
         $checkUser = User::where('email','=',$request->email)->first();
         if (!empty($company_data)) {
             $company_team_data = CompanyTeamMembers::where('id',$company_data->id)->first();
+            if($company_team_data->isCompanyAdmin==1){
+                companies::where('id',$company_team_data->company_id)->delete();
+                $getAdv = AdvisorProfile::where('company_id',$company_team_data->company_id)->get();
+                foreach($getAdv as $getAdv_data){
+                    AdvisorProfile::where('id',$getAdv_data->id)->update([
+                        'company_id' => 0
+                    ]);
+                }
+                CompanyTeamMembers::where('company_id',$company_team_data->company_id)->delete();
+            }
             if($checkUser){
                 CompanyTeamMembers::where('id',$company_data->id)->update([
                     'company_id' => $request->company_id,
                     'advisor_id' => $user->id,
+                    'is_joined'=>1,
                     'isCompanyAdmin'=>0,
                     'member_id' => $checkUser->id
                 ]);
@@ -1372,6 +1383,7 @@ class AdvisorController extends Controller
                 CompanyTeamMembers::where('id',$company_data->id)->update([
                     'company_id' => $request->company_id,
                     'advisor_id' => $user->id,
+                    'is_joined'=>1,
                     'isCompanyAdmin'=>0
                 ]);
             }
@@ -1389,6 +1401,7 @@ class AdvisorController extends Controller
                     'company_id' => $request->company_id,
                     'name' => $request->name,
                     'email' => $request->email,
+                    'is_joined'=>1,
                     'advisor_id' => $user->id,
                     'member_id' => $checkUser->id
                 ]);
@@ -1397,10 +1410,15 @@ class AdvisorController extends Controller
                     'company_id' => $request->company_id,
                     'name' => $request->name,
                     'email' => $request->email,
+                    'is_joined'=>1,
                     'advisor_id' => $user->id
                 ]);
             }
-            
+            if(!empty($checkUser)){
+                AdvisorProfile::where('advisorId',$checkUser->id)->update([
+                    'company_id' => $request->company_id
+                ]);
+            }
             $company_team_id = $profile->id;
         }
         
@@ -1551,9 +1569,17 @@ class AdvisorController extends Controller
     }
     public function deleteTeam(Request $request, $id)
     {
-
         $userDetails = JWTAuth::parseToken()->authenticate();
-        $offers = CompanyTeamMembers::where('id', '=', $id)->delete();
+        $company_member = CompanyTeamMembers::where('id',$id)->first();
+        if($company_member){
+            $user = User::where('email',$company_member->email)->first();
+            if($user){
+                AdvisorProfile::where('advisorId',$user->id)->update([
+                    'company_id' => 0
+                ]);
+            }
+        }
+        $offers = CompanyTeamMembers::where('id', $id)->delete();
         //User created, return success response
         $chatData = CompanyTeamMembers::get();
         return response()->json([
@@ -2134,7 +2160,7 @@ class AdvisorController extends Controller
                 'notification_unread_count'=>0,
                 'promotions'=>$promotion,
                 'userDetails'=>$userData,
-                'total_invoice'=>number_format(round($total_due),2)
+                'total_invoice'=>number_format($total_due,2)
             ]
         ], Response::HTTP_OK);
     }

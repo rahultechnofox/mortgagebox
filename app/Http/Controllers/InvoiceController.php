@@ -85,6 +85,7 @@ class InvoiceController extends Controller
         }else{
             $post['month'] = $month;
         }
+        
         $data['result'] = Invoice::getInvoiceDetailBasisOfMonth($post);
         foreach($data['result'] as $row){
             $row->invoice_data = json_decode($row->invoice_data);
@@ -113,6 +114,13 @@ class InvoiceController extends Controller
      */
     public function invoice(Request $request) {
         $post = $request->all();
+        $data['smallest_invoice_year'] = 0;
+        $smallest_invoice_year = Invoice::select('year')->orderBy('year','ASC')->first();
+        if($smallest_invoice_year){
+            $data['smallest_invoice_year'] = $smallest_invoice_year->year;
+        }
+        
+        // echo json_encode($data['smallest_invoice_year']);exit;
         $data['invoice'] = Invoice::getOverAllInvoice($post);
         $data['adviser_data'] = User::where('user_role',1)->orderBy('id','DESC')->get();
         return view('invoice.overall_invoice',$data);

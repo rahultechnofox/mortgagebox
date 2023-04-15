@@ -333,8 +333,8 @@ class ApiController extends Controller
             }
             $user->slug = $this->getEncryptedId($user->id);
             $user->is_invoice_remaining = 0;
-            $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('total_due','!=',0)->where('advisor_id',$user->id)->whereNull('deleted_at')->orderBy('id','DESC')->first();
-
+            $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('total_due','!=',0)->where('advisor_id',$user->id)->where('month','<',date('m'))->whereNull('deleted_at')->orderBy('id','DESC')->first();
+            
             if($unpaid_prevoius_invoice){
                 // return response()->json(['user' => $unpaid_prevoius_invoice]);
                 $user->is_invoice_remaining = 1;
@@ -361,7 +361,7 @@ class ApiController extends Controller
             }
 
         }
-        return response()->json(['user' => $user,'user_services'=>$user_service,'user_perferce'=>$user_perferce]);
+        return response()->json(['user' => $user,'user_services'=>$user_service,'user_perferce'=>$user_perferce,'unpaid_prevoius_invoice'=>$unpaid_prevoius_invoice]);
     }
     public function updateAccount(Request $request)
     {
@@ -4564,12 +4564,18 @@ class ApiController extends Controller
                         $data['invoice']->summary = $summary;
                         $data['invoice']->invoice_data = json_decode($data['invoice']->invoice_data);
                         $data['invoice']->unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
+                        $unpaid_prevoius_invoice = DB::table('invoices')->where('is_paid',0)->where('month','<',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->orderBy('id','DESC')->first();
+                        $data['invoice']->unpaid_previous_invoice_number = 0;
+                        if($unpaid_prevoius_invoice){
+                            $data['invoice']->unpaid_previous_invoice_number = $unpaid_prevoius_invoice->invoice_number;
+                        }
                         $data['invoice']->paid_prevoius_invoice = DB::table('invoices')->where('is_paid','!=',0)->where('month','!=',$data['invoice']->month)->where('advisor_id',$data['invoice']->advisor_id)->sum('total_due');
                         
                         $data['invoice']->new_fees_arr = AdvisorBids::where('advisor_id',$data['invoice']->advisor_id)->whereMonth('created_at',$m)->with('area')->with('adviser')->get();
 
                         $data['invoice']->total_due = $data['invoice']->total_due + $data['invoice']->unpaid_prevoius_invoice;
                         // ->where('is_discounted',0)
+                        $data['invoice']->total_due = number_format($data['invoice']->total_due,2);
                         if(count($data['invoice']->new_fees_arr)){
                             foreach($data['invoice']->new_fees_arr as $new_bid){
                                 $new_bid->cost_leads = number_format($new_bid->cost_leads,2);

@@ -24,7 +24,7 @@ class Invoice extends Model
     public static function getInvoiceList($search){
         try {
             $query = new Self;
-            $data = $query->groupBy('month')->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
+            $data = $query->groupBy('month','year')->orderBy('id','DESC')->paginate(config('constants.paginate.num_per_page'));
             foreach($data as $row){
                 $row->subtotal_month = DB::table('invoices')->where('month',$row->month)->where('year',$row->year)->sum('subtotal');
                 $row->discount_month = DB::table('invoices')->where('month',$row->month)->where('year',$row->year)->sum('discount');
@@ -144,7 +144,7 @@ class Invoice extends Model
             }
             
             if(isset($search['created_at']) && $search['created_at']!=''){
-                $query = $query->whereDate('created_at', '=',date("Y-m-d",strtotime($search['created_at'])));
+                $query = $query->whereDate('created_at',date("Y-m-d",strtotime($search['created_at'])));
             }
             if(isset($search['month']) && $search['month']!=''){
                 $query = $query->where('month',$search['month']);
@@ -195,6 +195,11 @@ class Invoice extends Model
                     }
                     array_push($adviser_arr,$row->advisor_id);
                 }
+                // if(isset($search['month']) && $search['month']!=''){
+                //     $data['new_fees_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted',0)->whereMonth('created_at',$search['month'])->with('area')->with('adviser')->get();
+                // }else{
+                //     $data['new_fees_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted',0)->with('area')->with('adviser')->get();
+                // }
                 $data['new_fees_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted',0)->with('area')->with('adviser')->get();
                 if(count($data['new_fees_arr'])){
                     foreach($data['new_fees_arr'] as $new_bid){
@@ -212,6 +217,11 @@ class Invoice extends Model
                         }
                     }
                 }
+                // if(isset($search['month']) && $search['month']!=''){
+                //     $data['discount_credit_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted','!=',0)->whereMonth('created_at',$search['month'])->with('area')->with('adviser')->get();
+                // }else{
+                //     $data['discount_credit_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
+                // }
                 $data['discount_credit_arr'] = AdvisorBids::whereIn('advisor_id',$adviser_arr)->where('is_discounted','!=',0)->with('area')->with('adviser')->get();
                 if(count($data['discount_credit_arr'])){
                     foreach($data['discount_credit_arr'] as $discount_bid){

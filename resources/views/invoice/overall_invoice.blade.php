@@ -46,9 +46,20 @@
                             </select>
                         </div>
                         <!-- <?php $firstYear = (int)date('Y'); ?> -->
-                        <div class="col-md-2 col-12" style="margin-top: 15px;">
+                        <!-- <div class="col-md-2 col-12" style="margin-top: 15px;">
                             
+                        </div> -->
+						<?php $diff = (int)date('Y') - $smallest_invoice_year;
+						$firstYear = (int)date('Y') - $diff; ?>
+                        <div class="col-md-2 col-12" style="margin-top: 15px;">
+                            <select class="form-select" id="" name="year">    
+                                <option value="">Year</option>
+                                <?php for($i=$firstYear;$i<=date('Y');$i++){ ?>
+                                    <option value="<?php echo $i;?>" <?php if(isset($_GET['year']) && $_GET['year']!=''){ if($_GET['year']==$i){ echo "selected"; } } ?>><?php echo $i;?></option>
+                                <?php }?>
+                            </select>
                         </div>
+						
                         <div class="col-md-2 col-12" style="margin-top: 15px;">
                             <button type="submit" name="submit" value="Search" id="submit" class="dt-button create-new btn btn-primary"><i data-feather="search"></i></button>
                             <a href="javascript:;" onclick="resetFilter()" class="btn btn-outline-secondary"><i data-feather="refresh-ccw"></i></a>

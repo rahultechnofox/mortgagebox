@@ -33,6 +33,7 @@ use App\Models\NeedSpam;
 use App\Models\AdviserProductPreferences;
 use App\Models\PaymentLog;
 use App\Models\Payment;
+use App\Models\ChatGptResponse;
 use DateTime;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -42,11 +43,12 @@ use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Storage;
-    use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use PDF;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Stripe;
+use GuzzleHttp\Client;
 
 class ApiController extends Controller
 {
@@ -4024,7 +4026,7 @@ class ApiController extends Controller
 
     public function searchPostalCode(Request $request) {
         $search = $request->postal_code;
-        $result = PostalCodes::select('id','Postcode')->where('Postcode', 'like', '%' . $search . '%')->limit(20)->get();
+        $result = PostalCodes::select('id','Postcode')->where('Postcode', 'like', '%' . strtoupper($search) . '%')->limit(20)->get();
         if(!empty($result)) {
             return response()->json([
                 'status' => true,
@@ -5673,6 +5675,85 @@ class ApiController extends Controller
                 'data'=> []
             ], Response::HTTP_OK);
         }
+    }
+
+    public function saveChatGptResponse(Request $request) {
+        $user_input = $request->question;
+        // Prepare the request data
+        $requestData = [
+            "model"=> "text-davinci-003",
+            'prompt' => "The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\nHuman: Hello, who are you?\nAI: I am an AI created by OpenAI. How can I help you today?\nHuman: ".$user_input."\nAI:",
+            "temperature"=> 0.9,
+            "max_tokens"=> 150,
+            "top_p"=> 1,
+            "frequency_penalty"=> 0.0,
+            "presence_penalty"=> 0.6,
+            "stop"=> [" Human:", " AI:"]
+        ];
+        
+        // Set the headers
+        $headers = [
+            'Content-Type: application/json',
+            'Authorization: Bearer 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',
+        ];
+
+        // Initialize cURL
+        $curl = curl_init();
+
+        // Set the cURL options
+        curl_setopt_array($curl, [
+            CURLOPT_URL => 'https://api.openai.com/v1/completions',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($requestData),
+            CURLOPT_HTTPHEADER => $headers,
+        ]);
+
+        // Execute the request
+        $response = curl_exec($curl);
+
+        // Close cURL
+        curl_close($curl);
+
+        // Check if cURL request was successful
+        if ($response === false) {
+            // Handle error
+            // ...
+        }
+
+        // Parse the response
+        $responseData = json_decode($response, true);
+        return response()->json([
+            'status' => true,
+            'message' => 'success',
+            'data'=>$responseData
+        ], Response::HTTP_OK);
+        // Extract the chatgpt_response from the response data
+        $chatgpt_response = $responseData['choices'][0]['text'];
+
+        // Return the response as JSON
+        if($chatgpt_response!=''){
+            // $arr = array(
+            //     'question'=>$request->question,
+            //     'response'=>$chatgpt_response
+            // );
+            // if(isset($request->user_id) && $request->user_id!=''){
+            //     $arr['user_id'] = $request->user_id;
+            // }
+            // $result = ChatGptResponse::insertGetId($arr);
+            return response()->json([
+                'status' => true,
+                'message' => 'success',
+                'data'=>$chatgpt_response
+            ], Response::HTTP_OK);       
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong please try again later.',
+                'data'=>$result
+            ], Response::HTTP_OK);
+        }
+            
     }
     
 }

@@ -5679,6 +5679,7 @@ class ApiController extends Controller
 
     public function saveChatGptResponse(Request $request) {
         $user_input = $request->question;
+        
         // Prepare the request data
         $requestData = [
             "model"=> "text-davinci-003",
@@ -5694,7 +5695,7 @@ class ApiController extends Controller
         // Set the headers
         $headers = [
             'Content-Type: application/json',
-            'Authorization: Bearer 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',
+            'Authorization: Bearer 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',
         ];
 
         // Initialize cURL
@@ -5723,24 +5724,20 @@ class ApiController extends Controller
 
         // Parse the response
         $responseData = json_decode($response, true);
-        return response()->json([
-            'status' => true,
-            'message' => 'success',
-            'data'=>$responseData
-        ], Response::HTTP_OK);
+        
         // Extract the chatgpt_response from the response data
         $chatgpt_response = $responseData['choices'][0]['text'];
 
         // Return the response as JSON
         if($chatgpt_response!=''){
-            // $arr = array(
-            //     'question'=>$request->question,
-            //     'response'=>$chatgpt_response
-            // );
-            // if(isset($request->user_id) && $request->user_id!=''){
-            //     $arr['user_id'] = $request->user_id;
-            // }
-            // $result = ChatGptResponse::insertGetId($arr);
+                $arr = array(
+                    'question'=>$request->question,
+                    'response'=>$chatgpt_response
+                );
+                if(isset($request->user_id) && $request->user_id!=''){
+                    $arr['user_id'] = $request->user_id;
+                }
+                $result = ChatGptResponse::insertGetId($arr);
             return response()->json([
                 'status' => true,
                 'message' => 'success',
@@ -5753,7 +5750,6 @@ class ApiController extends Controller
                 'data'=>$result
             ], Response::HTTP_OK);
         }
-            
     }
     
 }

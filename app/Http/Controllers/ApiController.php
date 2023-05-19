@@ -5695,7 +5695,7 @@ class ApiController extends Controller
         // Set the headers
         $headers = [
             'Content-Type: application/json',
-            'Authorization: Bearer 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',
+            'Authorization: Bearer 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',
         ];
 
         // Initialize cURL
